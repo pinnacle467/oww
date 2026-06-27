@@ -292,14 +292,180 @@ backend:
             
             Tours sub-pages B1 backend is production-ready.
 
+  - task: "B2: Tour gallery + 3-section body + Corporate Retreats + duplicate + preview-token + Maleny re-tag"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: |
+            Session B2 backend changes (all in backend/server.py). Verify:
+
+            1. EXTENDED MODELS — JourneyInput / JourneyUpdate now accept:
+               gallery_media_ids (List[str]), description_html, itinerary_html,
+               practical_html (all str), preview_token (str). All optional on
+               update, all defaulted on create.
+
+            2. MIGRATION ON STARTUP (idempotent):
+               a) Every journey row now has gallery_media_ids=[],
+                  description_html, itinerary_html, practical_html, preview_token
+                  (defaulted to "" / empty list if missing).
+               b) Where body_html was non-empty AND description_html was empty,
+                  body_html is copied into description_html.
+               c) The "Maleny Creative Immersion" row (slug=maleny-creative-immersion)
+                  is re-tagged from type='tour' to type='retreat'. Idempotent —
+                  only updates when type != 'retreat'.
+               Expected post-migration: GET /api/journeys returns 4 rows total,
+               1 retreat (maleny) + 3 tours (tasmanian, western, corporate).
+
+            3. NEW PUBLIC ENDPOINTS:
+               GET /api/retreats — returns only type='retreat' rows. Hides
+                 drafts/inactive by default. Should return 1 row (maleny).
+               GET /api/retreats/{slug} — single retreat by slug. 404 for
+                 unknown, draft (without preview), or inactive. 200 for
+                 maleny-creative-immersion.
+
+            4. TYPE FILTER ON GET /api/journeys:
+               ?type=tour returns 3 rows (excludes maleny).
+               ?type=retreat returns 1 row (only maleny).
+               Legacy rows without a `type` field MUST also be returned when
+               type=tour is requested.
+
+            5. TYPE FILTER ON GET /api/tours/{slug}:
+               GET /api/tours/maleny-creative-immersion MUST return 404 now
+               that Maleny is a retreat (it should only resolve through
+               /api/retreats/{slug}).
+               GET /api/tours/tasmanian-slow-and-soulful-journeys MUST return 200.
+
+            6. PREVIEW TOKEN flow:
+               POST /api/admin/journeys/{id}/preview-token (Bearer auth)
+                 generates a new urlsafe token, stores it on the row,
+                 returns { preview_token, slug, type }.
+               Set a row's status='draft', then:
+                 GET /api/tours/{slug} -> 404
+                 GET /api/tours/{slug}?preview=<token> -> 200 (drafts visible with valid token)
+                 GET /api/tours/{slug}?preview=wrong  -> 404
+               Same for /api/retreats/{slug} on a retreat draft.
+
+            7. DUPLICATE endpoint:
+               POST /api/admin/journeys/{id}/duplicate (Bearer auth) clones
+               the row into a fresh draft. New id, status='draft', new
+               preview_token, slug becomes <existing>-copy (or -copy-2 etc
+               on collision via _unique_slug), popular=false, name appended
+               with " (copy)". All other fields (description_html,
+               itinerary_html, practical_html, gallery_media_ids, etc) are
+               copied verbatim.
+
+            8. ROUND-TRIP all new B2 fields through POST and PATCH:
+               POST /api/admin/journeys with gallery_media_ids, description_html,
+               itinerary_html, practical_html in payload — fetch and confirm
+               persistence. Same on PATCH.
+
+            9. REGRESSION:
+               - GET /api/media count still 237.
+               - GET /api/admin/journeys (admin) still lists everything (now 4 rows
+                 with mixed types).
+               - GET /api/journeys (no filter) returns all 4 rows.
+               - B1 endpoints still work: include_drafts flag, slug uniqueness,
+                 hero_media_id field, seo_title/seo_description, status=draft
+                 hiding.
+
+            CLEAN UP every test row + duplicate you create.
+
+            Admin login: POST /api/auth/login {"email":"info@oncewerewild.com","password":"ChangeMe-OWW-2026!"}
+        - working: true
+          agent: "testing"
+          comment: |
+            VERIFIED: All B2 backend features working correctly. Comprehensive testing completed with 8/8 tests passed.
+            
+            TEST 1 - MALENY RE-TAG MIGRATION: ✓ PASSED
+            - GET /api/journeys returns 4 rows total (expected 4)
+            - GET /api/journeys?type=tour returns 3 rows (excludes Maleny)
+            - GET /api/journeys?type=retreat returns 1 row (only Maleny)
+            - GET /api/retreats returns 1 row (Maleny)
+            - GET /api/retreats/maleny-creative-immersion returns 200 with type='retreat'
+            - GET /api/tours/maleny-creative-immersion returns 404 (Maleny is no longer a tour)
+            - GET /api/tours/tasmanian-slow-and-soulful-journeys returns 200 (still a tour)
+            - Maleny successfully re-tagged from type='tour' to type='retreat'
+            
+            TEST 2 - B2 SCHEMA MIGRATION: ✓ PASSED
+            - All 4 journey rows have B2 fields: gallery_media_ids, description_html, itinerary_html, practical_html, preview_token
+            - gallery_media_ids is a list (default: [])
+            - description_html, itinerary_html, practical_html, preview_token are strings (default: "")
+            - Migration applied correctly to all existing rows
+            
+            TEST 3 - POST /api/admin/journeys WITH B2 FIELDS: ✓ PASSED
+            - Created journey with gallery_media_ids: ["media-id-1", "media-id-2", "media-id-3"]
+            - description_html, itinerary_html, practical_html all persisted correctly
+            - All B2 fields round-tripped through POST and GET
+            
+            TEST 4 - PATCH /api/admin/journeys WITH B2 FIELDS: ✓ PASSED
+            - Updated journey with new gallery_media_ids: ["updated-1", "updated-2"]
+            - description_html, itinerary_html, practical_html all updated correctly
+            - All B2 fields round-tripped through PATCH and GET
+            
+            TEST 5 - POST /api/admin/journeys/{id}/duplicate: ✓ PASSED
+            - Duplicate created with new id and unique slug (source-journey-for-duplicate-copy)
+            - status='draft', popular=false, preview_token generated
+            - name appended with " (copy)"
+            - All B2 fields (gallery_media_ids, description_html, itinerary_html, practical_html) copied verbatim
+            - Duplicate appears in GET /api/admin/journeys
+            - Duplicate does NOT appear in GET /api/journeys (draft hidden)
+            
+            TEST 6 - POST /api/admin/journeys/{id}/preview-token: ✓ PASSED
+            - Preview token generated and persisted on journey row
+            - Returns { preview_token, slug, type }
+            - Draft tour: GET /api/tours/{slug} returns 404 without token
+            - Draft tour: GET /api/tours/{slug}?preview={token} returns 200 with correct token
+            - Draft tour: GET /api/tours/{slug}?preview=wrong-token returns 404 with wrong token
+            - Draft retreat: GET /api/retreats/{slug}?preview={token} returns 200 with correct token
+            - Preview token flow working correctly for both tours and retreats
+            
+            TEST 7 - TYPE VALIDATION: ✓ PASSED
+            - Created tour: GET /api/tours/{slug} returns 200
+            - Created tour: GET /api/retreats/{slug} returns 404 (cross-type lookup blocked)
+            - Created retreat: GET /api/retreats/{slug} returns 200
+            - Created retreat: GET /api/tours/{slug} returns 404 (cross-type lookup blocked)
+            - Type filtering working correctly
+            
+            TEST 8 - REGRESSION CHECKS: ✓ PASSED
+            - GET /api/media returns 237 items (expected 237) - no regression
+            - GET /api/admin/journeys lists all rows including drafts and mixed types
+            - GET /api/journeys?include_drafts=true returns all rows (B1 flag still works)
+            - Slug uniqueness on POST working (unique-slug-test-regression vs unique-slug-test-regression-2)
+            - All B1 features still working correctly
+            
+            CLEANUP: ✓ COMPLETE
+            - Deleted all 10 test journeys created during testing
+            - Database returned to original state
+            
+            ALL B2 FEATURES VERIFIED AND WORKING:
+            ✓ Extended Journey schema with 5 new B2 fields (gallery_media_ids, description_html, itinerary_html, practical_html, preview_token)
+            ✓ Maleny Creative Immersion re-tagged from type='tour' to type='retreat'
+            ✓ GET /api/retreats and GET /api/retreats/{slug} endpoints working
+            ✓ Type filtering on GET /api/journeys?type=tour and ?type=retreat
+            ✓ Cross-type lookup blocking (tours can't be accessed via /api/retreats/{slug} and vice versa)
+            ✓ POST /api/admin/journeys/{id}/duplicate creates draft copy with unique slug and preview token
+            ✓ POST /api/admin/journeys/{id}/preview-token generates and persists preview token
+            ✓ Preview token flow allows draft access via ?preview={token} query param
+            ✓ POST and PATCH round-trip all B2 fields correctly
+            ✓ No regression in existing endpoints (media count stable at 237, B1 features working)
+            
+            B2 backend is production-ready.
+
 metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 2
+  test_sequence: 3
   run_ui: false
 
 test_plan:
-  current_focus: []
+  current_focus:
+    - "B2: Tour gallery + 3-section body + Corporate Retreats + duplicate + preview-token + Maleny re-tag"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -1552,3 +1718,113 @@ agent_communication:
       ✓ No regression in existing endpoints (media count stable at 237)
       
       Tours sub-pages B1 backend is production-ready. No action items for main agent.
+
+    - agent: "main"
+      message: |
+        Session B2 backend changes shipped. Please test ONLY the new "B2: Tour
+        gallery + 3-section body + Corporate Retreats + duplicate + preview-token
+        + Maleny re-tag" task described above. Do NOT retest B1 - that already
+        passed in iteration 2.
+
+        Key things to confirm:
+        1. Maleny was re-tagged to type=retreat by the startup migration.
+           - GET /api/journeys?type=tour returns 3 (no maleny)
+           - GET /api/retreats returns 1 (maleny)
+           - GET /api/tours/maleny-creative-immersion -> 404
+           - GET /api/retreats/maleny-creative-immersion -> 200
+        2. New 3-field body (description_html / itinerary_html / practical_html)
+           and gallery_media_ids round-trip through POST and PATCH.
+        3. POST /api/admin/journeys/{id}/duplicate creates a draft clone with
+           a unique <slug>-copy slug and a fresh preview_token.
+        4. POST /api/admin/journeys/{id}/preview-token regenerates the token
+           and returns it; using ?preview=<token> against /api/tours/{slug}
+           (or /api/retreats/{slug}) returns drafts. Wrong/missing token = 404.
+        5. body_html -> description_html copy migration ran (idempotent).
+        6. Regression: media count still 237, /api/admin/journeys still lists
+           all 4, B1 flags (include_drafts, slug uniqueness) still work.
+
+        Auth: POST /api/auth/login {"email":"info@oncewerewild.com","password":"ChangeMe-OWW-2026!"}
+        Backend up on http://localhost:8001. CLEAN UP all test rows + duplicates.
+
+  - agent: "testing"
+    message: |
+      ✅ B2 BACKEND FEATURE TEST COMPLETE - ALL 8 TESTS PASSED
+      
+      Comprehensive backend testing completed for B2 feature: Tour gallery + 3-section body + Corporate Retreats + duplicate + preview-token + Maleny re-tag.
+      
+      TEST RESULTS SUMMARY:
+      
+      1. ✅ MALENY RE-TAG MIGRATION (TEST 1):
+         - GET /api/journeys returns 4 rows total (expected 4)
+         - GET /api/journeys?type=tour returns 3 rows (excludes Maleny)
+         - GET /api/journeys?type=retreat returns 1 row (only Maleny)
+         - GET /api/retreats returns 1 row (Maleny)
+         - GET /api/retreats/maleny-creative-immersion returns 200 with type='retreat'
+         - GET /api/tours/maleny-creative-immersion returns 404 (Maleny is no longer a tour)
+         - GET /api/tours/tasmanian-slow-and-soulful-journeys returns 200 (still a tour)
+         - Maleny successfully re-tagged from type='tour' to type='retreat'
+      
+      2. ✅ B2 SCHEMA MIGRATION (TEST 2):
+         - All 4 journey rows have B2 fields: gallery_media_ids, description_html, itinerary_html, practical_html, preview_token
+         - gallery_media_ids is a list (default: [])
+         - description_html, itinerary_html, practical_html, preview_token are strings (default: "")
+         - Migration applied correctly to all existing rows
+      
+      3. ✅ POST /api/admin/journeys WITH B2 FIELDS (TEST 3):
+         - Created journey with gallery_media_ids: ["media-id-1", "media-id-2", "media-id-3"]
+         - description_html, itinerary_html, practical_html all persisted correctly
+         - All B2 fields round-tripped through POST and GET
+      
+      4. ✅ PATCH /api/admin/journeys WITH B2 FIELDS (TEST 4):
+         - Updated journey with new gallery_media_ids: ["updated-1", "updated-2"]
+         - description_html, itinerary_html, practical_html all updated correctly
+         - All B2 fields round-tripped through PATCH and GET
+      
+      5. ✅ POST /api/admin/journeys/{id}/duplicate (TEST 5):
+         - Duplicate created with new id and unique slug (source-journey-for-duplicate-copy)
+         - status='draft', popular=false, preview_token generated
+         - name appended with " (copy)"
+         - All B2 fields (gallery_media_ids, description_html, itinerary_html, practical_html) copied verbatim
+         - Duplicate appears in GET /api/admin/journeys
+         - Duplicate does NOT appear in GET /api/journeys (draft hidden)
+      
+      6. ✅ POST /api/admin/journeys/{id}/preview-token (TEST 6):
+         - Preview token generated and persisted on journey row
+         - Returns { preview_token, slug, type }
+         - Draft tour: GET /api/tours/{slug} returns 404 without token
+         - Draft tour: GET /api/tours/{slug}?preview={token} returns 200 with correct token
+         - Draft tour: GET /api/tours/{slug}?preview=wrong-token returns 404 with wrong token
+         - Draft retreat: GET /api/retreats/{slug}?preview={token} returns 200 with correct token
+         - Preview token flow working correctly for both tours and retreats
+      
+      7. ✅ TYPE VALIDATION (TEST 7):
+         - Created tour: GET /api/tours/{slug} returns 200
+         - Created tour: GET /api/retreats/{slug} returns 404 (cross-type lookup blocked)
+         - Created retreat: GET /api/retreats/{slug} returns 200
+         - Created retreat: GET /api/tours/{slug} returns 404 (cross-type lookup blocked)
+         - Type filtering working correctly
+      
+      8. ✅ REGRESSION CHECKS (TEST 8):
+         - GET /api/media returns 237 items (expected 237) - no regression
+         - GET /api/admin/journeys lists all rows including drafts and mixed types
+         - GET /api/journeys?include_drafts=true returns all rows (B1 flag still works)
+         - Slug uniqueness on POST working (unique-slug-test-regression vs unique-slug-test-regression-2)
+         - All B1 features still working correctly
+      
+      CLEANUP: ✓ COMPLETE
+      - Deleted all 10 test journeys created during testing
+      - Database returned to original state
+      
+      ALL B2 FEATURES VERIFIED AND WORKING:
+      ✓ Extended Journey schema with 5 new B2 fields (gallery_media_ids, description_html, itinerary_html, practical_html, preview_token)
+      ✓ Maleny Creative Immersion re-tagged from type='tour' to type='retreat'
+      ✓ GET /api/retreats and GET /api/retreats/{slug} endpoints working
+      ✓ Type filtering on GET /api/journeys?type=tour and ?type=retreat
+      ✓ Cross-type lookup blocking (tours can't be accessed via /api/retreats/{slug} and vice versa)
+      ✓ POST /api/admin/journeys/{id}/duplicate creates draft copy with unique slug and preview token
+      ✓ POST /api/admin/journeys/{id}/preview-token generates and persists preview token
+      ✓ Preview token flow allows draft access via ?preview={token} query param
+      ✓ POST and PATCH round-trip all B2 fields correctly
+      ✓ No regression in existing endpoints (media count stable at 237, B1 features working)
+      
+      B2 backend is production-ready. No action items for main agent - all requirements met.

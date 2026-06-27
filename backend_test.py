@@ -1,734 +1,594 @@
 #!/usr/bin/env python3
 """
-Backend test for Tours sub-pages B1 feature.
-Tests the extended Journey schema, /api/tours/{slug} endpoint, slug uniqueness, and draft hiding.
+Backend API test suite for B2 feature: Tour gallery + 3-section body + 
+Corporate Retreats + duplicate + preview-token + Maleny re-tag.
+
+Tests the journeys/tours/retreats/admin-journeys endpoints.
 """
 
 import requests
 import sys
-import json
-from typing import Optional
+import os
 
-# Backend URL from frontend/.env
-BACKEND_URL = "https://9d4d4695-ec6e-4ff5-97a0-1340b8f5043b.preview.emergentagent.com/api"
+# Read backend URL from frontend .env
+BACKEND_URL = None
+env_path = "/app/frontend/.env"
+if os.path.exists(env_path):
+    with open(env_path) as f:
+        for line in f:
+            if line.startswith("REACT_APP_BACKEND_URL="):
+                BACKEND_URL = line.split("=", 1)[1].strip() + "/api"
+                break
 
-# Admin credentials from /app/memory/test_credentials.md
+if not BACKEND_URL:
+    print("❌ ERROR: Could not read REACT_APP_BACKEND_URL from /app/frontend/.env")
+    sys.exit(1)
+
+print(f"🔗 Backend URL: {BACKEND_URL}")
+
+# Admin credentials
 ADMIN_EMAIL = "info@oncewerewild.com"
 ADMIN_PASSWORD = "ChangeMe-OWW-2026!"
 
 # Track test data for cleanup
 test_journey_ids = []
+test_duplicate_ids = []
 
-def log(msg: str):
-    """Print test log message."""
-    print(f"[TEST] {msg}")
-
-def error(msg: str):
-    """Print error message."""
-    print(f"[ERROR] {msg}", file=sys.stderr)
-
-def get_auth_token() -> Optional[str]:
-    """Login and get Bearer token."""
-    log("Logging in as admin...")
+def login():
+    """Login and return Bearer token."""
+    print("\n🔐 Logging in as admin...")
     resp = requests.post(
         f"{BACKEND_URL}/auth/login",
         json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD},
         timeout=10
     )
     if resp.status_code != 200:
-        error(f"Login failed: {resp.status_code} {resp.text}")
-        return None
+        print(f"❌ Login failed: {resp.status_code} {resp.text}")
+        sys.exit(1)
     data = resp.json()
-    token = data.get("access_token") or data.get("token")
+    token = data.get("access_token")
     if not token:
-        error(f"No token in login response: {data}")
-        return None
-    log(f"✓ Login successful, got token")
+        print(f"❌ No access_token in login response: {data}")
+        sys.exit(1)
+    print(f"✅ Login successful")
     return token
 
-def test_startup_migration():
-    """Test 1: Verify startup migration backfilled slug, status, type on all journeys."""
-    log("\n=== TEST 1: Startup Migration ===")
-    resp = requests.get(f"{BACKEND_URL}/journeys", timeout=10)
-    if resp.status_code != 200:
-        error(f"GET /api/journeys failed: {resp.status_code} {resp.text}")
-        return False
-    
-    journeys = resp.json()
-    log(f"GET /api/journeys returned {len(journeys)} journeys")
-    
-    if len(journeys) != 4:
-        error(f"Expected 4 journeys, got {len(journeys)}")
-        return False
-    
-    for j in journeys:
-        # Check slug is non-empty
-        if not j.get("slug"):
-            error(f"Journey {j.get('name')} has empty slug: {j.get('slug')}")
-            return False
-        # Check status is "published"
-        if j.get("status") != "published":
-            error(f"Journey {j.get('name')} has status={j.get('status')}, expected 'published'")
-            return False
-        # Check type is "tour"
-        if j.get("type") != "tour":
-            error(f"Journey {j.get('name')} has type={j.get('type')}, expected 'tour'")
-            return False
-        log(f"  ✓ {j.get('name')}: slug='{j.get('slug')}', status='published', type='tour'")
-    
-    log("✓ TEST 1 PASSED: All 4 journeys have non-empty slug, status='published', type='tour'")
-    return True
-
-def test_tours_slug_endpoint(token: str):
-    """Test 2: GET /api/tours/{slug} returns 200 for published+active, 404 for unknown/draft/inactive."""
-    log("\n=== TEST 2: GET /api/tours/{slug} Endpoint ===")
-    
-    # First, get a published journey's slug
-    resp = requests.get(f"{BACKEND_URL}/journeys", timeout=10)
-    if resp.status_code != 200:
-        error(f"GET /api/journeys failed: {resp.status_code}")
-        return False
-    journeys = resp.json()
-    if not journeys:
-        error("No journeys found")
-        return False
-    
-    published_slug = journeys[0].get("slug")
-    log(f"Testing with published journey slug: '{published_slug}'")
-    
-    # Test 2a: GET published journey by slug should return 200
-    resp = requests.get(f"{BACKEND_URL}/tours/{published_slug}", timeout=10)
-    if resp.status_code != 200:
-        error(f"GET /api/tours/{published_slug} failed: {resp.status_code} {resp.text}")
-        return False
-    tour = resp.json()
-    if tour.get("slug") != published_slug:
-        error(f"Expected slug '{published_slug}', got '{tour.get('slug')}'")
-        return False
-    log(f"  ✓ GET /api/tours/{published_slug} returned 200 with correct data")
-    
-    # Test 2b: GET unknown slug should return 404
-    resp = requests.get(f"{BACKEND_URL}/tours/nonexistent-slug-12345", timeout=10)
-    if resp.status_code != 404:
-        error(f"GET /api/tours/nonexistent-slug-12345 should return 404, got {resp.status_code}")
-        return False
-    log(f"  ✓ GET /api/tours/nonexistent-slug-12345 returned 404 (as expected)")
-    
-    # Test 2c: Create a draft journey and verify it returns 404
+def cleanup(token):
+    """Delete all test journeys created during testing."""
+    print("\n🧹 Cleaning up test data...")
     headers = {"Authorization": f"Bearer {token}"}
-    draft_data = {
-        "name": "Test Draft Journey",
-        "slug": "test-draft-journey",
-        "status": "draft",
-        "type": "tour",
-        "region": "Test Region",
-        "nights": "3",
-        "dates": "Year-round",
-        "priceFrom": "$999",
-        "summary": "Test draft journey",
-        "is_active": True
-    }
-    resp = requests.post(f"{BACKEND_URL}/admin/journeys", json=draft_data, headers=headers, timeout=10)
-    if resp.status_code != 200:
-        error(f"POST /api/admin/journeys failed: {resp.status_code} {resp.text}")
-        return False
-    draft_journey = resp.json()
-    draft_id = draft_journey.get("id")
-    draft_slug = draft_journey.get("slug")
-    test_journey_ids.append(draft_id)
-    log(f"  Created draft journey: id={draft_id}, slug='{draft_slug}'")
-    
-    # Verify draft journey returns 404 on public endpoint
-    resp = requests.get(f"{BACKEND_URL}/tours/{draft_slug}", timeout=10)
-    if resp.status_code != 404:
-        error(f"GET /api/tours/{draft_slug} (draft) should return 404, got {resp.status_code}")
-        return False
-    log(f"  ✓ GET /api/tours/{draft_slug} (draft) returned 404 (as expected)")
-    
-    # Test 2d: Create an inactive journey and verify it returns 404
-    inactive_data = {
-        "name": "Test Inactive Journey",
-        "slug": "test-inactive-journey",
-        "status": "published",
-        "type": "tour",
-        "region": "Test Region",
-        "nights": "3",
-        "dates": "Year-round",
-        "priceFrom": "$999",
-        "summary": "Test inactive journey",
-        "is_active": False
-    }
-    resp = requests.post(f"{BACKEND_URL}/admin/journeys", json=inactive_data, headers=headers, timeout=10)
-    if resp.status_code != 200:
-        error(f"POST /api/admin/journeys failed: {resp.status_code} {resp.text}")
-        return False
-    inactive_journey = resp.json()
-    inactive_id = inactive_journey.get("id")
-    inactive_slug = inactive_journey.get("slug")
-    test_journey_ids.append(inactive_id)
-    log(f"  Created inactive journey: id={inactive_id}, slug='{inactive_slug}'")
-    
-    # Verify inactive journey returns 404 on public endpoint
-    resp = requests.get(f"{BACKEND_URL}/tours/{inactive_slug}", timeout=10)
-    if resp.status_code != 404:
-        error(f"GET /api/tours/{inactive_slug} (inactive) should return 404, got {resp.status_code}")
-        return False
-    log(f"  ✓ GET /api/tours/{inactive_slug} (inactive) returned 404 (as expected)")
-    
-    log("✓ TEST 2 PASSED: GET /api/tours/{slug} works correctly for published/draft/inactive/unknown")
-    return True
+    deleted = 0
+    for jid in test_journey_ids + test_duplicate_ids:
+        try:
+            resp = requests.delete(f"{BACKEND_URL}/admin/journeys/{jid}", headers=headers, timeout=10)
+            if resp.status_code in (200, 404):
+                deleted += 1
+        except Exception as e:
+            print(f"⚠️  Failed to delete journey {jid}: {e}")
+    print(f"✅ Cleaned up {deleted} test journeys")
 
-def test_create_with_b1_fields(token: str):
-    """Test 3: POST /api/admin/journeys with all 7 B1 fields persists them."""
-    log("\n=== TEST 3: POST /api/admin/journeys with B1 Fields ===")
+def test_maleny_retag():
+    """Test 1: Maleny re-tag migration."""
+    print("\n" + "="*80)
+    print("TEST 1: Maleny re-tag migration")
+    print("="*80)
+    
+    # GET /api/journeys should return 4 rows total
+    resp = requests.get(f"{BACKEND_URL}/journeys", timeout=10)
+    assert resp.status_code == 200, f"GET /api/journeys failed: {resp.status_code}"
+    journeys = resp.json()
+    print(f"✓ GET /api/journeys returns {len(journeys)} rows (expected 4)")
+    assert len(journeys) == 4, f"Expected 4 journeys, got {len(journeys)}"
+    
+    # GET /api/journeys?type=tour should return 3 rows (no maleny)
+    resp = requests.get(f"{BACKEND_URL}/journeys?type=tour", timeout=10)
+    assert resp.status_code == 200, f"GET /api/journeys?type=tour failed: {resp.status_code}"
+    tours = resp.json()
+    print(f"✓ GET /api/journeys?type=tour returns {len(tours)} rows (expected 3)")
+    assert len(tours) == 3, f"Expected 3 tours, got {len(tours)}"
+    tour_names = [j.get("name", "") for j in tours]
+    assert "Maleny Creative Immersion" not in tour_names, "Maleny should not be in tours list"
+    print(f"✓ Maleny Creative Immersion NOT in tours list")
+    
+    # GET /api/journeys?type=retreat should return 1 row (only maleny)
+    resp = requests.get(f"{BACKEND_URL}/journeys?type=retreat", timeout=10)
+    assert resp.status_code == 200, f"GET /api/journeys?type=retreat failed: {resp.status_code}"
+    retreats = resp.json()
+    print(f"✓ GET /api/journeys?type=retreat returns {len(retreats)} row (expected 1)")
+    assert len(retreats) == 1, f"Expected 1 retreat, got {len(retreats)}"
+    assert retreats[0].get("name") == "Maleny Creative Immersion", "Expected Maleny in retreats"
+    print(f"✓ Maleny Creative Immersion IS in retreats list")
+    
+    # GET /api/retreats should return 1 row (maleny)
+    resp = requests.get(f"{BACKEND_URL}/retreats", timeout=10)
+    assert resp.status_code == 200, f"GET /api/retreats failed: {resp.status_code}"
+    retreats_public = resp.json()
+    print(f"✓ GET /api/retreats returns {len(retreats_public)} row (expected 1)")
+    assert len(retreats_public) == 1, f"Expected 1 retreat, got {len(retreats_public)}"
+    
+    # GET /api/retreats/maleny-creative-immersion should return 200
+    resp = requests.get(f"{BACKEND_URL}/retreats/maleny-creative-immersion", timeout=10)
+    assert resp.status_code == 200, f"GET /api/retreats/maleny-creative-immersion failed: {resp.status_code}"
+    maleny = resp.json()
+    assert maleny.get("type") == "retreat", f"Maleny type should be 'retreat', got {maleny.get('type')}"
+    print(f"✓ GET /api/retreats/maleny-creative-immersion returns 200 with type='retreat'")
+    
+    # GET /api/tours/maleny-creative-immersion should return 404 (Maleny is no longer a tour)
+    resp = requests.get(f"{BACKEND_URL}/tours/maleny-creative-immersion", timeout=10)
+    assert resp.status_code == 404, f"GET /api/tours/maleny-creative-immersion should return 404, got {resp.status_code}"
+    print(f"✓ GET /api/tours/maleny-creative-immersion returns 404 (Maleny is no longer a tour)")
+    
+    # GET /api/tours/tasmanian-slow-and-soulful-journeys should return 200 (still a tour)
+    resp = requests.get(f"{BACKEND_URL}/tours/tasmanian-slow-and-soulful-journeys", timeout=10)
+    assert resp.status_code == 200, f"GET /api/tours/tasmanian-slow-and-soulful-journeys failed: {resp.status_code}"
+    tas = resp.json()
+    assert tas.get("type") in ("tour", None), f"Tasmanian should be type='tour', got {tas.get('type')}"
+    print(f"✓ GET /api/tours/tasmanian-slow-and-soulful-journeys returns 200 (still a tour)")
+    
+    print("\n✅ TEST 1 PASSED: Maleny re-tag migration working correctly")
+
+def test_b2_schema_migration(token):
+    """Test 2: B2 schema migration applied to every journey row."""
+    print("\n" + "="*80)
+    print("TEST 2: B2 schema migration applied to every journey row")
+    print("="*80)
     
     headers = {"Authorization": f"Bearer {token}"}
-    journey_data = {
-        "name": "Test B1 Journey",
-        "slug": "test-b1-journey",
-        "hero_media_id": "test-media-id-123",
-        "body_html": "<h1>Test Body</h1><p>This is a test journey body.</p>",
-        "seo_title": "Test B1 Journey - SEO Title",
-        "seo_description": "This is the SEO description for the test B1 journey.",
-        "status": "published",
-        "type": "tour",
+    resp = requests.get(f"{BACKEND_URL}/admin/journeys", headers=headers, timeout=10)
+    assert resp.status_code == 200, f"GET /api/admin/journeys failed: {resp.status_code}"
+    journeys = resp.json()
+    
+    print(f"✓ GET /api/admin/journeys returns {len(journeys)} rows")
+    
+    # Check that every row has the B2 fields
+    required_fields = ["gallery_media_ids", "description_html", "itinerary_html", "practical_html", "preview_token"]
+    for journey in journeys:
+        name = journey.get("name", "Unknown")
+        for field in required_fields:
+            assert field in journey, f"Journey '{name}' missing field '{field}'"
+        print(f"✓ Journey '{name}' has all B2 fields: {required_fields}")
+        
+        # Check that gallery_media_ids is a list
+        assert isinstance(journey.get("gallery_media_ids"), list), f"gallery_media_ids should be a list"
+        
+        # Check that description_html, itinerary_html, practical_html, preview_token are strings
+        for field in ["description_html", "itinerary_html", "practical_html", "preview_token"]:
+            assert isinstance(journey.get(field), str), f"{field} should be a string"
+    
+    print("\n✅ TEST 2 PASSED: B2 schema migration applied to all journey rows")
+
+def test_post_admin_journeys_b2_fields(token):
+    """Test 3: POST /api/admin/journeys round-trips B2 fields."""
+    print("\n" + "="*80)
+    print("TEST 3: POST /api/admin/journeys round-trips B2 fields")
+    print("="*80)
+    
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    # Create a new journey with B2 fields
+    payload = {
+        "name": "Test B2 Journey POST",
         "region": "Test Region",
-        "nights": "5",
+        "nights": "5 nights",
         "dates": "Year-round",
-        "priceFrom": "$1,500",
-        "summary": "Test B1 journey summary",
-        "is_active": True
+        "priceFrom": "$5,000",
+        "summary": "Test summary",
+        "type": "tour",
+        "status": "published",
+        "gallery_media_ids": ["media-id-1", "media-id-2", "media-id-3"],
+        "description_html": "<p>This is the description section.</p>",
+        "itinerary_html": "<p>This is the itinerary section.</p>",
+        "practical_html": "<p>This is the practical info section.</p>",
     }
     
-    resp = requests.post(f"{BACKEND_URL}/admin/journeys", json=journey_data, headers=headers, timeout=10)
-    if resp.status_code != 200:
-        error(f"POST /api/admin/journeys failed: {resp.status_code} {resp.text}")
-        return False
-    
+    resp = requests.post(f"{BACKEND_URL}/admin/journeys", headers=headers, json=payload, timeout=10)
+    assert resp.status_code == 200, f"POST /api/admin/journeys failed: {resp.status_code} {resp.text}"
     created = resp.json()
     journey_id = created.get("id")
+    assert journey_id, "No id in created journey"
     test_journey_ids.append(journey_id)
-    log(f"  Created journey: id={journey_id}")
     
-    # Verify all 7 B1 fields are persisted
-    if created.get("slug") != "test-b1-journey":
-        error(f"Expected slug 'test-b1-journey', got '{created.get('slug')}'")
-        return False
-    if created.get("hero_media_id") != "test-media-id-123":
-        error(f"Expected hero_media_id 'test-media-id-123', got '{created.get('hero_media_id')}'")
-        return False
-    if created.get("body_html") != journey_data["body_html"]:
-        error(f"body_html mismatch")
-        return False
-    if created.get("seo_title") != "Test B1 Journey - SEO Title":
-        error(f"Expected seo_title 'Test B1 Journey - SEO Title', got '{created.get('seo_title')}'")
-        return False
-    if created.get("seo_description") != journey_data["seo_description"]:
-        error(f"seo_description mismatch")
-        return False
-    if created.get("status") != "published":
-        error(f"Expected status 'published', got '{created.get('status')}'")
-        return False
-    if created.get("type") != "tour":
-        error(f"Expected type 'tour', got '{created.get('type')}'")
-        return False
+    print(f"✓ Created journey with id={journey_id}")
     
-    log(f"  ✓ All 7 B1 fields persisted correctly:")
-    log(f"    - slug: '{created.get('slug')}'")
-    log(f"    - hero_media_id: '{created.get('hero_media_id')}'")
-    log(f"    - body_html: {len(created.get('body_html', ''))} chars")
-    log(f"    - seo_title: '{created.get('seo_title')}'")
-    log(f"    - seo_description: {len(created.get('seo_description', ''))} chars")
-    log(f"    - status: '{created.get('status')}'")
-    log(f"    - type: '{created.get('type')}'")
+    # Verify all B2 fields were persisted
+    assert created.get("gallery_media_ids") == ["media-id-1", "media-id-2", "media-id-3"], "gallery_media_ids mismatch"
+    assert created.get("description_html") == "<p>This is the description section.</p>", "description_html mismatch"
+    assert created.get("itinerary_html") == "<p>This is the itinerary section.</p>", "itinerary_html mismatch"
+    assert created.get("practical_html") == "<p>This is the practical info section.</p>", "practical_html mismatch"
     
-    # Fetch the journey again to verify persistence
-    resp = requests.get(f"{BACKEND_URL}/tours/{created.get('slug')}", timeout=10)
-    if resp.status_code != 200:
-        error(f"GET /api/tours/{created.get('slug')} failed: {resp.status_code}")
-        return False
-    fetched = resp.json()
-    if fetched.get("slug") != "test-b1-journey":
-        error(f"Fetched journey slug mismatch")
-        return False
-    log(f"  ✓ Journey fetched successfully via GET /api/tours/{created.get('slug')}")
+    print(f"✓ All B2 fields persisted correctly in POST response")
     
-    log("✓ TEST 3 PASSED: POST /api/admin/journeys with all 7 B1 fields works correctly")
-    return True
+    # Fetch the journey again to confirm persistence
+    resp = requests.get(f"{BACKEND_URL}/admin/journeys", headers=headers, timeout=10)
+    assert resp.status_code == 200
+    journeys = resp.json()
+    fetched = next((j for j in journeys if j.get("id") == journey_id), None)
+    assert fetched, f"Journey {journey_id} not found in GET /api/admin/journeys"
+    
+    assert fetched.get("gallery_media_ids") == ["media-id-1", "media-id-2", "media-id-3"], "gallery_media_ids mismatch on fetch"
+    assert fetched.get("description_html") == "<p>This is the description section.</p>", "description_html mismatch on fetch"
+    assert fetched.get("itinerary_html") == "<p>This is the itinerary section.</p>", "itinerary_html mismatch on fetch"
+    assert fetched.get("practical_html") == "<p>This is the practical info section.</p>", "practical_html mismatch on fetch"
+    
+    print(f"✓ All B2 fields confirmed on GET after POST")
+    
+    print("\n✅ TEST 3 PASSED: POST /api/admin/journeys round-trips B2 fields")
 
-def test_auto_slug_uniqueness(token: str):
-    """Test 4: Auto-slug from name when slug is blank, uniqueness collision yields slug-2, slug-3."""
-    log("\n=== TEST 4: Auto-slug and Uniqueness ===")
-    
-    headers = {"Authorization": f"Bearer {token}"}
-    
-    # Test 4a: Create journey with blank slug, should auto-generate from name
-    journey_data = {
-        "name": "Auto Slug Test Journey",
-        "slug": "",  # Blank slug
-        "status": "published",
-        "type": "tour",
-        "region": "Test Region",
-        "nights": "3",
-        "dates": "Year-round",
-        "priceFrom": "$999",
-        "summary": "Test auto-slug",
-        "is_active": True
-    }
-    
-    resp = requests.post(f"{BACKEND_URL}/admin/journeys", json=journey_data, headers=headers, timeout=10)
-    if resp.status_code != 200:
-        error(f"POST /api/admin/journeys failed: {resp.status_code} {resp.text}")
-        return False
-    
-    created1 = resp.json()
-    journey_id1 = created1.get("id")
-    slug1 = created1.get("slug")
-    test_journey_ids.append(journey_id1)
-    
-    if not slug1:
-        error(f"Auto-generated slug is empty")
-        return False
-    if slug1 != "auto-slug-test-journey":
-        error(f"Expected slug 'auto-slug-test-journey', got '{slug1}'")
-        return False
-    log(f"  ✓ Journey 1: Auto-generated slug from name: '{slug1}'")
-    
-    # Test 4b: Create another journey with same name, should get slug-2
-    resp = requests.post(f"{BACKEND_URL}/admin/journeys", json=journey_data, headers=headers, timeout=10)
-    if resp.status_code != 200:
-        error(f"POST /api/admin/journeys failed: {resp.status_code} {resp.text}")
-        return False
-    
-    created2 = resp.json()
-    journey_id2 = created2.get("id")
-    slug2 = created2.get("slug")
-    test_journey_ids.append(journey_id2)
-    
-    if slug2 != "auto-slug-test-journey-2":
-        error(f"Expected slug 'auto-slug-test-journey-2', got '{slug2}'")
-        return False
-    log(f"  ✓ Journey 2: Uniqueness collision resolved: '{slug2}'")
-    
-    # Test 4c: Create a third journey with same name, should get slug-3
-    resp = requests.post(f"{BACKEND_URL}/admin/journeys", json=journey_data, headers=headers, timeout=10)
-    if resp.status_code != 200:
-        error(f"POST /api/admin/journeys failed: {resp.status_code} {resp.text}")
-        return False
-    
-    created3 = resp.json()
-    journey_id3 = created3.get("id")
-    slug3 = created3.get("slug")
-    test_journey_ids.append(journey_id3)
-    
-    if slug3 != "auto-slug-test-journey-3":
-        error(f"Expected slug 'auto-slug-test-journey-3', got '{slug3}'")
-        return False
-    log(f"  ✓ Journey 3: Uniqueness collision resolved: '{slug3}'")
-    
-    log("✓ TEST 4 PASSED: Auto-slug and uniqueness collision handling works correctly")
-    return True
-
-def test_patch_b1_fields(token: str):
-    """Test 5: PATCH /api/admin/journeys/{id} round-trips all 7 B1 fields."""
-    log("\n=== TEST 5: PATCH /api/admin/journeys/{id} with B1 Fields ===")
+def test_patch_admin_journeys_b2_fields(token):
+    """Test 4: PATCH /api/admin/journeys round-trips B2 fields."""
+    print("\n" + "="*80)
+    print("TEST 4: PATCH /api/admin/journeys round-trips B2 fields")
+    print("="*80)
     
     headers = {"Authorization": f"Bearer {token}"}
     
     # Create a journey first
-    journey_data = {
-        "name": "Test Patch Journey",
-        "slug": "test-patch-journey",
-        "hero_media_id": "original-media-id",
-        "body_html": "<p>Original body</p>",
-        "seo_title": "Original SEO Title",
-        "seo_description": "Original SEO description",
-        "status": "published",
+    payload = {
+        "name": "Test B2 Journey PATCH",
         "type": "tour",
-        "region": "Test Region",
-        "nights": "3",
-        "dates": "Year-round",
-        "priceFrom": "$999",
-        "summary": "Test patch journey",
-        "is_active": True
+        "status": "published",
     }
-    
-    resp = requests.post(f"{BACKEND_URL}/admin/journeys", json=journey_data, headers=headers, timeout=10)
-    if resp.status_code != 200:
-        error(f"POST /api/admin/journeys failed: {resp.status_code} {resp.text}")
-        return False
-    
+    resp = requests.post(f"{BACKEND_URL}/admin/journeys", headers=headers, json=payload, timeout=10)
+    assert resp.status_code == 200
     created = resp.json()
     journey_id = created.get("id")
     test_journey_ids.append(journey_id)
-    log(f"  Created journey: id={journey_id}")
     
-    # Patch all 7 B1 fields
-    patch_data = {
-        "slug": "test-patch-journey-updated",
-        "hero_media_id": "updated-media-id",
-        "body_html": "<h1>Updated Body</h1><p>This is the updated body.</p>",
-        "seo_title": "Updated SEO Title",
-        "seo_description": "Updated SEO description",
-        "status": "published",
-        "type": "tour"
+    print(f"✓ Created journey with id={journey_id}")
+    
+    # PATCH with B2 fields
+    patch_payload = {
+        "gallery_media_ids": ["updated-1", "updated-2"],
+        "description_html": "<p>Updated description.</p>",
+        "itinerary_html": "<p>Updated itinerary.</p>",
+        "practical_html": "<p>Updated practical.</p>",
     }
     
-    resp = requests.patch(f"{BACKEND_URL}/admin/journeys/{journey_id}", json=patch_data, headers=headers, timeout=10)
-    if resp.status_code != 200:
-        error(f"PATCH /api/admin/journeys/{journey_id} failed: {resp.status_code} {resp.text}")
-        return False
-    log(f"  ✓ PATCH request successful")
+    resp = requests.patch(f"{BACKEND_URL}/admin/journeys/{journey_id}", headers=headers, json=patch_payload, timeout=10)
+    assert resp.status_code == 200, f"PATCH /api/admin/journeys/{journey_id} failed: {resp.status_code} {resp.text}"
     
-    # Fetch the journey to verify all fields were updated
-    resp = requests.get(f"{BACKEND_URL}/tours/test-patch-journey-updated", timeout=10)
-    if resp.status_code != 200:
-        error(f"GET /api/tours/test-patch-journey-updated failed: {resp.status_code}")
-        return False
+    print(f"✓ PATCH request successful")
     
-    updated = resp.json()
+    # Fetch the journey to verify updates
+    resp = requests.get(f"{BACKEND_URL}/admin/journeys", headers=headers, timeout=10)
+    assert resp.status_code == 200
+    journeys = resp.json()
+    fetched = next((j for j in journeys if j.get("id") == journey_id), None)
+    assert fetched, f"Journey {journey_id} not found"
     
-    # Verify all 7 B1 fields were updated
-    if updated.get("slug") != "test-patch-journey-updated":
-        error(f"Expected slug 'test-patch-journey-updated', got '{updated.get('slug')}'")
-        return False
-    if updated.get("hero_media_id") != "updated-media-id":
-        error(f"Expected hero_media_id 'updated-media-id', got '{updated.get('hero_media_id')}'")
-        return False
-    if updated.get("body_html") != patch_data["body_html"]:
-        error(f"body_html not updated correctly")
-        return False
-    if updated.get("seo_title") != "Updated SEO Title":
-        error(f"Expected seo_title 'Updated SEO Title', got '{updated.get('seo_title')}'")
-        return False
-    if updated.get("seo_description") != "Updated SEO description":
-        error(f"Expected seo_description 'Updated SEO description', got '{updated.get('seo_description')}'")
-        return False
-    if updated.get("status") != "published":
-        error(f"Expected status 'published', got '{updated.get('status')}'")
-        return False
-    if updated.get("type") != "tour":
-        error(f"Expected type 'tour', got '{updated.get('type')}'")
-        return False
+    assert fetched.get("gallery_media_ids") == ["updated-1", "updated-2"], "gallery_media_ids not updated"
+    assert fetched.get("description_html") == "<p>Updated description.</p>", "description_html not updated"
+    assert fetched.get("itinerary_html") == "<p>Updated itinerary.</p>", "itinerary_html not updated"
+    assert fetched.get("practical_html") == "<p>Updated practical.</p>", "practical_html not updated"
     
-    log(f"  ✓ All 7 B1 fields updated correctly:")
-    log(f"    - slug: '{updated.get('slug')}'")
-    log(f"    - hero_media_id: '{updated.get('hero_media_id')}'")
-    log(f"    - body_html: {len(updated.get('body_html', ''))} chars")
-    log(f"    - seo_title: '{updated.get('seo_title')}'")
-    log(f"    - seo_description: {len(updated.get('seo_description', ''))} chars")
-    log(f"    - status: '{updated.get('status')}'")
-    log(f"    - type: '{updated.get('type')}'")
+    print(f"✓ All B2 fields updated correctly via PATCH")
     
-    log("✓ TEST 5 PASSED: PATCH /api/admin/journeys/{id} round-trips all 7 B1 fields")
-    return True
+    print("\n✅ TEST 4 PASSED: PATCH /api/admin/journeys round-trips B2 fields")
 
-def test_draft_hiding(token: str):
-    """Test 6: Changing status='draft' hides from public GET /api/journeys and returns 404 on GET /api/tours/{slug}."""
-    log("\n=== TEST 6: Draft Hiding ===")
+def test_duplicate_endpoint(token):
+    """Test 5: POST /api/admin/journeys/{id}/duplicate."""
+    print("\n" + "="*80)
+    print("TEST 5: POST /api/admin/journeys/{id}/duplicate")
+    print("="*80)
     
     headers = {"Authorization": f"Bearer {token}"}
     
-    # Create a published journey
-    journey_data = {
-        "name": "Test Draft Hiding Journey",
-        "slug": "test-draft-hiding-journey",
-        "status": "published",
+    # Create a source journey with B2 fields
+    payload = {
+        "name": "Source Journey for Duplicate",
         "type": "tour",
-        "region": "Test Region",
-        "nights": "3",
-        "dates": "Year-round",
-        "priceFrom": "$999",
-        "summary": "Test draft hiding",
-        "is_active": True
+        "status": "published",
+        "popular": True,
+        "gallery_media_ids": ["src-1", "src-2"],
+        "description_html": "<p>Source description.</p>",
+        "itinerary_html": "<p>Source itinerary.</p>",
+        "practical_html": "<p>Source practical.</p>",
     }
+    resp = requests.post(f"{BACKEND_URL}/admin/journeys", headers=headers, json=payload, timeout=10)
+    assert resp.status_code == 200
+    source = resp.json()
+    source_id = source.get("id")
+    source_slug = source.get("slug")
+    test_journey_ids.append(source_id)
     
-    resp = requests.post(f"{BACKEND_URL}/admin/journeys", json=journey_data, headers=headers, timeout=10)
-    if resp.status_code != 200:
-        error(f"POST /api/admin/journeys failed: {resp.status_code} {resp.text}")
-        return False
+    print(f"✓ Created source journey with id={source_id}, slug={source_slug}")
     
-    created = resp.json()
-    journey_id = created.get("id")
-    slug = created.get("slug")
-    test_journey_ids.append(journey_id)
-    log(f"  Created published journey: id={journey_id}, slug='{slug}'")
+    # Duplicate the journey
+    resp = requests.post(f"{BACKEND_URL}/admin/journeys/{source_id}/duplicate", headers=headers, timeout=10)
+    assert resp.status_code == 200, f"POST /api/admin/journeys/{source_id}/duplicate failed: {resp.status_code} {resp.text}"
+    duplicate = resp.json()
+    dup_id = duplicate.get("id")
+    dup_slug = duplicate.get("slug")
+    dup_name = duplicate.get("name")
+    dup_status = duplicate.get("status")
+    dup_popular = duplicate.get("popular")
+    dup_preview_token = duplicate.get("preview_token")
     
-    # Verify it's visible on public endpoint
+    test_duplicate_ids.append(dup_id)
+    
+    print(f"✓ Duplicated journey with id={dup_id}, slug={dup_slug}")
+    
+    # Verify duplicate properties
+    assert dup_id != source_id, "Duplicate should have a new id"
+    assert dup_slug != source_slug, "Duplicate should have a unique slug"
+    assert dup_slug.endswith("-copy") or "-copy-" in dup_slug, f"Duplicate slug should end with -copy, got {dup_slug}"
+    assert dup_name == "Source Journey for Duplicate (copy)", f"Duplicate name should have ' (copy)' appended, got {dup_name}"
+    assert dup_status == "draft", f"Duplicate status should be 'draft', got {dup_status}"
+    assert dup_popular == False, f"Duplicate popular should be False, got {dup_popular}"
+    assert dup_preview_token and len(dup_preview_token) > 0, "Duplicate should have a preview_token"
+    
+    print(f"✓ Duplicate has correct properties: status=draft, popular=false, preview_token={dup_preview_token[:8]}...")
+    
+    # Verify B2 fields were copied
+    assert duplicate.get("gallery_media_ids") == ["src-1", "src-2"], "gallery_media_ids not copied"
+    assert duplicate.get("description_html") == "<p>Source description.</p>", "description_html not copied"
+    assert duplicate.get("itinerary_html") == "<p>Source itinerary.</p>", "itinerary_html not copied"
+    assert duplicate.get("practical_html") == "<p>Source practical.</p>", "practical_html not copied"
+    
+    print(f"✓ All B2 fields copied correctly to duplicate")
+    
+    # Verify duplicate appears in admin list but NOT in public list
+    resp = requests.get(f"{BACKEND_URL}/admin/journeys", headers=headers, timeout=10)
+    assert resp.status_code == 200
+    admin_journeys = resp.json()
+    assert any(j.get("id") == dup_id for j in admin_journeys), "Duplicate not in admin list"
+    print(f"✓ Duplicate appears in GET /api/admin/journeys")
+    
     resp = requests.get(f"{BACKEND_URL}/journeys", timeout=10)
-    if resp.status_code != 200:
-        error(f"GET /api/journeys failed: {resp.status_code}")
-        return False
-    journeys = resp.json()
-    if not any(j.get("id") == journey_id for j in journeys):
-        error(f"Published journey not found in GET /api/journeys")
-        return False
-    log(f"  ✓ Published journey visible in GET /api/journeys")
+    assert resp.status_code == 200
+    public_journeys = resp.json()
+    assert not any(j.get("id") == dup_id for j in public_journeys), "Duplicate should NOT be in public list (draft)"
+    print(f"✓ Duplicate does NOT appear in GET /api/journeys (draft hidden)")
     
-    # Verify it's accessible via slug endpoint
-    resp = requests.get(f"{BACKEND_URL}/tours/{slug}", timeout=10)
-    if resp.status_code != 200:
-        error(f"GET /api/tours/{slug} failed: {resp.status_code}")
-        return False
-    log(f"  ✓ Published journey accessible via GET /api/tours/{slug}")
-    
-    # Change status to draft
-    patch_data = {"status": "draft"}
-    resp = requests.patch(f"{BACKEND_URL}/admin/journeys/{journey_id}", json=patch_data, headers=headers, timeout=10)
-    if resp.status_code != 200:
-        error(f"PATCH /api/admin/journeys/{journey_id} failed: {resp.status_code} {resp.text}")
-        return False
-    log(f"  ✓ Changed status to 'draft'")
-    
-    # Verify it's hidden from public endpoint
-    resp = requests.get(f"{BACKEND_URL}/journeys", timeout=10)
-    if resp.status_code != 200:
-        error(f"GET /api/journeys failed: {resp.status_code}")
-        return False
-    journeys = resp.json()
-    if any(j.get("id") == journey_id for j in journeys):
-        error(f"Draft journey should be hidden from GET /api/journeys")
-        return False
-    log(f"  ✓ Draft journey hidden from GET /api/journeys")
-    
-    # Verify it returns 404 on slug endpoint
-    resp = requests.get(f"{BACKEND_URL}/tours/{slug}", timeout=10)
-    if resp.status_code != 404:
-        error(f"GET /api/tours/{slug} (draft) should return 404, got {resp.status_code}")
-        return False
-    log(f"  ✓ Draft journey returns 404 on GET /api/tours/{slug}")
-    
-    log("✓ TEST 6 PASSED: Draft hiding works correctly")
-    return True
+    print("\n✅ TEST 5 PASSED: POST /api/admin/journeys/{id}/duplicate working correctly")
 
-def test_include_drafts_flag(token: str):
-    """Test 7: GET /api/journeys?include_drafts=true returns drafts."""
-    log("\n=== TEST 7: include_drafts Flag ===")
+def test_preview_token_endpoint(token):
+    """Test 6: POST /api/admin/journeys/{id}/preview-token."""
+    print("\n" + "="*80)
+    print("TEST 6: POST /api/admin/journeys/{id}/preview-token")
+    print("="*80)
     
     headers = {"Authorization": f"Bearer {token}"}
     
     # Create a draft journey
-    journey_data = {
-        "name": "Test Include Drafts Journey",
-        "slug": "test-include-drafts-journey",
-        "status": "draft",
+    payload = {
+        "name": "Test Preview Token Journey",
         "type": "tour",
-        "region": "Test Region",
-        "nights": "3",
-        "dates": "Year-round",
-        "priceFrom": "$999",
-        "summary": "Test include drafts",
-        "is_active": True
+        "status": "draft",
+        "slug": "test-preview-token-journey",
     }
-    
-    resp = requests.post(f"{BACKEND_URL}/admin/journeys", json=journey_data, headers=headers, timeout=10)
-    if resp.status_code != 200:
-        error(f"POST /api/admin/journeys failed: {resp.status_code} {resp.text}")
-        return False
-    
-    created = resp.json()
-    journey_id = created.get("id")
+    resp = requests.post(f"{BACKEND_URL}/admin/journeys", headers=headers, json=payload, timeout=10)
+    assert resp.status_code == 200
+    journey = resp.json()
+    journey_id = journey.get("id")
+    journey_slug = journey.get("slug")
     test_journey_ids.append(journey_id)
-    log(f"  Created draft journey: id={journey_id}")
     
-    # Verify it's hidden from public endpoint without flag
-    resp = requests.get(f"{BACKEND_URL}/journeys", timeout=10)
-    if resp.status_code != 200:
-        error(f"GET /api/journeys failed: {resp.status_code}")
-        return False
+    print(f"✓ Created draft journey with id={journey_id}, slug={journey_slug}")
+    
+    # Generate preview token
+    resp = requests.post(f"{BACKEND_URL}/admin/journeys/{journey_id}/preview-token", headers=headers, timeout=10)
+    assert resp.status_code == 200, f"POST /api/admin/journeys/{journey_id}/preview-token failed: {resp.status_code} {resp.text}"
+    token_data = resp.json()
+    preview_token = token_data.get("preview_token")
+    returned_slug = token_data.get("slug")
+    returned_type = token_data.get("type")
+    
+    assert preview_token and len(preview_token) > 0, "preview_token should be non-empty"
+    assert returned_slug == journey_slug, f"Returned slug should match journey slug"
+    assert returned_type == "tour", f"Returned type should be 'tour'"
+    
+    print(f"✓ Preview token generated: {preview_token[:8]}...")
+    
+    # Verify token persists on the row
+    resp = requests.get(f"{BACKEND_URL}/admin/journeys", headers=headers, timeout=10)
+    assert resp.status_code == 200
     journeys = resp.json()
-    if any(j.get("id") == journey_id for j in journeys):
-        error(f"Draft journey should be hidden from GET /api/journeys without flag")
-        return False
-    log(f"  ✓ Draft journey hidden from GET /api/journeys (without flag)")
+    fetched = next((j for j in journeys if j.get("id") == journey_id), None)
+    assert fetched, f"Journey {journey_id} not found"
+    assert fetched.get("preview_token") == preview_token, "preview_token not persisted"
     
-    # Verify it's visible with include_drafts=true
-    resp = requests.get(f"{BACKEND_URL}/journeys?include_drafts=true", timeout=10)
-    if resp.status_code != 200:
-        error(f"GET /api/journeys?include_drafts=true failed: {resp.status_code}")
-        return False
-    journeys = resp.json()
-    if not any(j.get("id") == journey_id for j in journeys):
-        log(f"  ⚠ WARNING: include_drafts=true flag not honoured (draft journey not returned)")
-        log(f"  This is a FINDING to report, but not a critical failure")
-        return True  # Don't fail the whole test
-    log(f"  ✓ Draft journey visible in GET /api/journeys?include_drafts=true")
+    print(f"✓ Preview token persisted on journey row")
     
-    log("✓ TEST 7 PASSED: include_drafts flag works correctly")
-    return True
+    # Test preview access: without token should return 404
+    resp = requests.get(f"{BACKEND_URL}/tours/{journey_slug}", timeout=10)
+    assert resp.status_code == 404, f"GET /api/tours/{journey_slug} without token should return 404, got {resp.status_code}"
+    print(f"✓ GET /api/tours/{journey_slug} without token returns 404 (draft hidden)")
+    
+    # Test preview access: with correct token should return 200
+    resp = requests.get(f"{BACKEND_URL}/tours/{journey_slug}?preview={preview_token}", timeout=10)
+    assert resp.status_code == 200, f"GET /api/tours/{journey_slug}?preview={preview_token} should return 200, got {resp.status_code}"
+    print(f"✓ GET /api/tours/{journey_slug}?preview={preview_token} returns 200 (draft visible with token)")
+    
+    # Test preview access: with wrong token should return 404
+    resp = requests.get(f"{BACKEND_URL}/tours/{journey_slug}?preview=wrong-token", timeout=10)
+    assert resp.status_code == 404, f"GET /api/tours/{journey_slug}?preview=wrong-token should return 404, got {resp.status_code}"
+    print(f"✓ GET /api/tours/{journey_slug}?preview=wrong-token returns 404 (wrong token)")
+    
+    # Test same for retreats
+    payload_retreat = {
+        "name": "Test Preview Token Retreat",
+        "type": "retreat",
+        "status": "draft",
+        "slug": "test-preview-token-retreat",
+    }
+    resp = requests.post(f"{BACKEND_URL}/admin/journeys", headers=headers, json=payload_retreat, timeout=10)
+    assert resp.status_code == 200
+    retreat = resp.json()
+    retreat_id = retreat.get("id")
+    retreat_slug = retreat.get("slug")
+    test_journey_ids.append(retreat_id)
+    
+    resp = requests.post(f"{BACKEND_URL}/admin/journeys/{retreat_id}/preview-token", headers=headers, timeout=10)
+    assert resp.status_code == 200
+    retreat_token_data = resp.json()
+    retreat_preview_token = retreat_token_data.get("preview_token")
+    
+    print(f"✓ Created draft retreat with preview token")
+    
+    # Test retreat preview access
+    resp = requests.get(f"{BACKEND_URL}/retreats/{retreat_slug}", timeout=10)
+    assert resp.status_code == 404, "Retreat without token should return 404"
+    
+    resp = requests.get(f"{BACKEND_URL}/retreats/{retreat_slug}?preview={retreat_preview_token}", timeout=10)
+    assert resp.status_code == 200, "Retreat with correct token should return 200"
+    print(f"✓ GET /api/retreats/{retreat_slug}?preview={retreat_preview_token} returns 200")
+    
+    print("\n✅ TEST 6 PASSED: POST /api/admin/journeys/{id}/preview-token working correctly")
 
-def test_admin_list_all(token: str):
-    """Test 8: /api/admin/journeys lists everything including drafts and inactive."""
-    log("\n=== TEST 8: Admin List All ===")
+def test_type_validation(token):
+    """Test 7: Type validation (tour vs retreat)."""
+    print("\n" + "="*80)
+    print("TEST 7: Type validation (tour vs retreat)")
+    print("="*80)
     
     headers = {"Authorization": f"Bearer {token}"}
     
-    # Get current count
-    resp = requests.get(f"{BACKEND_URL}/admin/journeys", headers=headers, timeout=10)
-    if resp.status_code != 200:
-        error(f"GET /api/admin/journeys failed: {resp.status_code} {resp.text}")
-        return False
-    
-    before_count = len(resp.json())
-    log(f"  Current admin journey count: {before_count}")
-    
-    # Create a draft journey
-    draft_data = {
-        "name": "Test Admin List Draft",
-        "slug": "test-admin-list-draft",
-        "status": "draft",
+    # Create a tour
+    tour_payload = {
+        "name": "Test Type Validation Tour",
         "type": "tour",
-        "region": "Test Region",
-        "nights": "3",
-        "dates": "Year-round",
-        "priceFrom": "$999",
-        "summary": "Test admin list draft",
-        "is_active": True
-    }
-    resp = requests.post(f"{BACKEND_URL}/admin/journeys", json=draft_data, headers=headers, timeout=10)
-    if resp.status_code != 200:
-        error(f"POST /api/admin/journeys failed: {resp.status_code} {resp.text}")
-        return False
-    draft_id = resp.json().get("id")
-    test_journey_ids.append(draft_id)
-    log(f"  Created draft journey: id={draft_id}")
-    
-    # Create an inactive journey
-    inactive_data = {
-        "name": "Test Admin List Inactive",
-        "slug": "test-admin-list-inactive",
         "status": "published",
-        "type": "tour",
-        "region": "Test Region",
-        "nights": "3",
-        "dates": "Year-round",
-        "priceFrom": "$999",
-        "summary": "Test admin list inactive",
-        "is_active": False
+        "slug": "test-type-validation-tour",
     }
-    resp = requests.post(f"{BACKEND_URL}/admin/journeys", json=inactive_data, headers=headers, timeout=10)
-    if resp.status_code != 200:
-        error(f"POST /api/admin/journeys failed: {resp.status_code} {resp.text}")
-        return False
-    inactive_id = resp.json().get("id")
-    test_journey_ids.append(inactive_id)
-    log(f"  Created inactive journey: id={inactive_id}")
+    resp = requests.post(f"{BACKEND_URL}/admin/journeys", headers=headers, json=tour_payload, timeout=10)
+    assert resp.status_code == 200
+    tour = resp.json()
+    tour_id = tour.get("id")
+    tour_slug = tour.get("slug")
+    test_journey_ids.append(tour_id)
     
-    # Verify admin endpoint lists both
-    resp = requests.get(f"{BACKEND_URL}/admin/journeys", headers=headers, timeout=10)
-    if resp.status_code != 200:
-        error(f"GET /api/admin/journeys failed: {resp.status_code}")
-        return False
+    print(f"✓ Created tour with slug={tour_slug}")
     
-    journeys = resp.json()
-    after_count = len(journeys)
+    # GET /api/tours/{slug} should return 200
+    resp = requests.get(f"{BACKEND_URL}/tours/{tour_slug}", timeout=10)
+    assert resp.status_code == 200, f"GET /api/tours/{tour_slug} should return 200, got {resp.status_code}"
+    print(f"✓ GET /api/tours/{tour_slug} returns 200")
     
-    if after_count != before_count + 2:
-        error(f"Expected {before_count + 2} journeys, got {after_count}")
-        return False
+    # GET /api/retreats/{slug} should return 404 (cross-type lookup blocked)
+    resp = requests.get(f"{BACKEND_URL}/retreats/{tour_slug}", timeout=10)
+    assert resp.status_code == 404, f"GET /api/retreats/{tour_slug} should return 404, got {resp.status_code}"
+    print(f"✓ GET /api/retreats/{tour_slug} returns 404 (cross-type lookup blocked)")
     
-    if not any(j.get("id") == draft_id for j in journeys):
-        error(f"Draft journey not found in admin list")
-        return False
-    if not any(j.get("id") == inactive_id for j in journeys):
-        error(f"Inactive journey not found in admin list")
-        return False
+    # Create a retreat
+    retreat_payload = {
+        "name": "Test Type Validation Retreat",
+        "type": "retreat",
+        "status": "published",
+        "slug": "test-type-validation-retreat",
+    }
+    resp = requests.post(f"{BACKEND_URL}/admin/journeys", headers=headers, json=retreat_payload, timeout=10)
+    assert resp.status_code == 200
+    retreat = resp.json()
+    retreat_id = retreat.get("id")
+    retreat_slug = retreat.get("slug")
+    test_journey_ids.append(retreat_id)
     
-    log(f"  ✓ Admin endpoint lists all journeys including drafts and inactive ({after_count} total)")
+    print(f"✓ Created retreat with slug={retreat_slug}")
     
-    log("✓ TEST 8 PASSED: /api/admin/journeys lists everything including drafts and inactive")
-    return True
+    # GET /api/retreats/{slug} should return 200
+    resp = requests.get(f"{BACKEND_URL}/retreats/{retreat_slug}", timeout=10)
+    assert resp.status_code == 200, f"GET /api/retreats/{retreat_slug} should return 200, got {resp.status_code}"
+    print(f"✓ GET /api/retreats/{retreat_slug} returns 200")
+    
+    # GET /api/tours/{slug} should return 404 (cross-type lookup blocked)
+    resp = requests.get(f"{BACKEND_URL}/tours/{retreat_slug}", timeout=10)
+    assert resp.status_code == 404, f"GET /api/tours/{retreat_slug} should return 404, got {resp.status_code}"
+    print(f"✓ GET /api/tours/{retreat_slug} returns 404 (cross-type lookup blocked)")
+    
+    print("\n✅ TEST 7 PASSED: Type validation working correctly")
 
-def test_media_regression():
-    """Test 9: Regression check - GET /api/media count remains at 237."""
-    log("\n=== TEST 9: Media Regression Check ===")
+def test_regression(token):
+    """Test 8: Regression checks."""
+    print("\n" + "="*80)
+    print("TEST 8: Regression checks")
+    print("="*80)
     
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    # GET /api/media count should be 237
     resp = requests.get(f"{BACKEND_URL}/media", timeout=10)
-    if resp.status_code != 200:
-        error(f"GET /api/media failed: {resp.status_code} {resp.text}")
-        return False
-    
+    assert resp.status_code == 200, f"GET /api/media failed: {resp.status_code}"
     media = resp.json()
-    count = len(media)
+    media_count = len(media)
+    print(f"✓ GET /api/media returns {media_count} items (expected 237)")
+    assert media_count == 237, f"Expected 237 media items, got {media_count}"
     
-    if count != 237:
-        error(f"Expected 237 media items, got {count}")
-        return False
+    # GET /api/admin/journeys should return all rows
+    resp = requests.get(f"{BACKEND_URL}/admin/journeys", headers=headers, timeout=10)
+    assert resp.status_code == 200, f"GET /api/admin/journeys failed: {resp.status_code}"
+    admin_journeys = resp.json()
+    print(f"✓ GET /api/admin/journeys returns {len(admin_journeys)} rows (includes all types and statuses)")
     
-    log(f"  ✓ GET /api/media returns {count} items (expected 237)")
-    log("✓ TEST 9 PASSED: Media count regression check passed")
-    return True
-
-def cleanup_test_data(token: str):
-    """Clean up all test journeys created during testing."""
-    log("\n=== CLEANUP: Deleting Test Journeys ===")
+    # B1 flags should still work: include_drafts=true
+    resp = requests.get(f"{BACKEND_URL}/journeys?include_drafts=true", timeout=10)
+    assert resp.status_code == 200, f"GET /api/journeys?include_drafts=true failed: {resp.status_code}"
+    journeys_with_drafts = resp.json()
+    print(f"✓ GET /api/journeys?include_drafts=true returns {len(journeys_with_drafts)} rows")
     
-    headers = {"Authorization": f"Bearer {token}"}
-    deleted_count = 0
+    # Slug uniqueness on POST
+    payload = {
+        "name": "Unique Slug Test",
+        "slug": "unique-slug-test-regression",
+        "type": "tour",
+        "status": "published",
+    }
+    resp = requests.post(f"{BACKEND_URL}/admin/journeys", headers=headers, json=payload, timeout=10)
+    assert resp.status_code == 200
+    j1 = resp.json()
+    j1_id = j1.get("id")
+    j1_slug = j1.get("slug")
+    test_journey_ids.append(j1_id)
     
-    for journey_id in test_journey_ids:
-        try:
-            resp = requests.delete(f"{BACKEND_URL}/admin/journeys/{journey_id}", headers=headers, timeout=10)
-            if resp.status_code == 200:
-                deleted_count += 1
-                log(f"  ✓ Deleted journey: {journey_id}")
-            else:
-                log(f"  ⚠ Failed to delete journey {journey_id}: {resp.status_code}")
-        except Exception as e:
-            log(f"  ⚠ Error deleting journey {journey_id}: {e}")
+    # Try to create another with the same slug
+    resp = requests.post(f"{BACKEND_URL}/admin/journeys", headers=headers, json=payload, timeout=10)
+    assert resp.status_code == 200
+    j2 = resp.json()
+    j2_id = j2.get("id")
+    j2_slug = j2.get("slug")
+    test_journey_ids.append(j2_id)
     
-    log(f"✓ CLEANUP COMPLETE: Deleted {deleted_count}/{len(test_journey_ids)} test journeys")
+    assert j2_slug != j1_slug, f"Slug uniqueness failed: both have slug={j1_slug}"
+    assert j2_slug.startswith(j1_slug), f"Second slug should be based on first: {j2_slug}"
+    print(f"✓ Slug uniqueness working: {j1_slug} vs {j2_slug}")
+    
+    print("\n✅ TEST 8 PASSED: Regression checks passed")
 
 def main():
-    """Run all tests."""
-    log("=" * 80)
-    log("TOURS SUB-PAGES B1 BACKEND TEST")
-    log("=" * 80)
+    """Run all B2 backend tests."""
+    print("\n" + "="*80)
+    print("B2 BACKEND FEATURE TEST SUITE")
+    print("="*80)
     
-    # Get auth token
-    token = get_auth_token()
-    if not token:
-        error("Failed to get auth token, aborting tests")
-        sys.exit(1)
+    token = login()
     
-    # Run all tests
-    results = []
+    try:
+        # Run all tests
+        test_maleny_retag()
+        test_b2_schema_migration(token)
+        test_post_admin_journeys_b2_fields(token)
+        test_patch_admin_journeys_b2_fields(token)
+        test_duplicate_endpoint(token)
+        test_preview_token_endpoint(token)
+        test_type_validation(token)
+        test_regression(token)
+        
+        print("\n" + "="*80)
+        print("✅ ALL TESTS PASSED")
+        print("="*80)
+        
+    except AssertionError as e:
+        print(f"\n❌ TEST FAILED: {e}")
+        return 1
+    except Exception as e:
+        print(f"\n❌ UNEXPECTED ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        return 1
+    finally:
+        cleanup(token)
     
-    results.append(("Startup Migration", test_startup_migration()))
-    results.append(("GET /api/tours/{slug}", test_tours_slug_endpoint(token)))
-    results.append(("POST with B1 Fields", test_create_with_b1_fields(token)))
-    results.append(("Auto-slug Uniqueness", test_auto_slug_uniqueness(token)))
-    results.append(("PATCH B1 Fields", test_patch_b1_fields(token)))
-    results.append(("Draft Hiding", test_draft_hiding(token)))
-    results.append(("include_drafts Flag", test_include_drafts_flag(token)))
-    results.append(("Admin List All", test_admin_list_all(token)))
-    results.append(("Media Regression", test_media_regression()))
-    
-    # Cleanup
-    cleanup_test_data(token)
-    
-    # Print summary
-    log("\n" + "=" * 80)
-    log("TEST SUMMARY")
-    log("=" * 80)
-    
-    passed = sum(1 for _, result in results if result)
-    total = len(results)
-    
-    for name, result in results:
-        status = "✓ PASS" if result else "✗ FAIL"
-        log(f"{status}: {name}")
-    
-    log("=" * 80)
-    log(f"TOTAL: {passed}/{total} tests passed")
-    log("=" * 80)
-    
-    if passed == total:
-        log("✓ ALL TESTS PASSED")
-        sys.exit(0)
-    else:
-        error(f"✗ {total - passed} TEST(S) FAILED")
-        sys.exit(1)
+    return 0
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

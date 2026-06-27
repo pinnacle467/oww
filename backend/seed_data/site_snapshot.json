@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-06-27T11:51:40.790454+00:00",
+  "generated_at": "2026-06-27T12:19:39.928558+00:00",
   "media": [
     {
       "file_url": "/api/uploads/contact-bg/c6213da9b39140b19135fb900221e491.webp",
@@ -5706,6 +5706,22 @@
     {
       "key": "contact.errors.message",
       "value": "A few more words please, at least 20 characters."
+    },
+    {
+      "key": "nav.5.label",
+      "created_at": "2026-06-27T12:05:58.067199+00:00",
+      "group": "nav",
+      "label": "Nav 6 label",
+      "type": "text",
+      "value": "Corporate Retreats"
+    },
+    {
+      "key": "nav.5.to",
+      "created_at": "2026-06-27T12:05:58.067505+00:00",
+      "group": "nav",
+      "label": "Nav 6 link",
+      "type": "text",
+      "value": "/corporate-retreats"
     }
   ],
   "site_settings": [
@@ -5781,10 +5797,15 @@
       "itinerary_filename": "",
       "sort_order": 0,
       "created_at": "2026-06-24T07:30:57.634047+00:00",
-      "updated_at": "2026-06-27T11:44:35.168390+00:00",
+      "updated_at": "2026-06-27T12:05:50.969329+00:00",
       "slug": "maleny-creative-immersion",
       "status": "published",
-      "type": "tour"
+      "type": "retreat",
+      "gallery_media_ids": [],
+      "description_html": "",
+      "itinerary_html": "",
+      "practical_html": "",
+      "preview_token": ""
     },
     {
       "id": "ae57de03-978b-4ca3-a562-1735675ee464",
@@ -5814,7 +5835,12 @@
       "updated_at": "2026-06-27T11:44:35.169469+00:00",
       "slug": "tasmanian-slow-and-soulful-journeys",
       "status": "published",
-      "type": "tour"
+      "type": "tour",
+      "gallery_media_ids": [],
+      "description_html": "",
+      "itinerary_html": "",
+      "practical_html": "",
+      "preview_token": ""
     },
     {
       "id": "37ed2680-f641-4dcc-b85e-07140d0636e0",
@@ -5844,7 +5870,12 @@
       "updated_at": "2026-06-27T11:44:35.170467+00:00",
       "slug": "western-australian-slow-and-soulful-journeys",
       "status": "published",
-      "type": "tour"
+      "type": "tour",
+      "gallery_media_ids": [],
+      "description_html": "",
+      "itinerary_html": "",
+      "practical_html": "",
+      "preview_token": ""
     },
     {
       "id": "ee61cc18-76bf-4da8-806e-37145034b467",
@@ -5874,7 +5905,12 @@
       "updated_at": "2026-06-27T11:44:35.171406+00:00",
       "slug": "corporate-and-custom",
       "status": "published",
-      "type": "tour"
+      "type": "tour",
+      "gallery_media_ids": [],
+      "description_html": "",
+      "itinerary_html": "",
+      "practical_html": "",
+      "preview_token": ""
     }
   ],
   "about_blocks": [

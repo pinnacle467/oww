@@ -24,9 +24,11 @@ export default function Pricing() {
   // the page always renders something. The legacy editable content keys
   // (journeys.${id}.name, etc) are still honoured for the seeded 3 so
   // existing edits aren't lost during the migration.
+  // B2: filter to type=tour so retreats (e.g. Maleny) appear on
+  // /corporate-retreats instead of double-billing on /pricing.
   useEffect(() => {
     let cancelled = false;
-    axios.get(`${API_BASE}/api/journeys`).then((res) => {
+    axios.get(`${API_BASE}/api/journeys?type=tour`).then((res) => {
       if (!cancelled && Array.isArray(res.data) && res.data.length) {
         setAdminJourneys(res.data);
       }

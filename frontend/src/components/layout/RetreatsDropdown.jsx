@@ -6,27 +6,22 @@ import { cn } from "@/lib/utils";
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || "";
 
-// Tours dropdown for the desktop navbar. Fetches the live published tour
-// list once and renders sub-links beneath the parent "Tours" entry. The
-// parent label itself remains a regular link to /pricing (Tours index) for
-// keyboard users and screen readers. The dropdown is purely an enhancement.
-export function ToursDropdown({ solid, currentPath, parentLabel, parentTo }) {
+// Corporate Retreats dropdown for the desktop navbar. Mirrors ToursDropdown
+// but pulls from /api/retreats (which pre-filters to type='retreat') and
+// links each item to /corporate-retreats/<slug>.
+export function RetreatsDropdown({ solid, currentPath, parentLabel, parentTo }) {
   const [open, setOpen] = useState(false);
-  const [tours, setTours] = useState([]);
+  const [retreats, setRetreats] = useState([]);
   const closeTimer = useRef(null);
   const location = useLocation();
 
   useEffect(() => {
-    // B2: server-side filter to type=tour so retreats (e.g. Maleny) never
-    // leak into this dropdown. Legacy rows with no type are also returned
-    // by the backend when type=tour.
-    axios.get(`${API_BASE}/api/journeys?type=tour`).then(({ data }) => {
+    axios.get(`${API_BASE}/api/retreats`).then(({ data }) => {
       const usable = (data || []).filter((j) => j.slug);
-      setTours(usable);
-    }).catch(() => setTours([]));
+      setRetreats(usable);
+    }).catch(() => setRetreats([]));
   }, []);
 
-  // Close the menu when the route changes.
   useEffect(() => { setOpen(false); }, [location.pathname]);
 
   const handleEnter = () => {
@@ -37,14 +32,14 @@ export function ToursDropdown({ solid, currentPath, parentLabel, parentTo }) {
     closeTimer.current = setTimeout(() => setOpen(false), 160);
   };
 
-  const isActive = currentPath === parentTo || currentPath.startsWith("/tours/");
+  const isActive = currentPath === parentTo || currentPath.startsWith("/corporate-retreats");
 
   return (
     <div
       className="relative"
       onMouseEnter={handleEnter}
       onMouseLeave={handleLeave}
-      data-testid="nav-tours-dropdown"
+      data-testid="nav-retreats-dropdown"
     >
       <Link
         to={parentTo}
@@ -53,39 +48,39 @@ export function ToursDropdown({ solid, currentPath, parentLabel, parentTo }) {
           isActive ? "after:w-full" : "after:w-0 hover:after:w-full",
           solid ? "text-ink hover:text-nature-mid" : "text-white hover:text-white text-shadow-soft",
         )}
-        data-testid="nav-link-tours"
+        data-testid="nav-link-retreats"
         onFocus={handleEnter}
       >
         {parentLabel}
         <ChevronDown className={cn("h-3.5 w-3.5 transition-transform duration-200", open && "rotate-180")} />
       </Link>
 
-      {tours.length > 0 && (
+      {retreats.length > 0 && (
         <div
           className={cn(
             "absolute left-1/2 top-full -translate-x-1/2 pt-4 transition-all duration-200",
             open ? "opacity-100 pointer-events-auto translate-y-0" : "opacity-0 pointer-events-none -translate-y-1",
           )}
-          data-testid="nav-tours-dropdown-menu"
+          data-testid="nav-retreats-dropdown-menu"
         >
           <div className="min-w-[280px] rounded-sm border border-nature-deep/12 bg-white shadow-xl py-2">
-            {tours.map((t) => (
+            {retreats.map((r) => (
               <Link
-                key={t.id}
-                to={`/tours/${t.slug}`}
+                key={r.id}
+                to={`/corporate-retreats/${r.slug}`}
                 className="block px-5 py-3 text-sm font-accent uppercase tracking-[0.08em] text-ink hover:bg-cream/60 hover:text-nature-deep transition-colors"
-                data-testid={`nav-tours-dropdown-item-${t.slug}`}
+                data-testid={`nav-retreats-dropdown-item-${r.slug}`}
               >
-                {t.name}
+                {r.name}
               </Link>
             ))}
             <div className="my-1 border-t border-nature-deep/10" />
             <Link
               to={parentTo}
               className="block px-5 py-3 text-sm font-accent uppercase tracking-[0.08em] text-nature-mid hover:bg-cream/60 hover:text-nature-deep transition-colors"
-              data-testid="nav-tours-dropdown-view-all"
+              data-testid="nav-retreats-dropdown-view-all"
             >
-              View all tours
+              View all retreats
             </Link>
           </div>
         </div>
@@ -94,4 +89,4 @@ export function ToursDropdown({ solid, currentPath, parentLabel, parentTo }) {
   );
 }
 
-export default ToursDropdown;
+export default RetreatsDropdown;

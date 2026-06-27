@@ -1036,11 +1036,17 @@ class JourneyInput(BaseModel):
     # B1 additions - drive the new /tours/<slug> sub-pages and the nav dropdown.
     slug: str = ""                 # if blank, auto-generated from `name`
     hero_media_id: str = ""        # links to media.id; empty means use a placeholder
-    body_html: str = ""            # TipTap rich-text body for the sub-page
+    body_html: str = ""            # LEGACY (B1) - kept for backward compat. B2 splits this into 3 fields below.
     seo_title: str = ""            # <title> tag; falls back to name when blank
     seo_description: str = ""      # meta description; falls back to summary when blank
     status: str = "published"      # "draft" or "published" - drafts hidden from public
-    type: str = "tour"             # "tour" or "retreat" - retreat is reserved for B2
+    type: str = "tour"             # "tour" or "retreat" - retreats live at /corporate-retreats/<slug>
+    # B2 additions
+    gallery_media_ids: List[str] = Field(default_factory=list)  # ordered list of media.id values for the photo grid
+    description_html: str = ""     # primary sub-page body (replaces body_html). TipTap rich-text.
+    itinerary_html: str = ""       # optional itinerary section, rendered below description with an H3 divider
+    practical_html: str = ""       # optional practical info section, rendered below itinerary with an H3 divider
+    preview_token: str = ""        # short random string; when set, allows preview of drafts via ?preview=<token>
 
 
 class JourneyUpdate(BaseModel):
@@ -1064,6 +1070,12 @@ class JourneyUpdate(BaseModel):
     seo_description: Optional[str] = None
     status: Optional[str] = None
     type: Optional[str] = None
+    # B2 additions
+    gallery_media_ids: Optional[List[str]] = None
+    description_html: Optional[str] = None
+    itinerary_html: Optional[str] = None
+    practical_html: Optional[str] = None
+    preview_token: Optional[str] = None
 
 
 class JourneyReorder(BaseModel):
@@ -1109,15 +1121,23 @@ async def _unique_slug(base: str, exclude_id: Optional[str] = None) -> str:
 
 
 @api_router.get("/journeys")
-async def list_journeys(include_drafts: bool = False):
+async def list_journeys(include_drafts: bool = False, type: Optional[str] = None):
     """Public list of active journeys, sorted by `sort_order`. The /pricing
     page and the Tours nav dropdown both consume this. By default drafts and
     inactive rows are hidden; set `include_drafts=true` from authenticated
-    admin contexts only."""
+    admin contexts only. The optional `type` param filters to a single
+    journey type (e.g. `type=tour` for the tours dropdown, `type=retreat`
+    for the corporate retreats dropdown)."""
     query: dict = {"is_active": True}
     if not include_drafts:
         # status field may be missing on legacy rows - allow both
         query["$or"] = [{"status": "published"}, {"status": {"$exists": False}}]
+    if type:
+        # Legacy rows pre-B1 have no `type` field — treat them as "tour".
+        if type == "tour":
+            query["$and"] = [{"$or": [{"type": "tour"}, {"type": {"$exists": False}}]}]
+        else:
+            query["type"] = type
     out = []
     cursor = db.journeys.find(query).sort([("sort_order", 1), ("created_at", 1)])
     async for row in cursor:
@@ -1126,16 +1146,61 @@ async def list_journeys(include_drafts: bool = False):
 
 
 @api_router.get("/tours/{slug}")
-async def get_tour_by_slug(slug: str):
+async def get_tour_by_slug(slug: str, preview: Optional[str] = None):
     """Public single-tour fetch by slug. Used by /tours/<slug> detail page.
-    Drafts and inactive rows are 404'd so unpublished work never leaks."""
+    Drafts and inactive rows are 404'd so unpublished work never leaks,
+    UNLESS the caller provides a `?preview=<token>` query param that
+    matches the row's stored `preview_token` — in that case drafts are
+    returned so the admin can review before publishing. Filters by
+    `type="tour"` (legacy rows with no type are treated as tours)."""
+    # First locate the row by slug + type filter, regardless of status.
     doc = await db.journeys.find_one({
         "slug": slug,
         "is_active": True,
-        "$or": [{"status": "published"}, {"status": {"$exists": False}}],
+        "$or": [{"type": "tour"}, {"type": {"$exists": False}}],
     })
     if not doc:
         raise HTTPException(status_code=404, detail="Tour not found")
+    # If status is draft, require a matching preview token.
+    if doc.get("status") == "draft":
+        token = (doc.get("preview_token") or "").strip()
+        if not preview or not token or preview != token:
+            raise HTTPException(status_code=404, detail="Tour not found")
+    return _journey_view(doc)
+
+
+@api_router.get("/retreats")
+async def list_retreats(include_drafts: bool = False):
+    """Public list of active corporate retreats. Mirrors the structure of
+    GET /api/journeys but pre-filters to `type="retreat"` so the retreats
+    dropdown and /corporate-retreats index never accidentally surface a
+    tour. Drafts are hidden by default."""
+    query: dict = {"is_active": True, "type": "retreat"}
+    if not include_drafts:
+        query["$or"] = [{"status": "published"}, {"status": {"$exists": False}}]
+    out = []
+    cursor = db.journeys.find(query).sort([("sort_order", 1), ("created_at", 1)])
+    async for row in cursor:
+        out.append(_journey_view(row))
+    return out
+
+
+@api_router.get("/retreats/{slug}")
+async def get_retreat_by_slug(slug: str, preview: Optional[str] = None):
+    """Public single-retreat fetch by slug. Used by /corporate-retreats/<slug>
+    detail page. Drafts are 404'd unless a matching preview token is
+    supplied. Filters by `type="retreat"`."""
+    doc = await db.journeys.find_one({
+        "slug": slug,
+        "is_active": True,
+        "type": "retreat",
+    })
+    if not doc:
+        raise HTTPException(status_code=404, detail="Retreat not found")
+    if doc.get("status") == "draft":
+        token = (doc.get("preview_token") or "").strip()
+        if not preview or not token or preview != token:
+            raise HTTPException(status_code=404, detail="Retreat not found")
     return _journey_view(doc)
 
 
@@ -1213,6 +1278,57 @@ async def admin_reorder_journeys(data: JourneyReorder, admin: dict = Depends(get
         await db.journeys.update_one({"id": jid}, {"$set": {"sort_order": i, "updated_at": now_iso()}})
     await schedule_snapshot()
     return {"message": "Reordered", "count": len(data.ids)}
+
+
+@api_router.post("/admin/journeys/{jid}/duplicate")
+async def admin_duplicate_journey(jid: str, admin: dict = Depends(get_current_admin)):
+    """Clone an existing journey into a fresh draft. The new row gets a new
+    UUID, status='draft', and a unique slug derived from the existing slug
+    with `-copy` appended (collision-safe via `_unique_slug`). All other
+    fields are copied verbatim — the operator can then tweak and publish."""
+    src = await db.journeys.find_one({"id": jid}, {"_id": 0})
+    if not src:
+        raise HTTPException(status_code=404, detail="Journey not found")
+    base_slug = (src.get("slug") or _slugify(src.get("name") or "tour")) + "-copy"
+    new_slug = await _unique_slug(base_slug)
+    next_order = await db.journeys.count_documents({})
+    clone = {**src}
+    clone["id"] = str(uuid.uuid4())
+    clone["slug"] = new_slug
+    clone["status"] = "draft"
+    clone["popular"] = False                 # don't double up the highlight
+    clone["preview_token"] = secrets.token_urlsafe(16)
+    clone["itinerary_url"] = ""              # PDFs aren't physically copied; operator can re-upload
+    clone["itinerary_filename"] = ""
+    clone["sort_order"] = next_order
+    clone["name"] = (src.get("name") or "") + " (copy)"
+    clone["created_at"] = now_iso()
+    clone["updated_at"] = now_iso()
+    await db.journeys.insert_one(clone)
+    await schedule_snapshot()
+    return _journey_view(clone)
+
+
+@api_router.post("/admin/journeys/{jid}/preview-token")
+async def admin_regenerate_preview_token(jid: str, admin: dict = Depends(get_current_admin)):
+    """Regenerate the preview token for a journey row. Used by the admin
+    "Preview" button — clicking it invalidates the previous link and
+    returns a fresh one. The token is stored on the row and validated by
+    GET /api/tours/{slug}?preview=<token> (or /api/retreats)."""
+    existing = await db.journeys.find_one({"id": jid}, {"_id": 0, "id": 1, "slug": 1, "type": 1})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Journey not found")
+    token = secrets.token_urlsafe(16)
+    await db.journeys.update_one(
+        {"id": jid},
+        {"$set": {"preview_token": token, "updated_at": now_iso()}},
+    )
+    await schedule_snapshot()
+    return {
+        "preview_token": token,
+        "slug": existing.get("slug") or "",
+        "type": existing.get("type") or "tour",
+    }
 
 
 @api_router.post("/admin/journeys/{jid}/itinerary")
@@ -2332,6 +2448,8 @@ DEFAULT_CONTENT = [
     _c("nav", "nav.3.to", "/about", "Nav 4 link"),
     _c("nav", "nav.4.label", "Blog", "Nav 5 label"),
     _c("nav", "nav.4.to", "/blog", "Nav 5 link"),
+    _c("nav", "nav.5.label", "Corporate Retreats", "Nav 6 label"),
+    _c("nav", "nav.5.to", "/corporate-retreats", "Nav 6 link"),
     _c("nav", "nav.cta", "Get In Touch", "Header CTA label"),
 
     # Home — hero buttons
@@ -3113,6 +3231,64 @@ async def seed():
             await db.journeys.update_one({"id": row["id"]}, {"$set": patch})
     if legacy_rows:
         logger.info("Backfilled %d legacy journey rows with slug/status/type", len(legacy_rows))
+
+    # B2 migration #1 - default new fields on every journey row. Idempotent
+    # because we only $set the keys when they're missing.
+    b2_default_fields = {
+        "gallery_media_ids": [],
+        "description_html": "",
+        "itinerary_html": "",
+        "practical_html": "",
+        "preview_token": "",
+    }
+    b2_touched = 0
+    for field_name, default_value in b2_default_fields.items():
+        res = await db.journeys.update_many(
+            {field_name: {"$exists": False}},
+            {"$set": {field_name: default_value}},
+        )
+        b2_touched += res.modified_count or 0
+    if b2_touched:
+        logger.info("B2 default fields backfilled on %d journey row updates", b2_touched)
+
+    # B2 migration #2 - copy any existing `body_html` (B1 single field) into
+    # `description_html` (B2 primary body) when description_html is empty.
+    # Lets us split the public TourDetail rendering into 3 sections without
+    # losing previously-written content.
+    copy_rows = await db.journeys.find(
+        {
+            "$and": [
+                {"body_html": {"$exists": True, "$nin": [None, ""]}},
+                {"$or": [
+                    {"description_html": {"$exists": False}},
+                    {"description_html": ""},
+                ]},
+            ]
+        },
+        {"_id": 0, "id": 1, "body_html": 1},
+    ).to_list(length=500)
+    for row in copy_rows:
+        await db.journeys.update_one(
+            {"id": row["id"]},
+            {"$set": {"description_html": row.get("body_html") or "", "updated_at": now_iso()}},
+        )
+    if copy_rows:
+        logger.info("B2: copied body_html -> description_html on %d rows", len(copy_rows))
+
+    # B2 migration #3 - re-tag "Maleny Creative Immersion" to type='retreat'
+    # so it appears under the Corporate Retreats nav dropdown instead of
+    # the Tours dropdown (per user decision Q4). Idempotent: matches by
+    # slug AND only updates when current type != 'retreat'.
+    maleny = await db.journeys.find_one(
+        {"slug": "maleny-creative-immersion", "type": {"$ne": "retreat"}},
+        {"_id": 0, "id": 1},
+    )
+    if maleny:
+        await db.journeys.update_one(
+            {"id": maleny["id"]},
+            {"$set": {"type": "retreat", "updated_at": now_iso()}},
+        )
+        logger.info("B2: re-tagged Maleny Creative Immersion to type='retreat'")
 
     # Seed default home FAQs ("Questions Gently Answered"). Idempotent — only
     # inserts if the collection is empty so the client's edits are never lost.

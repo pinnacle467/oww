@@ -1,12 +1,18 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import api, { formatApiError } from "@/lib/api";
 import { AdminShell } from "@/components/admin/AdminShell";
 import RichTextEditor from "@/components/editor/RichTextEditor";
-import { Plus, Trash2, Save, Upload, Download, X, ChevronUp, ChevronDown, Star, StarOff, ExternalLink } from "lucide-react";
+import {
+  Plus, Trash2, Save, Upload, Download, X, ChevronUp, ChevronDown,
+  Star, StarOff, ExternalLink, Copy, Eye, GripVertical,
+} from "lucide-react";
 
-// Trip cards on the public /pricing page. Each row in this manager corresponds
-// to one card on the live site. Edits are saved per-row via PATCH so an
-// operator can save one card at a time without losing focus on the others.
+const API_BASE = process.env.REACT_APP_BACKEND_URL || "";
+
+// Trip cards on the public /pricing and /corporate-retreats pages. Each row
+// in this manager is one card. B2 adds: filter tabs (Tours vs Corporate
+// Retreats), a 3-section body editor, a gallery picker, a Duplicate button
+// and a Preview button per row.
 
 const EMPTY_DRAFT = {
   name: "",
@@ -22,12 +28,17 @@ const EMPTY_DRAFT = {
   popular: false,
   is_active: true,
   // B1 sub-page fields - drive /tours/<slug> detail pages and the nav dropdown.
-  slug: "",                // auto-generated server-side from name if blank
-  hero_media_id: "",       // links to an existing /admin/website-media entry by id
-  body_html: "",           // TipTap rich-text body for the sub-page
+  slug: "",
+  hero_media_id: "",
   seo_title: "",
   seo_description: "",
-  status: "published",     // "draft" or "published"
+  status: "published",
+  type: "tour",
+  // B2 fields
+  description_html: "",
+  itinerary_html: "",
+  practical_html: "",
+  gallery_media_ids: [],   // array of media.id values, ordered
 };
 
 function includesToArray(text) {
@@ -38,21 +49,32 @@ function includesToText(arr) {
   return Array.isArray(arr) ? arr.join("\n") : (arr || "");
 }
 
+const TYPE_LABEL = { tour: "Tour", retreat: "Corporate Retreat" };
+
 export default function JourneysManager() {
   const [items, setItems] = useState([]);
+  const [allMedia, setAllMedia] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [savingId, setSavingId] = useState(null);
   const [creating, setCreating] = useState(false);
-  const [draft, setDraft] = useState(EMPTY_DRAFT);
+  const [activeTab, setActiveTab] = useState("tour"); // "tour" | "retreat"
+  const [draft, setDraft] = useState({ ...EMPTY_DRAFT, type: "tour" });
 
   const load = async () => {
     setLoading(true);
     setError("");
     try {
-      const { data } = await api.get("/admin/journeys");
-      // Normalise each row's `includes` (array) into the editable string form.
-      setItems(data.map((d) => ({ ...d, _includesText: includesToText(d.includes) })));
+      const [{ data }, { data: mediaData }] = await Promise.all([
+        api.get("/admin/journeys"),
+        api.get("/media").catch(() => ({ data: [] })),
+      ]);
+      setItems(data.map((d) => ({
+        ...d,
+        _includesText: includesToText(d.includes),
+        gallery_media_ids: Array.isArray(d.gallery_media_ids) ? d.gallery_media_ids : [],
+      })));
+      setAllMedia(Array.isArray(mediaData) ? mediaData : []);
     } catch (e) {
       setError(formatApiError(e?.response?.data?.detail) || "Could not load trips");
     } finally {
@@ -65,6 +87,14 @@ export default function JourneysManager() {
   const updateLocal = (id, patch) => {
     setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)));
   };
+
+  // Filter to the active tab. Legacy rows with no type are treated as tours.
+  const visibleItems = useMemo(() => {
+    return items.filter((j) => {
+      const t = j.type || "tour";
+      return t === activeTab;
+    });
+  }, [items, activeTab]);
 
   const saveRow = async (j) => {
     setSavingId(j.id);
@@ -85,10 +115,15 @@ export default function JourneysManager() {
         // B1 sub-page fields
         slug: j.slug || "",
         hero_media_id: j.hero_media_id || "",
-        body_html: j.body_html || "",
         seo_title: j.seo_title || "",
         seo_description: j.seo_description || "",
         status: j.status || "published",
+        type: j.type || "tour",
+        // B2 fields
+        description_html: j.description_html || "",
+        itinerary_html: j.itinerary_html || "",
+        practical_html: j.practical_html || "",
+        gallery_media_ids: Array.isArray(j.gallery_media_ids) ? j.gallery_media_ids : [],
       });
       await load();
     } catch (e) {
@@ -108,26 +143,52 @@ export default function JourneysManager() {
     }
   };
 
-  const move = async (idx, dir) => {
-    const next = idx + dir;
-    if (next < 0 || next >= items.length) return;
+  const duplicateRow = async (j) => {
+    if (!window.confirm(`Duplicate "${j.name}" as a new draft?`)) return;
+    try {
+      await api.post(`/admin/journeys/${j.id}/duplicate`);
+      await load();
+    } catch (e) {
+      alert(formatApiError(e?.response?.data?.detail) || "Duplicate failed");
+    }
+  };
+
+  const previewRow = async (j) => {
+    try {
+      const { data } = await api.post(`/admin/journeys/${j.id}/preview-token`);
+      const path = (data.type === "retreat" ? "/corporate-retreats/" : "/tours/") + data.slug;
+      const url = `${path}?preview=${encodeURIComponent(data.preview_token)}`;
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (e) {
+      alert(formatApiError(e?.response?.data?.detail) || "Could not generate preview link");
+    }
+  };
+
+  // Move a row up/down WITHIN the currently-visible tab. We compute the new
+  // ordering across all items so the server-side sort_order stays consistent
+  // even when retreat rows are interleaved with tour rows.
+  const move = async (j, dir) => {
+    const visIdx = visibleItems.findIndex((it) => it.id === j.id);
+    const targetVisIdx = visIdx + dir;
+    if (targetVisIdx < 0 || targetVisIdx >= visibleItems.length) return;
+    const targetItem = visibleItems[targetVisIdx];
     const newOrder = [...items];
-    [newOrder[idx], newOrder[next]] = [newOrder[next], newOrder[idx]];
+    const a = newOrder.findIndex((it) => it.id === j.id);
+    const b = newOrder.findIndex((it) => it.id === targetItem.id);
+    [newOrder[a], newOrder[b]] = [newOrder[b], newOrder[a]];
     setItems(newOrder);
     try {
-      await api.post("/admin/journeys/reorder", { ids: newOrder.map((j) => j.id) });
+      await api.post("/admin/journeys/reorder", { ids: newOrder.map((it) => it.id) });
     } catch (e) {
-      alert("Reorder failed — refreshing");
+      alert("Reorder failed - refreshing");
       await load();
     }
   };
 
   const togglePopular = async (j) => {
-    // Only one trip can be "Most Popular" at a time — clear the flag on
-    // every other row first so the highlight band stays unique.
     try {
       for (const other of items) {
-        if (other.id !== j.id && other.popular) {
+        if (other.id !== j.id && other.popular && (other.type || "tour") === (j.type || "tour")) {
           await api.patch(`/admin/journeys/${other.id}`, { popular: false });
         }
       }
@@ -146,7 +207,7 @@ export default function JourneysManager() {
     try {
       const payload = { ...draft, includes: includesToArray(draft.includes) };
       await api.post("/admin/journeys", payload);
-      setDraft(EMPTY_DRAFT);
+      setDraft({ ...EMPTY_DRAFT, type: activeTab });
       setCreating(false);
       await load();
     } catch (e) {
@@ -154,7 +215,6 @@ export default function JourneysManager() {
     }
   };
 
-  // PDF upload (per row)
   const fileInputs = useRef({});
   const uploadPdf = async (j, file) => {
     if (!file) return;
@@ -183,29 +243,59 @@ export default function JourneysManager() {
     }
   };
 
+  const switchTab = (next) => {
+    if (next === activeTab) return;
+    setActiveTab(next);
+    setCreating(false);
+    setDraft({ ...EMPTY_DRAFT, type: next });
+  };
+
   return (
     <AdminShell>
       <div className="max-w-5xl" data-testid="journeys-manager">
         <div className="flex items-start justify-between gap-4 mb-6">
           <div>
-            <p className="text-base text-gray-500">Pricing page</p>
+            <p className="text-base text-gray-500">Trips, tours and retreats</p>
             <h1 className="text-3xl font-semibold text-[#1C1C1C]">Trips & Journeys</h1>
             <p className="text-base text-gray-500 mt-2 max-w-2xl">
-              Each row below is one trip card on your <span className="font-medium">/pricing</span> page.
-              Add a new trip, change prices or details, mark one as &quot;Most Popular&quot;, and optionally
-              attach a downloadable PDF itinerary that visitors can grab from the card.
-              Use the <span className="font-medium">↑ / ↓ arrows</span> beside each title to reorder how the cards appear on the public page.
+              Manage every trip and corporate retreat on the site. Switch tabs to filter by type.
+              Tours appear on <span className="font-medium">/pricing</span> and the Tours nav dropdown;
+              Corporate Retreats appear on <span className="font-medium">/corporate-retreats</span> and the Retreats nav dropdown.
             </p>
           </div>
           {!creating && (
             <button
-              onClick={() => setCreating(true)}
+              onClick={() => { setDraft({ ...EMPTY_DRAFT, type: activeTab }); setCreating(true); }}
               className="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 bg-[#2D4A3E] text-white rounded-lg hover:bg-[#1F3329] transition-colors"
               data-testid="add-journey-btn"
             >
-              <Plus className="h-4 w-4" /> Add a trip
+              <Plus className="h-4 w-4" /> Add a {TYPE_LABEL[activeTab].toLowerCase()}
             </button>
           )}
+        </div>
+
+        {/* Tab strip */}
+        <div className="flex items-center gap-1 mb-6 border-b border-gray-200">
+          {(["tour", "retreat"]).map((t) => {
+            const count = items.filter((j) => (j.type || "tour") === t).length;
+            const active = activeTab === t;
+            return (
+              <button
+                key={t}
+                onClick={() => switchTab(t)}
+                className={
+                  "px-5 py-3 -mb-px text-sm font-medium border-b-2 transition-colors " +
+                  (active
+                    ? "text-[#2D4A3E] border-[#2D4A3E]"
+                    : "text-gray-500 border-transparent hover:text-gray-800 hover:border-gray-300")
+                }
+                data-testid={`journeys-tab-${t}`}
+              >
+                {t === "tour" ? "Tours" : "Corporate Retreats"}
+                <span className="ml-2 text-xs text-gray-400">({count})</span>
+              </button>
+            );
+          })}
         </div>
 
         {error && <div className="mb-4 px-4 py-3 bg-red-50 text-red-700 rounded">{error}</div>}
@@ -214,16 +304,16 @@ export default function JourneysManager() {
         {creating && (
           <div className="mb-8 bg-white rounded-lg border-2 border-[#2D4A3E] p-6" data-testid="new-journey-form">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-[#1C1C1C]">New trip</h2>
-              <button onClick={() => { setCreating(false); setDraft(EMPTY_DRAFT); }} className="text-gray-500 hover:text-gray-800">
+              <h2 className="text-xl font-semibold text-[#1C1C1C]">New {TYPE_LABEL[draft.type || "tour"].toLowerCase()}</h2>
+              <button onClick={() => { setCreating(false); setDraft({ ...EMPTY_DRAFT, type: activeTab }); }} className="text-gray-500 hover:text-gray-800">
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <DraftFields value={draft} onChange={(p) => setDraft((d) => ({ ...d, ...p }))} />
+            <DraftFields value={draft} onChange={(p) => setDraft((d) => ({ ...d, ...p }))} allMedia={allMedia} />
             <div className="mt-5 flex justify-end gap-2">
-              <button onClick={() => { setCreating(false); setDraft(EMPTY_DRAFT); }} className="px-4 py-2 text-gray-600 hover:text-gray-900">Cancel</button>
+              <button onClick={() => { setCreating(false); setDraft({ ...EMPTY_DRAFT, type: activeTab }); }} className="px-4 py-2 text-gray-600 hover:text-gray-900">Cancel</button>
               <button onClick={createJourney} className="px-5 py-2 bg-[#2D4A3E] text-white rounded-lg hover:bg-[#1F3329]">
-                Add trip
+                Add {TYPE_LABEL[draft.type || "tour"].toLowerCase()}
               </button>
             </div>
           </div>
@@ -231,38 +321,34 @@ export default function JourneysManager() {
 
         {/* Existing rows */}
         {loading ? (
-          <div className="text-gray-500">Loading trips…</div>
-        ) : items.length === 0 ? (
+          <div className="text-gray-500">Loading trips...</div>
+        ) : visibleItems.length === 0 ? (
           <div className="bg-gray-50 rounded-lg p-10 text-center text-gray-500">
-            No trips yet. Click &quot;Add a trip&quot; to create your first one.
+            No {activeTab === "tour" ? "tours" : "corporate retreats"} yet. Click &quot;Add a {TYPE_LABEL[activeTab].toLowerCase()}&quot; to create the first one.
           </div>
         ) : (
           <div className="space-y-5">
-            {items.map((j, idx) => (
+            {visibleItems.map((j, idx) => (
               <div key={j.id} className="bg-white rounded-lg border border-gray-200 p-6" data-testid={`journey-row-${j.id}`}>
                 <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
                   <div className="flex items-center gap-3">
-                    {/* Reorder controls. Clear, big-enough hit targets so
-                        the operator can shuffle the trip cards without
-                        squinting. Order is persisted server-side on click
-                        via /admin/journeys/reorder. */}
                     <div className="flex flex-col gap-1" data-testid={`reorder-${j.id}`}>
                       <button
                         type="button"
-                        onClick={() => move(idx, -1)}
+                        onClick={() => move(j, -1)}
                         disabled={idx === 0}
                         title="Move up"
-                        aria-label="Move trip up"
+                        aria-label="Move up"
                         className="h-7 w-7 inline-flex items-center justify-center rounded border border-gray-300 bg-white text-gray-600 hover:border-[#2D4A3E] hover:text-[#2D4A3E] hover:bg-[#FAF7F2] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                       >
                         <ChevronUp className="h-4 w-4" />
                       </button>
                       <button
                         type="button"
-                        onClick={() => move(idx, 1)}
-                        disabled={idx === items.length - 1}
+                        onClick={() => move(j, 1)}
+                        disabled={idx === visibleItems.length - 1}
                         title="Move down"
-                        aria-label="Move trip down"
+                        aria-label="Move down"
                         className="h-7 w-7 inline-flex items-center justify-center rounded border border-gray-300 bg-white text-gray-600 hover:border-[#2D4A3E] hover:text-[#2D4A3E] hover:bg-[#FAF7F2] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                       >
                         <ChevronDown className="h-4 w-4" />
@@ -271,14 +357,31 @@ export default function JourneysManager() {
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-xs uppercase tracking-widest text-gray-400 font-medium">#{idx + 1}</span>
                       <h2 className="text-2xl font-semibold text-[#1C1C1C]">{j.name || "(untitled)"}</h2>
+                      {j.status === "draft" && <span className="text-xs px-2 py-1 rounded bg-amber-100 text-amber-700 tracking-widest uppercase">Draft</span>}
                       {j.popular && <span className="text-xs px-2 py-1 rounded bg-[#B8923D] text-white tracking-widest uppercase">Most popular</span>}
                       {!j.is_active && <span className="text-xs px-2 py-1 rounded bg-gray-200 text-gray-600 tracking-widest uppercase">Hidden</span>}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      onClick={() => previewRow(j)}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-[#2E6DA4] border border-[#2E6DA4]/40 rounded hover:bg-[#2E6DA4] hover:text-white"
+                      title="Open this row in a new tab (preview includes drafts)"
+                      data-testid={`preview-journey-${j.id}`}
+                    >
+                      <Eye className="h-4 w-4" /> Preview
+                    </button>
+                    <button
+                      onClick={() => duplicateRow(j)}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-gray-700 border border-gray-300 rounded hover:bg-gray-100"
+                      title="Clone this row to a fresh draft"
+                      data-testid={`duplicate-journey-${j.id}`}
+                    >
+                      <Copy className="h-4 w-4" /> Duplicate
+                    </button>
                     <button onClick={() => togglePopular(j)} className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-[#B8923D] border border-[#B8923D]/50 rounded hover:bg-[#B8923D] hover:text-white">
                       {j.popular ? <StarOff className="h-4 w-4" /> : <Star className="h-4 w-4" />}
-                      {j.popular ? "Remove highlight" : "Mark as Most Popular"}
+                      {j.popular ? "Remove highlight" : "Mark popular"}
                     </button>
                     <button onClick={() => deleteRow(j)} className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-red-600 border border-red-200 rounded hover:bg-red-50">
                       <Trash2 className="h-4 w-4" /> Delete
@@ -294,31 +397,33 @@ export default function JourneysManager() {
                     includes: j._includesText || "", cta: j.cta || "Enquire",
                     popular: !!j.popular, is_active: !!j.is_active,
                     slug: j.slug || "", hero_media_id: j.hero_media_id || "",
-                    body_html: j.body_html || "", seo_title: j.seo_title || "",
-                    seo_description: j.seo_description || "", status: j.status || "published",
+                    seo_title: j.seo_title || "", seo_description: j.seo_description || "",
+                    status: j.status || "published",
+                    type: j.type || "tour",
+                    description_html: j.description_html || "",
+                    itinerary_html: j.itinerary_html || "",
+                    practical_html: j.practical_html || "",
+                    gallery_media_ids: Array.isArray(j.gallery_media_ids) ? j.gallery_media_ids : [],
                   }}
                   onChange={(p) => updateLocal(j.id, p.includes !== undefined ? { _includesText: p.includes } : p)}
                   rowId={j.id}
+                  allMedia={allMedia}
                 />
 
-                {/* B1 - quick link to the public sub-page so the operator can
-                    review the change without leaving the admin. Only shows
-                    when the row has a published slug. */}
                 {j.slug && (
                   <div className="mt-3 -mb-2">
                     <a
-                      href={`/tours/${j.slug}`}
+                      href={`${(j.type || "tour") === "retreat" ? "/corporate-retreats/" : "/tours/"}${j.slug}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 text-xs text-[#2E6DA4] hover:underline"
                     >
                       <ExternalLink className="h-3 w-3" />
-                      View /tours/{j.slug}
+                      View {(j.type || "tour") === "retreat" ? `/corporate-retreats/${j.slug}` : `/tours/${j.slug}`}
                     </a>
                   </div>
                 )}
 
-                {/* PDF itinerary block */}
                 <div className="mt-6 pt-5 border-t border-gray-100">
                   <div className="text-base font-medium text-gray-700 mb-2">Itinerary PDF (optional)</div>
                   {j.itinerary_url ? (
@@ -355,7 +460,7 @@ export default function JourneysManager() {
                     className="inline-flex items-center gap-2 px-5 py-2 bg-[#2D4A3E] text-white rounded-lg hover:bg-[#1F3329] disabled:opacity-60"
                     data-testid={`save-journey-${j.id}`}
                   >
-                    <Save className="h-4 w-4" /> {savingId === j.id ? "Saving…" : "Save changes"}
+                    <Save className="h-4 w-4" /> {savingId === j.id ? "Saving..." : "Save changes"}
                   </button>
                 </div>
               </div>
@@ -367,11 +472,6 @@ export default function JourneysManager() {
   );
 }
 
-// Shared form fields - used for both new-trip drafts and editing existing rows.
-// The "includes" textarea takes one bullet per line for natural editing.
-
-// Defined OUTSIDE the parent so React doesn't recreate the input on every
-// keystroke (which would steal focus after each character).
 function Field({ label, k, value, onChange, ...rest }) {
   return (
     <label className="block">
@@ -387,7 +487,146 @@ function Field({ label, k, value, onChange, ...rest }) {
   );
 }
 
-function DraftFields({ value, onChange, rowId }) {
+// Native HTML5 drag-and-drop gallery picker. No external deps. Operator
+// clicks a thumbnail in the picker to add it; existing items can be
+// reordered via drag-handles and removed via the X button.
+function GalleryPicker({ value, onChange, allMedia, rowId }) {
+  const [filter, setFilter] = useState("");
+  const [dragId, setDragId] = useState(null);
+  const ids = Array.isArray(value) ? value : [];
+  const mediaMap = useMemo(() => {
+    const m = {};
+    (allMedia || []).forEach((x) => { m[x.id] = x; });
+    return m;
+  }, [allMedia]);
+
+  const filteredAvailable = useMemo(() => {
+    const q = filter.trim().toLowerCase();
+    return (allMedia || [])
+      .filter((m) => m.file_type !== "video")        // gallery is for images only
+      .filter((m) => !ids.includes(m.id))
+      .filter((m) => !q || (m.section || "").toLowerCase().includes(q) || (m.alt || "").toLowerCase().includes(q))
+      .slice(0, 60);
+  }, [allMedia, ids, filter]);
+
+  const add = (id) => {
+    if (ids.includes(id)) return;
+    onChange({ gallery_media_ids: [...ids, id] });
+  };
+  const remove = (id) => {
+    onChange({ gallery_media_ids: ids.filter((x) => x !== id) });
+  };
+  const onDragStart = (id) => () => setDragId(id);
+  const onDragOver = (id) => (e) => { e.preventDefault(); };
+  const onDrop = (overId) => (e) => {
+    e.preventDefault();
+    if (!dragId || dragId === overId) { setDragId(null); return; }
+    const fromIdx = ids.indexOf(dragId);
+    const toIdx = ids.indexOf(overId);
+    if (fromIdx === -1 || toIdx === -1) { setDragId(null); return; }
+    const next = [...ids];
+    next.splice(fromIdx, 1);
+    next.splice(toIdx, 0, dragId);
+    onChange({ gallery_media_ids: next });
+    setDragId(null);
+  };
+
+  const thumbUrl = (m) => {
+    if (!m) return "";
+    const u = m.thumb_url || m.file_url || "";
+    return u && u.startsWith("/") && API_BASE ? `${API_BASE}${u}` : u;
+  };
+
+  return (
+    <div className="sm:col-span-2 mt-4 pt-5 border-t border-gray-200" data-testid={`gallery-picker-${rowId || "new"}`}>
+      <h3 className="text-base font-semibold text-[#1C1C1C] mb-1">Photo gallery</h3>
+      <p className="text-sm text-gray-500 mb-4">
+        Pick images from your Website Media library. Drag the thumbnails to reorder. Up to 30 images recommended.
+      </p>
+
+      {/* Selected (ordered, draggable) */}
+      <div className="mb-5">
+        <div className="text-xs font-medium uppercase tracking-widest text-gray-500 mb-2">In this gallery ({ids.length})</div>
+        {ids.length === 0 ? (
+          <div className="text-sm text-gray-400 bg-gray-50 rounded p-4 text-center">No images selected yet. Click thumbnails below to add.</div>
+        ) : (
+          <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 gap-2">
+            {ids.map((id) => {
+              const m = mediaMap[id];
+              return (
+                <div
+                  key={id}
+                  draggable
+                  onDragStart={onDragStart(id)}
+                  onDragOver={onDragOver(id)}
+                  onDrop={onDrop(id)}
+                  className={
+                    "group relative aspect-square overflow-hidden rounded border bg-gray-100 cursor-move " +
+                    (dragId === id ? "ring-2 ring-[#2D4A3E] opacity-60" : "border-gray-200")
+                  }
+                  data-testid={`gallery-selected-${id}`}
+                >
+                  {m ? (
+                    <img src={thumbUrl(m)} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-xs text-red-600">missing</div>
+                  )}
+                  <div className="absolute top-1 left-1 bg-black/40 text-white rounded px-1.5 py-0.5 text-[10px] uppercase tracking-widest flex items-center gap-1">
+                    <GripVertical className="h-3 w-3" /> drag
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); remove(id); }}
+                    className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Remove from gallery"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Available pool */}
+      <div>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="text-xs font-medium uppercase tracking-widest text-gray-500">Available images</div>
+          <input
+            type="text"
+            placeholder="Filter by section or alt text..."
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="ml-auto w-64 px-3 py-1.5 text-sm border border-gray-300 rounded focus:border-[#2D4A3E] focus:outline-none"
+          />
+        </div>
+        {filteredAvailable.length === 0 ? (
+          <div className="text-sm text-gray-400 bg-gray-50 rounded p-4 text-center">No matching media. Upload images via /admin/website-media first.</div>
+        ) : (
+          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 max-h-80 overflow-y-auto p-2 bg-gray-50 rounded">
+            {filteredAvailable.map((m) => (
+              <button
+                type="button"
+                key={m.id}
+                onClick={() => add(m.id)}
+                className="group relative aspect-square overflow-hidden rounded border border-gray-200 bg-white hover:ring-2 hover:ring-[#2D4A3E] transition-all"
+                title={m.section ? `Section: ${m.section}` : "Click to add"}
+              >
+                <img src={thumbUrl(m)} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                <div className="absolute inset-x-0 bottom-0 bg-black/55 text-white text-[10px] uppercase tracking-widest px-1.5 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity text-center">
+                  Add
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DraftFields({ value, onChange, rowId, allMedia }) {
   return (
     <div className="grid sm:grid-cols-2 gap-4">
       <Field label="Trip name *" k="name" value={value.name} onChange={onChange} />
@@ -424,17 +663,31 @@ function DraftFields({ value, onChange, rowId }) {
           checked={!!value.is_active}
           onChange={(e) => onChange({ is_active: e.target.checked })}
         />
-        <span className="text-sm text-gray-700">Visible on the public /pricing page</span>
+        <span className="text-sm text-gray-700">Visible on the public listing</span>
       </label>
 
-      {/* ---- B1: Sub-page content for /tours/<slug> ---------------------- */}
+      {/* ---- B1/B2: Sub-page content ---------------------- */}
       <div className="sm:col-span-2 mt-4 pt-5 border-t border-gray-200">
-        <h3 className="text-base font-semibold text-[#1C1C1C] mb-1">Tour sub-page</h3>
+        <h3 className="text-base font-semibold text-[#1C1C1C] mb-1">Sub-page (the standalone page for this trip)</h3>
         <p className="text-sm text-gray-500 mb-4">
-          The standalone page at <span className="font-mono text-xs">/tours/{value.slug || "..."}</span>. Leave the body empty and the page will simply show the summary above.
+          {(value.type || "tour") === "retreat"
+            ? <>The standalone page at <span className="font-mono text-xs">/corporate-retreats/{value.slug || "..."}</span>.</>
+            : <>The standalone page at <span className="font-mono text-xs">/tours/{value.slug || "..."}</span>.</>
+          }
         </p>
         <div className="grid sm:grid-cols-2 gap-4">
           <Field label="URL slug (auto if blank)" k="slug" value={value.slug} onChange={onChange} placeholder="e.g. tasmanian-tour" />
+          <label className="block">
+            <span className="block text-sm font-medium text-gray-600 mb-1">Type</span>
+            <select
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:border-[#2D4A3E] focus:outline-none focus:ring-1 focus:ring-[#2D4A3E]/40 bg-white"
+              value={value.type || "tour"}
+              onChange={(e) => onChange({ type: e.target.value })}
+            >
+              <option value="tour">Tour (appears on /pricing)</option>
+              <option value="retreat">Corporate Retreat (appears on /corporate-retreats)</option>
+            </select>
+          </label>
           <label className="block">
             <span className="block text-sm font-medium text-gray-600 mb-1">Status</span>
             <select
@@ -443,7 +696,7 @@ function DraftFields({ value, onChange, rowId }) {
               onChange={(e) => onChange({ status: e.target.value })}
             >
               <option value="published">Published (visible)</option>
-              <option value="draft">Draft (hidden)</option>
+              <option value="draft">Draft (hidden, preview only)</option>
             </select>
           </label>
           <Field label="Hero image media ID (optional)" k="hero_media_id" value={value.hero_media_id} onChange={onChange} placeholder="Copy a media id from /admin/website-media" />
@@ -458,17 +711,47 @@ function DraftFields({ value, onChange, rowId }) {
               placeholder="Falls back to the summary above. Aim for 140 to 160 characters."
             />
           </label>
-          <div className="sm:col-span-2">
-            <span className="block text-sm font-medium text-gray-600 mb-1">Sub-page body (rich text)</span>
-            <RichTextEditor
-              value={value.body_html || ""}
-              onChange={(html) => onChange({ body_html: html })}
-              placeholder="The main content of the /tours/<slug> page. Use the toolbar for headings, lists, links and inline images."
-              testIdPrefix={`journey-body-${rowId || "new"}`}
-            />
+
+          {/* B2 - three TipTap editors with H3 dividers between them */}
+          <div className="sm:col-span-2 space-y-6 mt-2">
+            <div>
+              <span className="block text-sm font-medium text-gray-600 mb-1">About this journey (description)</span>
+              <RichTextEditor
+                value={value.description_html || ""}
+                onChange={(html) => onChange({ description_html: html })}
+                placeholder="Tell the story of this trip. Use headings, lists and inline images."
+                testIdPrefix={`journey-description-${rowId || "new"}`}
+              />
+            </div>
+            <div>
+              <span className="block text-sm font-medium text-gray-600 mb-1">Itinerary (optional)</span>
+              <RichTextEditor
+                value={value.itinerary_html || ""}
+                onChange={(html) => onChange({ itinerary_html: html })}
+                placeholder="Day-by-day breakdown of the journey. Leave empty if a PDF itinerary covers this."
+                testIdPrefix={`journey-itinerary-${rowId || "new"}`}
+              />
+            </div>
+            <div>
+              <span className="block text-sm font-medium text-gray-600 mb-1">Practical information (optional)</span>
+              <RichTextEditor
+                value={value.practical_html || ""}
+                onChange={(html) => onChange({ practical_html: html })}
+                placeholder="What to bring, fitness level, dietary notes, anything practical."
+                testIdPrefix={`journey-practical-${rowId || "new"}`}
+              />
+            </div>
           </div>
         </div>
       </div>
+
+      {/* B2 - gallery picker */}
+      <GalleryPicker
+        value={value.gallery_media_ids}
+        onChange={onChange}
+        allMedia={allMedia || []}
+        rowId={rowId}
+      />
     </div>
   );
 }
