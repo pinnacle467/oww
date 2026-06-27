@@ -464,8 +464,7 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus:
-    - "B2: Tour gallery + 3-section body + Corporate Retreats + duplicate + preview-token + Maleny re-tag"
+  current_focus: []
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
