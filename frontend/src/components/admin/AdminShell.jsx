@@ -1,6 +1,6 @@
 import { Navigate, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { LayoutDashboard, Images, Image, Type, FileImage, Inbox, Settings, LogOut, Loader2, Map, BookOpen, Newspaper } from "lucide-react";
+import { LayoutDashboard, Images, Image, Type, FileImage, Inbox, Settings, LogOut, Loader2, Map, BookOpen, Newspaper, HelpCircle, FileText } from "lucide-react";
 
 const LINKS = [
   { to: "/admin/dashboard", label: "Home", icon: LayoutDashboard },
@@ -9,6 +9,8 @@ const LINKS = [
   { to: "/admin/hero", label: "Hero Slideshow", icon: Images },
   { to: "/admin/gallery", label: "Gallery Photos & Videos", icon: Image },
   { to: "/admin/journeys", label: "Trips & Journeys", icon: Map },
+  { to: "/admin/home-content", label: "Home Content", icon: FileText },
+  { to: "/admin/home-faqs", label: "Home FAQs", icon: HelpCircle },
   { to: "/admin/about", label: "About Us & Stories", icon: BookOpen },
   { to: "/admin/blog", label: "Blog", icon: Newspaper },
   { to: "/admin/submissions", label: "Messages", icon: Inbox },

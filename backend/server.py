@@ -1377,6 +1377,185 @@ async def admin_reorder_about_blocks(data: AboutBlockReorder, admin: dict = Depe
     return {"message": "Reordered", "count": len(data.ids)}
 
 
+# ============================== Home FAQs ("Questions Gently Answered") =======
+# Accordion of Q&A pairs shown on the home page. Standalone collection so the
+# admin can add, edit, delete, reorder and toggle visibility without touching
+# the older /pricing-page FAQs (those still live as `faqs.N.q/a` content keys).
+
+
+class HomeFaqInput(BaseModel):
+    question: str = ""
+    answer: str = ""           # HTML (rich text) so links/formatting survive
+    is_visible: bool = True
+
+
+class HomeFaqUpdate(BaseModel):
+    question: Optional[str] = None
+    answer: Optional[str] = None
+    is_visible: Optional[bool] = None
+
+
+class HomeFaqReorder(BaseModel):
+    ids: List[str]
+
+
+def _faq_view(doc: dict) -> dict:
+    doc.pop("_id", None)
+    return doc
+
+
+@api_router.get("/home-faqs")
+async def list_home_faqs():
+    out = []
+    cursor = db.home_faqs.find({"is_visible": True}).sort([("sort_order", 1), ("created_at", 1)])
+    async for row in cursor:
+        out.append(_faq_view(row))
+    return out
+
+
+@api_router.get("/admin/home-faqs")
+async def admin_list_home_faqs(admin: dict = Depends(get_current_admin)):
+    out = []
+    cursor = db.home_faqs.find({}).sort([("sort_order", 1), ("created_at", 1)])
+    async for row in cursor:
+        out.append(_faq_view(row))
+    return out
+
+
+@api_router.post("/admin/home-faqs")
+async def admin_create_home_faq(data: HomeFaqInput, admin: dict = Depends(get_current_admin)):
+    next_order = await db.home_faqs.count_documents({})
+    doc = {
+        "id": str(uuid.uuid4()),
+        **data.model_dump(),
+        "sort_order": next_order,
+        "created_at": now_iso(),
+        "updated_at": now_iso(),
+    }
+    await db.home_faqs.insert_one(doc)
+    await schedule_snapshot()
+    return _faq_view(doc)
+
+
+@api_router.patch("/admin/home-faqs/{fid}")
+async def admin_update_home_faq(fid: str, data: HomeFaqUpdate, admin: dict = Depends(get_current_admin)):
+    update = {k: v for k, v in data.model_dump().items() if v is not None}
+    if not update:
+        return {"message": "Nothing to update"}
+    update["updated_at"] = now_iso()
+    res = await db.home_faqs.update_one({"id": fid}, {"$set": update})
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="FAQ not found")
+    await schedule_snapshot()
+    return {"message": "Updated"}
+
+
+@api_router.delete("/admin/home-faqs/{fid}")
+async def admin_delete_home_faq(fid: str, admin: dict = Depends(get_current_admin)):
+    res = await db.home_faqs.delete_one({"id": fid})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="FAQ not found")
+    await schedule_snapshot()
+    return {"message": "Removed"}
+
+
+@api_router.post("/admin/home-faqs/reorder")
+async def admin_reorder_home_faqs(data: HomeFaqReorder, admin: dict = Depends(get_current_admin)):
+    for i, fid in enumerate(data.ids):
+        await db.home_faqs.update_one({"id": fid}, {"$set": {"sort_order": i, "updated_at": now_iso()}})
+    await schedule_snapshot()
+    return {"message": "Reordered", "count": len(data.ids)}
+
+
+# ============================== Home Content Sections =========================
+# Long-form rich-text sections rendered on the home page. Each section has its
+# own H2 heading and HTML body, can be reordered and toggled visible/hidden.
+
+
+class HomeSectionInput(BaseModel):
+    heading: str = ""
+    body: str = ""             # HTML (rich text)
+    is_visible: bool = True
+
+
+class HomeSectionUpdate(BaseModel):
+    heading: Optional[str] = None
+    body: Optional[str] = None
+    is_visible: Optional[bool] = None
+
+
+class HomeSectionReorder(BaseModel):
+    ids: List[str]
+
+
+def _section_view(doc: dict) -> dict:
+    doc.pop("_id", None)
+    return doc
+
+
+@api_router.get("/home-sections")
+async def list_home_sections():
+    out = []
+    cursor = db.home_sections.find({"is_visible": True}).sort([("sort_order", 1), ("created_at", 1)])
+    async for row in cursor:
+        out.append(_section_view(row))
+    return out
+
+
+@api_router.get("/admin/home-sections")
+async def admin_list_home_sections(admin: dict = Depends(get_current_admin)):
+    out = []
+    cursor = db.home_sections.find({}).sort([("sort_order", 1), ("created_at", 1)])
+    async for row in cursor:
+        out.append(_section_view(row))
+    return out
+
+
+@api_router.post("/admin/home-sections")
+async def admin_create_home_section(data: HomeSectionInput, admin: dict = Depends(get_current_admin)):
+    next_order = await db.home_sections.count_documents({})
+    doc = {
+        "id": str(uuid.uuid4()),
+        **data.model_dump(),
+        "sort_order": next_order,
+        "created_at": now_iso(),
+        "updated_at": now_iso(),
+    }
+    await db.home_sections.insert_one(doc)
+    await schedule_snapshot()
+    return _section_view(doc)
+
+
+@api_router.patch("/admin/home-sections/{sid}")
+async def admin_update_home_section(sid: str, data: HomeSectionUpdate, admin: dict = Depends(get_current_admin)):
+    update = {k: v for k, v in data.model_dump().items() if v is not None}
+    if not update:
+        return {"message": "Nothing to update"}
+    update["updated_at"] = now_iso()
+    res = await db.home_sections.update_one({"id": sid}, {"$set": update})
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Section not found")
+    await schedule_snapshot()
+    return {"message": "Updated"}
+
+
+@api_router.delete("/admin/home-sections/{sid}")
+async def admin_delete_home_section(sid: str, admin: dict = Depends(get_current_admin)):
+    res = await db.home_sections.delete_one({"id": sid})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Section not found")
+    await schedule_snapshot()
+    return {"message": "Removed"}
+
+
+@api_router.post("/admin/home-sections/reorder")
+async def admin_reorder_home_sections(data: HomeSectionReorder, admin: dict = Depends(get_current_admin)):
+    for i, sid in enumerate(data.ids):
+        await db.home_sections.update_one({"id": sid}, {"$set": {"sort_order": i, "updated_at": now_iso()}})
+    await schedule_snapshot()
+    return {"message": "Reordered", "count": len(data.ids)}
+
+
 # ============================== Stories (mini blog on /about) ==================
 # Trip stories shown as cards on the public /about page. Cover images are
 # uploaded via the dedicated endpoint below — they live in /uploads/stories/
@@ -2104,6 +2283,27 @@ DEFAULT_CONTENT = [
        "Journal strip intro"),
     _c("home", "home.journal.cta", "Read the journal", "Journal strip CTA button label"),
 
+    # Home — "Questions Gently Answered" FAQ accordion
+    _c("home", "home.faq.eyebrow", "Common Questions", "Home FAQ eyebrow"),
+    _c("home", "home.faq.heading", "Questions Gently Answered", "Home FAQ section heading (above the accordion)"),
+    _c("home", "home.faq.intro",
+       "Quiet answers to the things most often asked before stepping into a journey with us.",
+       "Home FAQ intro paragraph"),
+
+    # Home — Extended rich-text content sections
+    _c("home", "home.content.eyebrow", "More to know", "Home content sections eyebrow"),
+    _c("home", "home.content.title", "Slow stories, *gently shared.*",
+       "Home content sections title (italic part wrapped in asterisks)", "richtext"),
+
+    # Home — Minimal Tours CTA card (replaces older repeated Tasmania + Maleny marketing blocks)
+    _c("home", "home.tours_cta.eyebrow", "Our Journeys", "Tours CTA card eyebrow"),
+    _c("home", "home.tours_cta.title", "Slow tours, *soulful retreats.*",
+       "Tours CTA card title (italic part wrapped in asterisks)", "richtext"),
+    _c("home", "home.tours_cta.body",
+       "Small group journeys across Australia and beyond, plus immersive Maleny retreats in the Sunshine Coast hinterland.",
+       "Tours CTA card body"),
+    _c("home", "home.tours_cta.button", "Explore all tours", "Tours CTA card button label"),
+
     # Home — Pillars (3)
     _c("home", "home.pillars.eyebrow", "How We Travel", "Pillars eyebrow"),
     _c("home", "home.pillars.title", "Three ways to step *beyond the familiar.*", "Pillars title"),
@@ -2355,6 +2555,53 @@ DEFAULT_MEDIA = [
 # collection so the operator can edit, add, delete and upload PDF itineraries
 # from /admin/journeys. The shape matches the legacy JOURNEYS list in
 # frontend/src/data/content.js so the public page renders identically.
+
+# Default home FAQs ("Questions Gently Answered"). Seeded ONCE into the
+# `home_faqs` collection. The client edits, reorders and toggles visibility
+# from /admin/home-faqs and never gets re-overwritten.
+DEFAULT_HOME_FAQS = [
+    {"question": "What types of tours do you offer?",
+     "answer": "<p>We design slow, small group journeys for women. Our flagship trips run across Tasmania and Western Australia, and we also host immersive creative retreats in the Maleny hinterland on Queensland's Sunshine Coast.</p>"},
+    {"question": "Are your tours women-only?",
+     "answer": "<p>Yes. Every scheduled departure is curated for women travellers, often aged 45 and beyond, who value depth and connection over crowds and itineraries.</p>"},
+    {"question": "How many people are in each group?",
+     "answer": "<p>Groups are intentionally small, usually six to eight guests, so the pace stays gentle and conversation has room to breathe.</p>"},
+    {"question": "What is included in the tour price?",
+     "answer": "<p>Most journeys are all inclusive of accommodation, meals as specified, wine with dinner, guided experiences and ground transport. Each tour page lists exactly what is covered so there are no surprises.</p>"},
+    {"question": "What fitness level is required?",
+     "answer": "<p>A moderate level of mobility is plenty. We balance gentle walks, rest and beautiful food with the occasional longer hike. If you have any specific concerns, get in touch and we will talk it through.</p>"},
+    {"question": "Can I join as a solo traveller?",
+     "answer": "<p>Absolutely. Most of our guests arrive solo. Twin share accommodation is the default, and single rooms can be arranged for a supplement on most journeys.</p>"},
+    {"question": "How do I book or enquire?",
+     "answer": "<p>Use the Get In Touch form on our contact page, or email us directly. We reply personally within a day or two and walk you through every step.</p>"},
+    {"question": "What happens if I need to cancel?",
+     "answer": "<p>Cancellation terms vary slightly by journey. Travel insurance is strongly advised for every guest and we will share the exact terms when you register your interest.</p>"},
+]
+
+
+# Default home content sections (long-form rich text). Each section becomes
+# an H2 + body block on the home page. The client edits these in
+# /admin/home-content. Light placeholder text so the page never looks empty.
+DEFAULT_HOME_SECTIONS = [
+    {
+        "heading": "Women's Small Group Travel in Australia",
+        "body": "<p>Once Were Wild Travel is built around women who are quietly ready for something deeper than a tour. Our journeys move through Tasmania, Western Australia and the Maleny hinterland, in groups small enough to feel like friends and slow enough to actually arrive.</p><p>Every itinerary is shaped around connection: with the landscape, with the women you travel beside, and with the quieter version of yourself that travel like this tends to bring forward.</p>",
+    },
+    {
+        "heading": "Why Slow Travel?",
+        "body": "<p>We believe a journey only really begins when the rush stops. Slow travel is not about fewer experiences, it is about deeper ones: longer stays in fewer places, time for unhurried meals, room for conversation, and space to notice where you are.</p><p>You will not be moved through this country at the pace of a coach tour. You will walk, listen, taste, rest and return home with stories that actually feel like yours.</p>",
+    },
+    {
+        "heading": "Exploring Tasmania with Once Were Wild",
+        "body": "<p>Tasmania is the heart of what we do. Twelve and twenty three night odysseys through ancient wilderness, untouched coast and farm to table cellar doors. Wildlife at dawn, fireside dinners at night, and the people who make this island feel like home.</p>",
+    },
+    {
+        "heading": "Our Approach to Travel",
+        "body": "<p>Hosted personally, paced gently, and curated for women who want their travel to mean something. We work with people, not numbers; with landscapes, not landmarks; and with time, not tick lists. If that sounds like the kind of journey you have been waiting for, you are exactly where you should be.</p>",
+    },
+]
+
+
 DEFAULT_JOURNEYS = [
     {
         "name": "Maleny Creative Immersion",
@@ -2464,6 +2711,12 @@ async def _write_snapshot_now() -> dict:
     blog_docs = []
     async for row in db.blog_posts.find({}, {"_id": 0}):
         blog_docs.append(row)
+    home_faq_docs = []
+    async for row in db.home_faqs.find({}, {"_id": 0}):
+        home_faq_docs.append(row)
+    home_section_docs = []
+    async for row in db.home_sections.find({}, {"_id": 0}):
+        home_section_docs.append(row)
 
     payload = {
         "version": 1,
@@ -2475,6 +2728,8 @@ async def _write_snapshot_now() -> dict:
         "about_blocks": about_docs,
         "stories": story_docs,
         "blog_posts": blog_docs,
+        "home_faqs": home_faq_docs,
+        "home_sections": home_section_docs,
     }
     # Write atomically: dump to .tmp then rename, so a partial write never
     # leaves a corrupt JSON on disk.
@@ -2623,6 +2878,8 @@ async def _apply_snapshot(snapshot: dict, *, reason: str, protect_media: bool = 
     await _safe_replace("about_blocks", snapshot.get("about_blocks") or [], "about_blocks")
     await _safe_replace("stories", snapshot.get("stories") or [], "stories")
     await _safe_replace("blog_posts", snapshot.get("blog_posts") or [], "blog_posts")
+    await _safe_replace("home_faqs", snapshot.get("home_faqs") or [], "home_faqs")
+    await _safe_replace("home_sections", snapshot.get("home_sections") or [], "home_sections")
 
     # Record the snapshot hash so we don't keep re-applying the same file.
     fh = _snapshot_file_hash()
@@ -2752,6 +3009,35 @@ async def seed():
             {"itinerary_url": {"$exists": False}},
             {"$set": {"itinerary_url": "", "itinerary_filename": ""}},
         )
+
+    # Seed default home FAQs ("Questions Gently Answered"). Idempotent — only
+    # inserts if the collection is empty so the client's edits are never lost.
+    if await db.home_faqs.count_documents({}) == 0:
+        for i, f in enumerate(DEFAULT_HOME_FAQS):
+            await db.home_faqs.insert_one({
+                "id": str(uuid.uuid4()),
+                "question": f["question"],
+                "answer": f["answer"],
+                "is_visible": True,
+                "sort_order": i,
+                "created_at": now_iso(),
+                "updated_at": now_iso(),
+            })
+        logger.info("Seeded %d default home FAQs", len(DEFAULT_HOME_FAQS))
+
+    # Seed default home content sections (long-form rich-text blocks).
+    if await db.home_sections.count_documents({}) == 0:
+        for i, s in enumerate(DEFAULT_HOME_SECTIONS):
+            await db.home_sections.insert_one({
+                "id": str(uuid.uuid4()),
+                "heading": s["heading"],
+                "body": s["body"],
+                "is_visible": True,
+                "sort_order": i,
+                "created_at": now_iso(),
+                "updated_at": now_iso(),
+            })
+        logger.info("Seeded %d default home content sections", len(DEFAULT_HOME_SECTIONS))
 
     # Migrate any legacy data:image/... rows to disk-backed WebP so the public
     # API returns short URLs and the hero paints instantly. This is run once

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { AdminShell } from "@/components/admin/AdminShell";
-import { Images, Image, Type, FileImage, Inbox, ArrowRight, Map, BookOpen, Newspaper } from "lucide-react";
+import { Images, Image, Type, FileImage, Inbox, ArrowRight, Map, BookOpen, Newspaper, HelpCircle, FileText } from "lucide-react";
 
 export default function AdminDashboard() {
   useEffect(() => { document.title = "Dashboard | Once Were Wild Admin"; }, []);
@@ -20,6 +20,8 @@ export default function AdminDashboard() {
     { to: "/admin/hero", label: "Hero Slideshow", desc: "The big rotating photos on your home page", icon: Images, color: "#2E6DA4" },
     { to: "/admin/gallery", label: "Gallery Photos & Videos", desc: "Manage your photo and video gallery", icon: Image, color: "#4A7C6F" },
     { to: "/admin/journeys", label: "Trips & Journeys", desc: "Add, edit and price the trip cards on /pricing — upload itinerary PDFs", icon: Map, color: "#B8923D" },
+    { to: "/admin/home-content", label: "Home Content", desc: "Long-form rich-text sections in the lower half of the home page", icon: FileText, color: "#2E6DA4" },
+    { to: "/admin/home-faqs", label: "Home FAQs", desc: "The Questions Gently Answered accordion on the home page", icon: HelpCircle, color: "#4A7C6F" },
     { to: "/admin/about", label: "About Us & Stories", desc: "Edit the /about text blocks and manage the trip story blog", icon: BookOpen, color: "#4A7C6F" },
     { to: "/admin/blog", label: "Blog", desc: "Write standalone travel posts shown on /blog", icon: Newspaper, color: "#B8923D" },
     { to: "/admin/submissions", label: "Messages", desc: "Read enquiries from your website", icon: Inbox, color: "#2D4A3E" },

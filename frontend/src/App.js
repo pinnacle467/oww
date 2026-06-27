@@ -31,6 +31,8 @@ const GalleryManager = lazy(() => import("@/pages/admin/GalleryManager"));
 const JourneysManager = lazy(() => import("@/pages/admin/JourneysManager"));
 const AboutManager = lazy(() => import("@/pages/admin/AboutManager"));
 const BlogManager = lazy(() => import("@/pages/admin/BlogManager"));
+const HomeFaqManager = lazy(() => import("@/pages/admin/HomeFaqManager"));
+const HomeContentManager = lazy(() => import("@/pages/admin/HomeContentManager"));
 const Submissions = lazy(() => import("@/pages/admin/Submissions"));
 const AdminSettings = lazy(() => import("@/pages/admin/AdminSettings"));
 const WebsiteText = lazy(() => import("@/pages/admin/WebsiteText"));
@@ -95,6 +97,8 @@ function App() {
                     <Route path="/admin/journeys" element={<Suspense fallback={<AdminFallback />}><JourneysManager /></Suspense>} />
                     <Route path="/admin/about" element={<Suspense fallback={<AdminFallback />}><AboutManager /></Suspense>} />
                     <Route path="/admin/blog" element={<Suspense fallback={<AdminFallback />}><BlogManager /></Suspense>} />
+                    <Route path="/admin/home-faqs" element={<Suspense fallback={<AdminFallback />}><HomeFaqManager /></Suspense>} />
+                    <Route path="/admin/home-content" element={<Suspense fallback={<AdminFallback />}><HomeContentManager /></Suspense>} />
                     <Route path="/admin/website-text" element={<Suspense fallback={<AdminFallback />}><WebsiteText /></Suspense>} />
                     <Route path="/admin/website-media" element={<Suspense fallback={<AdminFallback />}><WebsiteMedia /></Suspense>} />
                     <Route path="/admin/submissions" element={<Suspense fallback={<AdminFallback />}><Submissions /></Suspense>} />

@@ -1131,3 +1131,200 @@ agent_communication:
       - AVIF implementation is PRODUCTION-READY and working perfectly ✓
       - Critters plugin working (no FOUC, CSS inlined correctly) ✓
       - Cache headers code is correct but being overridden by infrastructure ✗
+
+user_problem_statement: "Test the two newly added admin-managed collections (home-faqs and home-sections) on the backend. Verify: 1) Public endpoints return correct default data (8 FAQs, 4 sections), 2) Admin CRUD operations work with authentication, 3) Visibility toggling works correctly, 4) Reordering works, 5) Unauthenticated access returns 401/403, 6) Existing endpoints still work (no regression)."
+
+backend:
+  - task: "Public home-faqs endpoint (GET /api/home-faqs)"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: |
+            VERIFIED: Public home-faqs endpoint working correctly.
+            ✓ GET /api/home-faqs returns 200 status
+            ✓ Returns array of 8 FAQs (as expected)
+            ✓ Each FAQ has required fields: question (string), answer (HTML string), id, sort_order, is_visible
+            ✓ All returned FAQs have is_visible=true (hidden FAQs correctly filtered out)
+            ✓ Response structure matches requirements exactly
+
+  - task: "Public home-sections endpoint (GET /api/home-sections)"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: |
+            VERIFIED: Public home-sections endpoint working correctly.
+            ✓ GET /api/home-sections returns 200 status
+            ✓ Returns array of 4 sections (as expected)
+            ✓ Each section has required fields: heading (string), body (HTML string), id, sort_order, is_visible
+            ✓ All returned sections have is_visible=true (hidden sections correctly filtered out)
+            ✓ Response structure matches requirements exactly
+
+  - task: "Admin home-faqs CRUD operations"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: |
+            VERIFIED: All admin home-faqs CRUD operations working correctly.
+            ✓ GET /api/admin/home-faqs returns all FAQs including hidden (8 FAQs)
+            ✓ POST /api/admin/home-faqs creates new FAQ with generated id
+            ✓ Created FAQ data matches input (question: "Test Q", answer: "<p>Test A</p>")
+            ✓ PATCH /api/admin/home-faqs/{id} updates is_visible to false
+            ✓ Hidden FAQ correctly removed from public endpoint
+            ✓ PATCH /api/admin/home-faqs/{id} updates is_visible back to true
+            ✓ Visible FAQ correctly appears in public endpoint
+            ✓ POST /api/admin/home-faqs/reorder successfully reorders FAQs
+            ✓ Reorder verified by fetching and comparing order
+            ✓ DELETE /api/admin/home-faqs/{id} successfully deletes test FAQ
+            ✓ Count returns to original 8 after deletion
+            All CRUD operations working perfectly with proper authentication.
+
+  - task: "Admin home-sections CRUD operations"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: |
+            VERIFIED: All admin home-sections CRUD operations working correctly.
+            ✓ GET /api/admin/home-sections returns all sections including hidden (4 sections)
+            ✓ POST /api/admin/home-sections creates new section with generated id
+            ✓ Created section data matches input (heading: "Test Heading", body: "<p>Test Body Content</p>")
+            ✓ PATCH /api/admin/home-sections/{id} updates is_visible to false
+            ✓ Hidden section correctly removed from public endpoint
+            ✓ PATCH /api/admin/home-sections/{id} updates is_visible back to true
+            ✓ Visible section correctly appears in public endpoint
+            ✓ POST /api/admin/home-sections/reorder successfully reorders sections
+            ✓ Reorder verified by fetching and comparing order
+            ✓ DELETE /api/admin/home-sections/{id} successfully deletes test section
+            ✓ Count returns to original 4 after deletion
+            All CRUD operations working perfectly with proper authentication.
+
+  - task: "Unauthenticated access protection for admin endpoints"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: |
+            VERIFIED: Admin endpoints properly protected from unauthenticated access.
+            ✓ GET /api/admin/home-faqs without auth returns 401 (as expected)
+            ✓ GET /api/admin/home-sections without auth returns 401 (as expected)
+            Authentication middleware working correctly - all admin endpoints require Bearer token.
+
+  - task: "Existing endpoints regression check"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: |
+            VERIFIED: All existing endpoints still working correctly (no regression).
+            ✓ GET /api/media returns 200 with 237 media items (exact count as expected)
+            ✓ GET /api/about-blocks returns 200 with 3 about blocks
+            ✓ GET /api/blog returns 200 with 0 blog posts
+            ✓ GET /api/journeys returns 200 with 4 journeys
+            No regressions detected - all existing endpoints functioning normally.
+
+metadata:
+  created_by: "testing_agent"
+  version: "1.6"
+  test_sequence: 7
+  run_ui: false
+  test_date: "2026-06-24"
+  test_type: "admin_collections_backend_test"
+
+test_plan:
+  current_focus: []
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "testing"
+    message: |
+      ✅ ADMIN-MANAGED COLLECTIONS BACKEND TEST COMPLETE - ALL 27 TESTS PASSED
+      
+      Comprehensive backend testing completed for the two newly added admin-managed collections (home-faqs and home-sections).
+      
+      TEST RESULTS SUMMARY:
+      
+      1. PUBLIC ENDPOINTS (no auth):
+         ✅ GET /api/home-faqs returns 8 default FAQs with correct structure
+         ✅ GET /api/home-sections returns 4 default sections with correct structure
+         ✅ All items have required fields: question/heading, answer/body (HTML), id, sort_order, is_visible=true
+      
+      2. ADMIN ENDPOINTS (with Bearer token):
+         ✅ Admin login successful with credentials: info@oncewerewild.com / ChangeMe-OWW-2026!
+         
+         HOME-FAQS CRUD:
+         ✅ GET /api/admin/home-faqs returns all FAQs including hidden
+         ✅ POST /api/admin/home-faqs creates new FAQ with generated id
+         ✅ PATCH /api/admin/home-faqs/{id} updates is_visible to false
+         ✅ Hidden FAQ correctly removed from public endpoint
+         ✅ PATCH /api/admin/home-faqs/{id} updates is_visible back to true
+         ✅ Visible FAQ correctly appears in public endpoint
+         ✅ POST /api/admin/home-faqs/reorder successfully reorders FAQs
+         ✅ DELETE /api/admin/home-faqs/{id} deletes FAQ and count returns to 8
+         
+         HOME-SECTIONS CRUD:
+         ✅ GET /api/admin/home-sections returns all sections including hidden
+         ✅ POST /api/admin/home-sections creates new section with generated id
+         ✅ PATCH /api/admin/home-sections/{id} updates is_visible to false
+         ✅ Hidden section correctly removed from public endpoint
+         ✅ PATCH /api/admin/home-sections/{id} updates is_visible back to true
+         ✅ Visible section correctly appears in public endpoint
+         ✅ POST /api/admin/home-sections/reorder successfully reorders sections
+         ✅ DELETE /api/admin/home-sections/{id} deletes section and count returns to 4
+      
+      3. AUTHENTICATION:
+         ✅ Unauthenticated GET /api/admin/home-faqs returns 401
+         ✅ Unauthenticated GET /api/admin/home-sections returns 401
+      
+      4. REGRESSION CHECK:
+         ✅ GET /api/media returns 237 docs (exact count as expected)
+         ✅ GET /api/about-blocks returns 3 blocks
+         ✅ GET /api/blog returns 0 posts
+         ✅ GET /api/journeys returns 4 journeys
+      
+      CRITICAL FINDINGS:
+      - All 27 backend tests passed successfully
+      - Public endpoints correctly filter by is_visible=true
+      - Admin endpoints properly protected with authentication
+      - Visibility toggling works correctly (hidden items removed from public, visible items appear)
+      - Reordering functionality works as expected
+      - CRUD operations maintain data integrity (counts return to original after test cleanup)
+      - No regressions detected in existing endpoints
+      
+      CONCLUSION: The admin-managed collections feature is production-ready. All backend APIs working correctly.
+      
+      No action items for main agent - all requirements met.
