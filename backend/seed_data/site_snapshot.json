@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-06-27T11:17:07.113726+00:00",
+  "generated_at": "2026-06-27T11:50:28.116417+00:00",
   "media": [
     {
       "file_url": "/api/uploads/contact-bg/c6213da9b39140b19135fb900221e491.webp",
@@ -518,7 +518,7 @@
     {
       "id": "36a1b7ee-5c0b-4a5d-be8a-3c3191064272",
       "section": "gallery",
-      "file_url": "/api/uploads/gallery/a9f0c365bab1497ba83d491d7b07e009.webp",
+      "file_url": "/api/uploads/gallery/b59e2c9cb900493caf0d4e447030d00d.webp",
       "srcset": {
         "1600w": "/api/uploads/gallery/1cf13526d08a481aa65bff670f76da3a.webp",
         "1200w": "/api/uploads/gallery/1cf13526d08a481aa65bff670f76da3a-md.webp",
@@ -531,7 +531,7 @@
       "category": "Maleny Retreats",
       "sort_order": 12,
       "is_active": true,
-      "lqip": "data:image/webp;base64,UklGRqIAAABXRUJQVlA4IJYAAAAQBQCdASoYABIAPu1oqVAppaOiqA1RMB2JYwC7AywApjsVyWYIo9CeNbjSoOrvVipAAP4be2lRO4LdM4RNJLsDACYfB4NS29i7elIZd2J2DFVuwXYqBx7X3zE3oHvMULU1+SVh0+ATaxjts0TfZ2jKG1xFVOswyI+bTJ9IyHjLAQID7OG7K4d/Ee1c4DPaaJ2tcq62IAA=",
+      "lqip": "data:image/webp;base64,UklGRqgAAABXRUJQVlA4IJwAAADwBACdASoYABIAPu1qqVAppaOiqA1RMB2JYwDA3A0ZTOsKXrzy34aoFsYu2BtCugAA/h4R2eTizMJQvnaSlEZ70GeRzjnqqWcophNWZ3N2fRADhy2bjKHD4qMntHnTE/j6mvySsOnwCbWMd0yzC8BkZqRECr85+R1A/S8KZsOD6xwECAlK2EUKGkPId8oNuju4ulflMfYJODlOAAA=",
       "created_at": "2026-06-23T20:48:11.890925+00:00"
     },
     {
@@ -5781,7 +5781,10 @@
       "itinerary_filename": "",
       "sort_order": 0,
       "created_at": "2026-06-24T07:30:57.634047+00:00",
-      "updated_at": "2026-06-24T10:28:05.978576+00:00"
+      "updated_at": "2026-06-27T11:44:35.168390+00:00",
+      "slug": "maleny-creative-immersion",
+      "status": "published",
+      "type": "tour"
     },
     {
       "id": "ae57de03-978b-4ca3-a562-1735675ee464",
@@ -5808,7 +5811,10 @@
       "itinerary_filename": "",
       "sort_order": 1,
       "created_at": "2026-06-24T07:30:57.644975+00:00",
-      "updated_at": "2026-06-24T10:28:05.979944+00:00"
+      "updated_at": "2026-06-27T11:44:35.169469+00:00",
+      "slug": "tasmanian-slow-and-soulful-journeys",
+      "status": "published",
+      "type": "tour"
     },
     {
       "id": "37ed2680-f641-4dcc-b85e-07140d0636e0",
@@ -5835,7 +5841,10 @@
       "itinerary_filename": "",
       "sort_order": 2,
       "created_at": "2026-06-24T10:28:01.511628+00:00",
-      "updated_at": "2026-06-24T10:28:13.276811+00:00"
+      "updated_at": "2026-06-27T11:44:35.170467+00:00",
+      "slug": "western-australian-slow-and-soulful-journeys",
+      "status": "published",
+      "type": "tour"
     },
     {
       "id": "ee61cc18-76bf-4da8-806e-37145034b467",
@@ -5862,7 +5871,10 @@
       "itinerary_filename": "",
       "sort_order": 3,
       "created_at": "2026-06-24T07:30:57.645241+00:00",
-      "updated_at": "2026-06-24T10:28:05.981526+00:00"
+      "updated_at": "2026-06-27T11:44:35.171406+00:00",
+      "slug": "corporate-and-custom",
+      "status": "published",
+      "type": "tour"
     }
   ],
   "about_blocks": [

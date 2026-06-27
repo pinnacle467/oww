@@ -169,14 +169,138 @@ backend:
             - Changes reflect immediately on public endpoint
             TEST 5 (CLEANUP): DELETE /api/admin/media/{id} successful, media removed from GET.
 
+  - task: "Tours sub-pages B1: extended Journey schema + /api/tours/{slug} endpoint + slug uniqueness + draft hiding"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: |
+            Session B1 was paused mid-flight and needs verification before B2 starts.
+            Verify the following on the journey/tour endpoints:
+
+            1. Startup migration: GET /api/journeys must return 4 rows, each with `slug` (non-empty),
+               `status="published"`, and `type="tour"` populated. Backfill is idempotent.
+
+            2. New public endpoint GET /api/tours/{slug}:
+               - Returns HTTP 200 with the full journey doc for a published+active row.
+               - 404 if slug does not exist.
+               - 404 if the matching row has status="draft" (drafts must NOT leak publicly).
+               - 404 if the matching row has is_active=false.
+
+            3. Admin POST /api/admin/journeys with all 7 new B1 fields persists them:
+               slug, hero_media_id, body_html, seo_title, seo_description, status, type.
+               If slug is blank on create, server auto-generates from name and ensures uniqueness
+               (so creating two rows with the same name should produce different slugs e.g. "foo" and "foo-2").
+
+            4. Admin PATCH /api/admin/journeys/{id} round-trips all 7 B1 fields.
+               Setting status="draft" must immediately hide the row from public GET /api/journeys and
+               return 404 on GET /api/tours/{slug}.
+
+            5. The `?include_drafts=true` query param on GET /api/journeys must return drafts as well
+               (admin/preview use case). NOTE: re-check the source — handover says this exists; if not,
+               flag for main agent. Public default behaviour MUST hide drafts.
+
+            6. /api/admin/journeys (Bearer auth) must list ALL rows including drafts and inactive.
+
+            7. Regression: GET /api/media count must remain 237. Existing /api/journeys CRUD and
+               /api/admin/journeys CRUD must still work for the non-B1 fields (name, region, nights,
+               dates, priceFrom, includes, sort_order, is_active, cta).
+
+            CLEAN UP any rows you create.
+
+            Admin login: POST /api/auth/login with
+            {"email":"info@oncewerewild.com","password":"ChangeMe-OWW-2026!"}
+            (see /app/memory/test_credentials.md).
+        - working: true
+          agent: "testing"
+          comment: |
+            VERIFIED: All Tours sub-pages B1 backend features working correctly. Comprehensive testing completed with 9/9 tests passed.
+            
+            TEST 1 - STARTUP MIGRATION: ✓ PASSED
+            - GET /api/journeys returns 4 journeys
+            - All journeys have non-empty slug (maleny-creative-immersion, tasmanian-slow-and-soulful-journeys, western-australian-slow-and-soulful-journeys, corporate-and-custom)
+            - All journeys have status='published'
+            - All journeys have type='tour'
+            - Backfill migration working correctly
+            
+            TEST 2 - GET /api/tours/{slug} ENDPOINT: ✓ PASSED
+            - GET /api/tours/maleny-creative-immersion returns 200 with correct data
+            - GET /api/tours/nonexistent-slug-12345 returns 404 (as expected)
+            - Created draft journey, GET /api/tours/{slug} returns 404 (drafts hidden)
+            - Created inactive journey, GET /api/tours/{slug} returns 404 (inactive hidden)
+            - All 4 scenarios working correctly
+            
+            TEST 3 - POST /api/admin/journeys WITH B1 FIELDS: ✓ PASSED
+            - Created journey with all 7 B1 fields (slug, hero_media_id, body_html, seo_title, seo_description, status, type)
+            - All fields persisted correctly in database
+            - Journey accessible via GET /api/tours/{slug}
+            
+            TEST 4 - AUTO-SLUG AND UNIQUENESS: ✓ PASSED
+            - Journey 1: Auto-generated slug from name: 'auto-slug-test-journey'
+            - Journey 2: Uniqueness collision resolved: 'auto-slug-test-journey-2'
+            - Journey 3: Uniqueness collision resolved: 'auto-slug-test-journey-3'
+            - Auto-slug generation and uniqueness handling working correctly
+            
+            TEST 5 - PATCH /api/admin/journeys/{id} WITH B1 FIELDS: ✓ PASSED
+            - Created journey with original B1 field values
+            - PATCH request updated all 7 B1 fields
+            - All fields round-tripped correctly (slug, hero_media_id, body_html, seo_title, seo_description, status, type)
+            - Updated journey accessible via new slug
+            
+            TEST 6 - DRAFT HIDING: ✓ PASSED
+            - Created published journey, visible in GET /api/journeys
+            - Published journey accessible via GET /api/tours/{slug}
+            - Changed status to 'draft'
+            - Draft journey hidden from GET /api/journeys
+            - Draft journey returns 404 on GET /api/tours/{slug}
+            - Draft hiding working correctly
+            
+            TEST 7 - include_drafts FLAG: ✓ PASSED
+            - Created draft journey
+            - Draft hidden from GET /api/journeys (without flag)
+            - Draft visible in GET /api/journeys?include_drafts=true
+            - include_drafts flag working correctly
+            
+            TEST 8 - ADMIN LIST ALL: ✓ PASSED
+            - GET /api/admin/journeys lists all journeys including drafts and inactive
+            - Created draft journey, visible in admin list
+            - Created inactive journey, visible in admin list
+            - Admin endpoint correctly lists everything
+            
+            TEST 9 - MEDIA REGRESSION CHECK: ✓ PASSED
+            - GET /api/media returns 237 items (expected 237)
+            - No regression in media count
+            
+            CLEANUP: ✓ COMPLETE
+            - Deleted all 11 test journeys created during testing
+            - Database returned to original state
+            
+            ALL B1 FEATURES VERIFIED AND WORKING:
+            ✓ Extended Journey schema with 7 new fields (slug, hero_media_id, body_html, seo_title, seo_description, status, type)
+            ✓ GET /api/tours/{slug} endpoint with proper 200/404 handling
+            ✓ Slug auto-generation from name when blank
+            ✓ Slug uniqueness collision handling (slug-2, slug-3, etc.)
+            ✓ Draft hiding from public endpoints
+            ✓ include_drafts=true flag for admin/preview
+            ✓ Admin endpoints list all rows including drafts and inactive
+            ✓ No regression in existing endpoints (media count stable at 237)
+            
+            Tours sub-pages B1 backend is production-ready.
+
 metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 1
+  test_sequence: 2
   run_ui: false
 
 test_plan:
-  current_focus: []
+  current_focus:
+    - "Tours sub-pages B1: extended Journey schema + /api/tours/{slug} endpoint + slug uniqueness + draft hiding"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -1328,3 +1452,104 @@ agent_communication:
       CONCLUSION: The admin-managed collections feature is production-ready. All backend APIs working correctly.
       
       No action items for main agent - all requirements met.
+
+    - agent: "main"
+      message: |
+        Session B1 (Tours sub-pages) was paused mid-flight. Code is shipped to disk
+        but NOT end-to-end verified. Please test ONLY the journey/tour endpoints
+        described under the new task "Tours sub-pages B1: extended Journey schema +
+        /api/tours/{slug} endpoint + slug uniqueness + draft hiding" above.
+
+        Specifically:
+        1. GET /api/journeys returns 4 rows, all with slug/status/type populated.
+        2. GET /api/tours/{slug} returns 200 for published rows; 404 for unknown slug,
+           draft rows, or inactive rows.
+        3. POST /api/admin/journeys persists all 7 B1 fields (slug, hero_media_id,
+           body_html, seo_title, seo_description, status, type). Auto-generated unique
+           slug when slug is blank or duplicated.
+        4. PATCH /api/admin/journeys/{id} round-trips all 7 B1 fields. Flipping
+           status to "draft" hides the row from public list + tours endpoint.
+        5. ?include_drafts=true on public GET /api/journeys returns drafts too
+           (admin/preview use case). If this flag isn't honoured, report back.
+        6. /api/admin/journeys lists everything (including drafts and inactive).
+        7. Regression: media count stays at 237; existing journey CRUD still works.
+
+        Auth: POST /api/auth/login with
+        {"email":"info@oncewerewild.com","password":"ChangeMe-OWW-2026!"}.
+        Backend already up on http://localhost:8001 via supervisor.
+        Please CLEAN UP any rows you create.
+
+  - agent: "testing"
+    message: |
+      ✅ TOURS SUB-PAGES B1 BACKEND TEST COMPLETE - ALL 9 TESTS PASSED
+      
+      Comprehensive backend testing completed for Tours sub-pages B1 feature. All test scenarios passed successfully.
+      
+      TEST RESULTS SUMMARY:
+      
+      1. ✅ STARTUP MIGRATION (TEST 1):
+         - GET /api/journeys returns 4 journeys
+         - All journeys have non-empty slug: maleny-creative-immersion, tasmanian-slow-and-soulful-journeys, western-australian-slow-and-soulful-journeys, corporate-and-custom
+         - All journeys have status='published'
+         - All journeys have type='tour'
+         - Backfill migration working correctly
+      
+      2. ✅ GET /api/tours/{slug} ENDPOINT (TEST 2):
+         - GET /api/tours/maleny-creative-immersion returns 200 with correct data
+         - GET /api/tours/nonexistent-slug-12345 returns 404 (as expected)
+         - Draft journey returns 404 (drafts hidden from public)
+         - Inactive journey returns 404 (inactive hidden from public)
+         - All 4 scenarios working correctly
+      
+      3. ✅ POST /api/admin/journeys WITH B1 FIELDS (TEST 3):
+         - Created journey with all 7 B1 fields (slug, hero_media_id, body_html, seo_title, seo_description, status, type)
+         - All fields persisted correctly in database
+         - Journey accessible via GET /api/tours/{slug}
+      
+      4. ✅ AUTO-SLUG AND UNIQUENESS (TEST 4):
+         - Journey 1: Auto-generated slug from name: 'auto-slug-test-journey'
+         - Journey 2: Uniqueness collision resolved: 'auto-slug-test-journey-2'
+         - Journey 3: Uniqueness collision resolved: 'auto-slug-test-journey-3'
+         - Auto-slug generation and uniqueness handling working correctly
+      
+      5. ✅ PATCH /api/admin/journeys/{id} WITH B1 FIELDS (TEST 5):
+         - Created journey with original B1 field values
+         - PATCH request updated all 7 B1 fields
+         - All fields round-tripped correctly
+         - Updated journey accessible via new slug
+      
+      6. ✅ DRAFT HIDING (TEST 6):
+         - Published journey visible in GET /api/journeys and accessible via GET /api/tours/{slug}
+         - Changed status to 'draft'
+         - Draft journey hidden from GET /api/journeys
+         - Draft journey returns 404 on GET /api/tours/{slug}
+         - Draft hiding working correctly
+      
+      7. ✅ include_drafts FLAG (TEST 7):
+         - Draft hidden from GET /api/journeys (without flag)
+         - Draft visible in GET /api/journeys?include_drafts=true
+         - include_drafts flag working correctly
+      
+      8. ✅ ADMIN LIST ALL (TEST 8):
+         - GET /api/admin/journeys lists all journeys including drafts and inactive
+         - Admin endpoint correctly lists everything
+      
+      9. ✅ MEDIA REGRESSION CHECK (TEST 9):
+         - GET /api/media returns 237 items (expected 237)
+         - No regression in media count
+      
+      CLEANUP: ✓ COMPLETE
+      - Deleted all 11 test journeys created during testing
+      - Database returned to original state
+      
+      ALL B1 FEATURES VERIFIED AND WORKING:
+      ✓ Extended Journey schema with 7 new fields (slug, hero_media_id, body_html, seo_title, seo_description, status, type)
+      ✓ GET /api/tours/{slug} endpoint with proper 200/404 handling
+      ✓ Slug auto-generation from name when blank
+      ✓ Slug uniqueness collision handling (slug-2, slug-3, etc.)
+      ✓ Draft hiding from public endpoints
+      ✓ include_drafts=true flag for admin/preview
+      ✓ Admin endpoints list all rows including drafts and inactive
+      ✓ No regression in existing endpoints (media count stable at 237)
+      
+      Tours sub-pages B1 backend is production-ready. No action items for main agent.
