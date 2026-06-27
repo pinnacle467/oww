@@ -11,9 +11,9 @@ export const BRAND = {
 
 export const NAV_LINKS = [
   { label: "Home", to: "/" },
-  { label: "Journeys", to: "/pricing" },
+  { label: "Tours", to: "/pricing" },
   { label: "Gallery", to: "/gallery" },
-  { label: "About", to: "/about" },
+  { label: "About Us", to: "/about" },
   { label: "Blog", to: "/blog" },
 ];
 

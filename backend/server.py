@@ -2019,11 +2019,11 @@ DEFAULT_CONTENT = [
     # Navigation (5 routes: Home / Journeys / Gallery / About / Blog)
     _c("nav", "nav.0.label", "Home", "Nav 1 label"),
     _c("nav", "nav.0.to", "/", "Nav 1 link"),
-    _c("nav", "nav.1.label", "Journeys", "Nav 2 label"),
+    _c("nav", "nav.1.label", "Tours", "Nav 2 label"),
     _c("nav", "nav.1.to", "/pricing", "Nav 2 link"),
     _c("nav", "nav.2.label", "Gallery", "Nav 3 label"),
     _c("nav", "nav.2.to", "/gallery", "Nav 3 link"),
-    _c("nav", "nav.3.label", "About", "Nav 4 label"),
+    _c("nav", "nav.3.label", "About Us", "Nav 4 label"),
     _c("nav", "nav.3.to", "/about", "Nav 4 link"),
     _c("nav", "nav.4.label", "Blog", "Nav 5 label"),
     _c("nav", "nav.4.to", "/blog", "Nav 5 link"),

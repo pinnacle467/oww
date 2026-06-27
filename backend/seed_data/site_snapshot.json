@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-06-27T09:13:05.881364+00:00",
+  "generated_at": "2026-06-27T09:18:30.879989+00:00",
   "media": [
     {
       "file_url": "/api/uploads/contact-bg/c6213da9b39140b19135fb900221e491.webp",
@@ -4401,7 +4401,8 @@
     },
     {
       "key": "nav.1.label",
-      "value": "Journeys"
+      "value": "Tours",
+      "updated_at": "2026-06-27T09:18:28.870362+00:00"
     },
     {
       "key": "nav.1.to",
@@ -4417,7 +4418,8 @@
     },
     {
       "key": "nav.3.label",
-      "value": "About"
+      "value": "About Us",
+      "updated_at": "2026-06-27T09:18:28.870898+00:00"
     },
     {
       "key": "nav.3.to",
