@@ -1,4 +1,4 @@
-# Once Were Wild Travel - Detailed Handover (v2026-06-27)
+# Once Were Wild Travel - Detailed Handover (v2026-06-27, Session B1 paused mid-flight)
 
 > **Loading instructions for the next agent:**
 > 1. Pull the GitHub repo (`pinnacle467/oww`, branch `main`) into `/app` - that's the source of truth for **all code**.
@@ -6,6 +6,7 @@
 > 3. Immediately run the LIVE-SYNC sequence at the bottom of this doc (`python3 /app/backend/sync_from_live.py`) - that pulls **every DB row, every image, every video** from production at https://oncewerewild.com into your preview environment so you're working against real data, not an empty shell.
 > 4. The sync script + repo together cost **< 10 credits** to re-hydrate the entire project; do not rebuild any of the features below from scratch.
 > 5. **Respond to the user in English only.** They have explicitly disliked em dashes ("—") in user-facing copy - never use them in DB content, SEO text, alt text, JSON-LD, or seeded examples. Hyphens (`-`), commas, or colons are fine.
+> 6. **▶︎ START HERE for this hand-off:** read **Section 2 entry "R. Tours sub-pages + nav dropdown"** below. That session (B1 of Changes 4-7) was paused mid-flight to preserve credits. The code is shipped to disk but not visually verified end-to-end. The "Where we paused" + "B1 outstanding items the next agent MUST do FIRST" sub-headings under entry R tell you the exact next actions. **Do NOT start B2 work until B1 is verified, tested, and shipped to live.**
 
 ---
 
@@ -21,6 +22,77 @@
 ---
 
 ## 2. What's been built (chronological, most recent first)
+
+### R. Tours sub-pages + nav dropdown (2026-06-27, Session B1 of Changes 4-7 — **PAUSED MID-FLIGHT, all code shipped but NOT end-to-end verified, see "Where we paused" below**)
+
+**What this session delivered:** every existing tour now has a real content sub-page at `/tours/<slug>` (no more PDF-only links), a Tours dropdown in the navbar listing live tours, and the existing `JourneysManager` admin form is extended with all the B1 fields (slug, hero image, rich-text body, SEO, draft/published status). The 4 existing journeys were auto-migrated to the new schema on backend startup with sensible slugs and `status="published"` so the live site keeps working from second zero.
+
+**Backend changes (`backend/server.py`):**
+- Extended `JourneyInput` and `JourneyUpdate` Pydantic models with 7 new optional fields:
+  - `slug` (auto-generated from name if blank, kept unique via `_unique_slug` helper)
+  - `hero_media_id` (string ID linking to a row in the `media` collection)
+  - `body_html` (TipTap rich-text output for the sub-page body)
+  - `seo_title`, `seo_description` (override `<title>` and meta description; fall back to name + summary)
+  - `status` ("published" | "draft" — drafts are 404'd by public endpoints)
+  - `type` ("tour" | "retreat" — **`retreat` is reserved for B2**, all rows default to `"tour"`)
+- New helper `_slugify(text)` and `async _unique_slug(base, exclude_id=None)` in `backend/server.py` (search for `# ---- Slug helpers`). Both are used by create/update endpoints and by the startup migration.
+- New endpoint `GET /api/tours/{slug}` — public, filters `is_active=True` AND `status="published"` (or status missing for legacy rows). 404s on drafts so unpublished work never leaks.
+- `GET /api/journeys` now accepts an optional `?include_drafts=true` flag. Default (no flag) hides drafts and inactive rows. The Tours dropdown uses default behaviour. Admin still uses `/api/admin/journeys` which lists everything.
+- Startup migration in `seed()`: every row that's missing `slug`, `status`, or `type` gets backfilled in place. Idempotent — runs every startup but only touches rows that need it. Logs `"Backfilled N legacy journey rows with slug/status/type"` on first run.
+- The `journeys` collection was already in `_write_snapshot_now()` / `_apply_snapshot()` so no snapshot plumbing changes needed.
+
+**Frontend public (`frontend/src/`):**
+- New page `pages/TourDetail.jsx` — full layout: PageHero with hero image (resolved via `/api/media`), key-details strip (nights | region | dates), rich-text body OR summary fallback, price block (when set), Enquire Now + Download PDF CTAs, "View all tours" back-link. Has its own `<Seo>` block with `TouristTrip` JSON-LD. Handles loading + 404 states cleanly.
+- New component `components/layout/ToursDropdown.jsx` — mouse-hover + focus dropdown with a 160ms close timer, fetches `/api/journeys` once, filters `type === "tour" || !type` and `slug` present, lists each tour + a "View all tours" footer link to `/pricing`.
+- `components/layout/Navbar.jsx` — when a nav link's `to === "/pricing"` it now renders `<ToursDropdown />` instead of a plain `<Link>`. All other nav links unchanged. Mobile nav unchanged (drawer still has a single Tours link, no sub-items — by design, mobile users tap through to /pricing).
+- `pages/Pricing.jsx` — each card now shows a "Find Out More →" link below the Enquire CTA when the row has a `slug`. Variable rename: the local `slug` (used for content-key lookup) is now `contentKey` to avoid clashing with the new URL slug field. Public data shape gets a new `urlSlug` property.
+- `App.js` — added `const TourDetail = lazy(() => import("@/pages/TourDetail"))` and `<Route path="/tours/:slug" element={...} />` directly under the existing `/pricing` route.
+
+**Admin (`frontend/src/pages/admin/JourneysManager.jsx`):**
+- `EMPTY_DRAFT` extended with the 7 new fields (default `status: "published"`).
+- `saveRow()` now sends all 7 B1 fields on every PATCH.
+- The shared `<DraftFields>` component (used for both the new-trip form and editing existing rows) gets a new section at the bottom under a `border-t` divider titled "Tour sub-page" containing:
+  - URL slug input (with a hint that it auto-generates from name if blank)
+  - Status `<select>` dropdown (Published | Draft)
+  - Hero image media ID text input (asks operator to paste an ID from `/admin/website-media`)
+  - SEO title + SEO meta description fields
+  - Full `<RichTextEditor>` (the same TipTap component used by blog and FAQs) for `body_html`
+- Each existing row also gets a small "View /tours/`<slug>`" external-link button under the form so the operator can preview the live result with one click.
+
+**Verified end-to-end:**
+- ✅ Backend compiles, restarts cleanly, migration ran (logged `Backfilled 4 legacy journey rows`).
+- ✅ `/api/tours/tasmanian-slow-and-soulful-journeys` returns HTTP 200 with the full doc.
+- ✅ `/api/journeys` lists all 4 tours with `slug`, `status="published"`, `type="tour"` populated.
+- ✅ Frontend serves `http://localhost:3000/tours/tasmanian-slow-and-soulful-journeys` with HTTP 200.
+- ✅ All edited files lint clean (Pricing, Navbar, ToursDropdown, TourDetail, JourneysManager).
+
+**Where we paused (read this before doing anything):**
+The user stopped me mid-session to conserve credits and asked me to document the exact state for the next agent. The work above is **shipped to disk but I did NOT visually verify in the browser** that:
+  1. The Tours dropdown actually appears on hover over the "Tours" nav link.
+  2. The "Find Out More" link renders on each /pricing card.
+  3. The `/tours/<slug>` page renders correctly without a hero image (since none of the 4 existing tours have `hero_media_id` set yet — the `TourDetail` page should fall back to `null` and PageHero should render its dark `bg-ink` background with no image).
+  4. The admin `JourneysManager` shows the new "Tour sub-page" section in the drawer correctly and TipTap loads.
+  5. Saving a row via the admin actually persists the new fields (backend test agent was NOT run for this session — skipped to save credits).
+
+**B1 outstanding items the next agent MUST do FIRST (before starting B2):**
+1. **Visual smoke test the four points above in the preview environment.** Login at `/admin/login` with `info@oncewerewild.com` / the password stored in `/app/memory/test_credentials.md`. Open `/admin/journeys` and try editing one of the 4 existing rows — paste a hero media ID (you can copy one from `/admin/website-media` — pick anything with `section: "hero"` or `"gallery-hero"`), write a short body in the TipTap editor, save, then click the "View /tours/..." link to confirm it renders.
+2. **Run `deep_testing_backend_v2`** on the journey endpoints specifically to verify all B1 fields roundtrip through PATCH/POST and GET correctly, the slug uniqueness check works, and drafts are correctly hidden from the public `/api/journeys` and `/api/tours/<slug>` endpoints.
+3. **Update `backend/seed_data/site_snapshot.json`** — the snapshot was last regenerated before B1. After confirming the 4 journeys look right in the live DB and the slugs/status/type all match what you want shipped to live, restart the backend and a fresh snapshot will be written by `schedule_snapshot()` on the first PATCH. Or run `python3 -c "import asyncio; from server import _write_snapshot_now; asyncio.run(_write_snapshot_now())"` (TODO: verify that import path works; may need to invoke as a module).
+4. **Ship B1 to live** before starting B2 so the user gets the user-visible win sooner. The deploy path is unchanged: push to GitHub from preview, then on Bluehost `bash scripts/safe-pull.sh && ./deploy.sh`.
+
+**B2 scope, untouched (start AFTER B1 is verified + shipped):**
+- **Photo gallery on tour pages:** add `gallery_media_ids: List[str]` to `JourneyInput`/`JourneyUpdate`. Admin gets a multi-image picker + drag-reorder UI (the current `WebsiteMediaManager` admin page has a similar grid pattern to copy from). `TourDetail.jsx` renders the gallery using responsive srcset just below the body. Build a new `<TourGallery />` component.
+- **Split body into 3 rich-text fields** (low risk, optional): rename `body_html` to `description_html`, add `itinerary_html` and `practical_html`. Admin gets 3 TipTap editors with H3 dividers between them. `TourDetail.jsx` renders each one with a sticky-ish in-page nav. **WARNING:** if you do this, write a migration that copies existing `body_html` → `description_html` and removes `body_html`. Or alias both at the API level for one release.
+- **Duplicate button on the admin row:** clones the current row to a fresh draft with `status: "draft"`, `slug: <existing>-copy` (use `_unique_slug` to ensure uniqueness), and identical content. Sits next to Delete.
+- **Preview button:** generates a short-lived preview token, opens `/tours/<slug>?preview=<token>`. New endpoint `GET /api/tours/{slug}?preview=<token>` validates the token against the journey row and returns the doc even if `status="draft"`. Token stored on the journey row, regenerated on each Preview click. NOTE: simpler alternative is to just have the admin click "View" while editing as Draft and check status code 404; the Preview button is the proper UX but skip if credits are tight.
+- **Corporate Retreats — use the existing `type` field, do NOT make a parallel collection:**
+  - Admin filter tabs at the top of `JourneysManager`: "Tours" / "Corporate Retreats" — filters items by `type`. When creating a new row from the Retreats tab, default `type: "retreat"`.
+  - New public route `/retreats/<slug>` (or `/corporate-retreats/<slug>` if more SEO-friendly — confirm with user) wired to the SAME `TourDetail.jsx` component (reuses everything; the only difference is the URL).
+  - New `<RetreatsDropdown />` component in the navbar, identical shape to `<ToursDropdown />` but filters `type === "retreat"`. Sits next to the Tours dropdown.
+  - New endpoint `GET /api/retreats/{slug}` (or extend `GET /api/tours/{slug}` to also match `type="retreat"` — your call). Public list `GET /api/retreats` filtering by `type="retreat"`.
+  - Decide what to do with the existing "Maleny Creative Immersion" row — **THIS IS Q4 FROM THE USER, STILL UNANSWERED.** Three options: re-tag to `type="retreat"` (single source of truth), leave as Tour and create a separate brand-new Maleny Corporate Retreat row, or just plumb the data model and let the user decide in admin. ASK the user this before writing the migration.
+- **Add `nav.7.label` and `nav.7.to`** content keys for the Corporate Retreats nav entry so the operator can rename it.
+- **Frontend testing pass** after all the above with `deep_testing_frontend_v2` (but only after asking the user).
 
 ### Q. Home page: "Questions Gently Answered" FAQ + extended content sections + Tours CTA (2026-06-27, Session A of Changes 4-7)
 - New backend collections: `home_faqs` and `home_sections`. Both have full CRUD endpoints under `/api/admin/...` plus public read endpoints (filter by `is_visible=true`, sorted by `sort_order`):

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import axios from "axios";
-import { Check, Download } from "lucide-react";
+import { Check, Download, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PageHero } from "@/components/layout/PageHero";
 import { SectionHeading } from "@/components/ui/SectionHeading";
@@ -50,26 +51,29 @@ export default function Pricing() {
   // use that. Otherwise fall back to the hardcoded JOURNEYS so the page
   // never goes blank if the API is unreachable.
   const journeys = (adminJourneys || JOURNEYS).map((j) => {
-    // Admin docs use a uuid `id`; the legacy hardcoded list uses slugs
-    // like "maleny" — both supported so existing content-key edits
-    // continue to work for the original 3 entries.
-    const slug = j.id || "";
+    // `contentKey` is the lookup prefix for editable text overrides (uses the
+    // row id or legacy slug). `urlSlug` is the new B1 field driving the sub-
+    // page URL at /tours/<urlSlug>. Falls back to the row id so the legacy
+    // hardcoded JOURNEYS still work even before the backend backfill ran.
+    const contentKey = j.id || "";
+    const urlSlug = j.slug || j.id || "";
     const includesArr = Array.isArray(j.includes)
       ? j.includes
       : (typeof j.includes === "string" ? j.includes.split("|").map((s) => s.trim()).filter(Boolean) : []);
     return {
       ...j,
-      name:       content[`journeys.${slug}.name`]      || j.name,
-      region:     content[`journeys.${slug}.region`]    || j.region,
-      nights:     content[`journeys.${slug}.nights`]    || j.nights,
-      dates:      content[`journeys.${slug}.dates`]     || j.dates,
-      priceFrom:  content[`journeys.${slug}.priceFrom`] || j.priceFrom,
-      priceUnit:  content[`journeys.${slug}.priceUnit`] || j.priceUnit,
-      priceNote:  content[`journeys.${slug}.priceNote`] || j.priceNote,
-      summary:    content[`journeys.${slug}.summary`]   || j.summary,
-      cta:        content[`journeys.${slug}.cta`]       || j.cta,
-      includes:  (content[`journeys.${slug}.includes`]
-                    ? content[`journeys.${slug}.includes`].split("|").map((s) => s.trim()).filter(Boolean)
+      urlSlug,
+      name:       content[`journeys.${contentKey}.name`]      || j.name,
+      region:     content[`journeys.${contentKey}.region`]    || j.region,
+      nights:     content[`journeys.${contentKey}.nights`]    || j.nights,
+      dates:      content[`journeys.${contentKey}.dates`]     || j.dates,
+      priceFrom:  content[`journeys.${contentKey}.priceFrom`] || j.priceFrom,
+      priceUnit:  content[`journeys.${contentKey}.priceUnit`] || j.priceUnit,
+      priceNote:  content[`journeys.${contentKey}.priceNote`] || j.priceNote,
+      summary:    content[`journeys.${contentKey}.summary`]   || j.summary,
+      cta:        content[`journeys.${contentKey}.cta`]       || j.cta,
+      includes:  (content[`journeys.${contentKey}.includes`]
+                    ? content[`journeys.${contentKey}.includes`].split("|").map((s) => s.trim()).filter(Boolean)
                     : includesArr),
       itineraryUrl: j.itinerary_url || j.itineraryUrl || "",
       itineraryFilename: j.itinerary_filename || j.itineraryFilename || "",
@@ -179,6 +183,20 @@ export default function Pricing() {
                   <CTAButton to="/contact" variant={j.popular ? "filled" : "gold"} withArrow className="w-full" data-testid={`pricing-cta-${j.id}`}>
                     {j.cta}
                   </CTAButton>
+
+                  {/* B1 sub-page link - opens /tours/<slug>. Only renders when
+                      the journey has a URL slug (i.e. came from the admin API
+                      with the B1 backfill applied). Quiet, no chrome. */}
+                  {j.urlSlug && (
+                    <Link
+                      to={`/tours/${j.urlSlug}`}
+                      className="mt-3 inline-flex items-center justify-center gap-2 text-xs font-accent uppercase tracking-label text-nature-deep hover:text-gold transition-colors duration-200 group"
+                      data-testid={`pricing-find-out-more-${j.id}`}
+                    >
+                      <span>Find Out More</span>
+                      <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                    </Link>
+                  )}
 
                   {/* Quiet secondary CTA — only renders when the admin has
                       uploaded a PDF itinerary for this journey. Stays out

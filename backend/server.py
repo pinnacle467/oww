@@ -1033,6 +1033,14 @@ class JourneyInput(BaseModel):
     includes: List[str] = Field(default_factory=list)
     cta: str = "Enquire"
     is_active: bool = True
+    # B1 additions - drive the new /tours/<slug> sub-pages and the nav dropdown.
+    slug: str = ""                 # if blank, auto-generated from `name`
+    hero_media_id: str = ""        # links to media.id; empty means use a placeholder
+    body_html: str = ""            # TipTap rich-text body for the sub-page
+    seo_title: str = ""            # <title> tag; falls back to name when blank
+    seo_description: str = ""      # meta description; falls back to summary when blank
+    status: str = "published"      # "draft" or "published" - drafts hidden from public
+    type: str = "tour"             # "tour" or "retreat" - retreat is reserved for B2
 
 
 class JourneyUpdate(BaseModel):
@@ -1049,6 +1057,13 @@ class JourneyUpdate(BaseModel):
     includes: Optional[List[str]] = None
     cta: Optional[str] = None
     is_active: Optional[bool] = None
+    slug: Optional[str] = None
+    hero_media_id: Optional[str] = None
+    body_html: Optional[str] = None
+    seo_title: Optional[str] = None
+    seo_description: Optional[str] = None
+    status: Optional[str] = None
+    type: Optional[str] = None
 
 
 class JourneyReorder(BaseModel):
@@ -1061,16 +1076,67 @@ def _journey_view(doc: dict) -> dict:
     return doc
 
 
+# ---- Slug helpers (B1 - sub-pages at /tours/<slug>) -------------------------
+import re as _re_slug
+
+def _slugify(text: str) -> str:
+    """Slugify to a-z0-9-, collapse repeats, max 80 chars. Strict so URLs are
+    stable across browsers and case-insensitive lookups never collide."""
+    if not text:
+        return ""
+    s = text.strip().lower()
+    s = _re_slug.sub(r"[^a-z0-9]+", "-", s)
+    s = _re_slug.sub(r"-+", "-", s).strip("-")
+    return s[:80]
+
+
+async def _unique_slug(base: str, exclude_id: Optional[str] = None) -> str:
+    """Return `base` if free, else base-2, base-3, ... Skip the row with
+    `exclude_id` (used on PATCH so a row doesn't collide with itself)."""
+    if not base:
+        base = "tour"
+    candidate = base
+    i = 2
+    while True:
+        q = {"slug": candidate}
+        if exclude_id:
+            q["id"] = {"$ne": exclude_id}
+        existing = await db.journeys.find_one(q, {"_id": 0, "id": 1})
+        if not existing:
+            return candidate
+        candidate = f"{base}-{i}"
+        i += 1
+
+
 @api_router.get("/journeys")
-async def list_journeys():
-    """Public list of active journeys, sorted by `sort_order`. The
-    /pricing page consumes this. Inactive journeys are hidden from the
-    public site but still visible in the admin."""
+async def list_journeys(include_drafts: bool = False):
+    """Public list of active journeys, sorted by `sort_order`. The /pricing
+    page and the Tours nav dropdown both consume this. By default drafts and
+    inactive rows are hidden; set `include_drafts=true` from authenticated
+    admin contexts only."""
+    query: dict = {"is_active": True}
+    if not include_drafts:
+        # status field may be missing on legacy rows - allow both
+        query["$or"] = [{"status": "published"}, {"status": {"$exists": False}}]
     out = []
-    cursor = db.journeys.find({"is_active": True}).sort([("sort_order", 1), ("created_at", 1)])
+    cursor = db.journeys.find(query).sort([("sort_order", 1), ("created_at", 1)])
     async for row in cursor:
         out.append(_journey_view(row))
     return out
+
+
+@api_router.get("/tours/{slug}")
+async def get_tour_by_slug(slug: str):
+    """Public single-tour fetch by slug. Used by /tours/<slug> detail page.
+    Drafts and inactive rows are 404'd so unpublished work never leaks."""
+    doc = await db.journeys.find_one({
+        "slug": slug,
+        "is_active": True,
+        "$or": [{"status": "published"}, {"status": {"$exists": False}}],
+    })
+    if not doc:
+        raise HTTPException(status_code=404, detail="Tour not found")
+    return _journey_view(doc)
 
 
 @api_router.get("/admin/journeys")
@@ -1085,9 +1151,12 @@ async def admin_list_journeys(admin: dict = Depends(get_current_admin)):
 @api_router.post("/admin/journeys")
 async def admin_create_journey(data: JourneyInput, admin: dict = Depends(get_current_admin)):
     next_order = await db.journeys.count_documents({})
+    payload = data.model_dump()
+    base_slug = _slugify(payload.get("slug") or payload.get("name") or "")
+    payload["slug"] = await _unique_slug(base_slug or "tour")
     doc = {
         "id": str(uuid.uuid4()),
-        **data.model_dump(),
+        **payload,
         "itinerary_url": "",
         "itinerary_filename": "",
         "sort_order": next_order,
@@ -1104,6 +1173,15 @@ async def admin_update_journey(jid: str, data: JourneyUpdate, admin: dict = Depe
     update = {k: v for k, v in data.model_dump().items() if v is not None}
     if not update:
         return {"message": "Nothing to update"}
+    if "slug" in update:
+        update["slug"] = await _unique_slug(_slugify(update["slug"]) or "tour", exclude_id=jid)
+    elif "name" in update:
+        # If the name changed but no explicit slug was provided AND the current
+        # row has no slug yet, derive one. Existing slugs are NOT auto-rewritten
+        # on name change because that would break inbound links and SEO.
+        existing = await db.journeys.find_one({"id": jid}, {"slug": 1, "_id": 0})
+        if existing and not (existing.get("slug") or "").strip():
+            update["slug"] = await _unique_slug(_slugify(update["name"]) or "tour", exclude_id=jid)
     update["updated_at"] = now_iso()
     res = await db.journeys.update_one({"id": jid}, {"$set": update})
     if res.matched_count == 0:
@@ -3009,6 +3087,32 @@ async def seed():
             {"itinerary_url": {"$exists": False}},
             {"$set": {"itinerary_url": "", "itinerary_filename": ""}},
         )
+
+    # B1 migration - backfill the sub-page fields on every existing journey.
+    # Idempotent: only touches rows that don't already have the field. Runs on
+    # every startup so freshly-pulled-from-live snapshots get patched too.
+    legacy_rows = await db.journeys.find(
+        {"$or": [
+            {"slug": {"$exists": False}}, {"slug": ""},
+            {"status": {"$exists": False}},
+            {"type": {"$exists": False}},
+        ]},
+        {"_id": 0, "id": 1, "name": 1, "slug": 1, "status": 1, "type": 1},
+    ).to_list(length=500)
+    for row in legacy_rows:
+        patch: dict = {}
+        if not (row.get("slug") or "").strip():
+            base = _slugify(row.get("name") or "tour")
+            patch["slug"] = await _unique_slug(base or "tour", exclude_id=row["id"])
+        if not row.get("status"):
+            patch["status"] = "published"
+        if not row.get("type"):
+            patch["type"] = "tour"
+        if patch:
+            patch["updated_at"] = now_iso()
+            await db.journeys.update_one({"id": row["id"]}, {"$set": patch})
+    if legacy_rows:
+        logger.info("Backfilled %d legacy journey rows with slug/status/type", len(legacy_rows))
 
     # Seed default home FAQs ("Questions Gently Answered"). Idempotent — only
     # inserts if the collection is empty so the client's edits are never lost.

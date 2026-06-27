@@ -4,6 +4,7 @@ import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NAV_LINKS } from "@/data/content";
 import { useContent, useText } from "@/context/ContentContext";
+import { ToursDropdown } from "@/components/layout/ToursDropdown";
 
 export function Navbar() {
   const location = useLocation();
@@ -87,20 +88,37 @@ export function Navbar() {
           </Link>
 
           <div className="hidden items-center gap-9 lg:flex">
-            {links.map((l) => (
-              <Link
-                key={l.to}
-                to={l.to}
-                className={cn(
-                  "font-accent text-base font-medium uppercase tracking-[0.12em] transition-colors duration-300 relative after:absolute after:-bottom-1.5 after:left-0 after:h-px after:bg-gold after:transition-all after:duration-300",
-                  location.pathname === l.to ? "after:w-full" : "after:w-0 hover:after:w-full",
-                  solid ? "text-ink hover:text-nature-mid" : "text-white hover:text-white text-shadow-soft"
-                )}
-                data-testid={`nav-link-${l.label.toLowerCase()}`}
-              >
-                {l.label}
-              </Link>
-            ))}
+            {links.map((l) => {
+              // The Tours nav item gets a dropdown of published tours. We
+              // detect it by the destination (/pricing - the Tours index) so
+              // the dropdown also kicks in if the client renames the label
+              // in /admin/website-text.
+              if (l.to === "/pricing") {
+                return (
+                  <ToursDropdown
+                    key={l.to}
+                    solid={solid}
+                    currentPath={location.pathname}
+                    parentLabel={l.label}
+                    parentTo={l.to}
+                  />
+                );
+              }
+              return (
+                <Link
+                  key={l.to}
+                  to={l.to}
+                  className={cn(
+                    "font-accent text-base font-medium uppercase tracking-[0.12em] transition-colors duration-300 relative after:absolute after:-bottom-1.5 after:left-0 after:h-px after:bg-gold after:transition-all after:duration-300",
+                    location.pathname === l.to ? "after:w-full" : "after:w-0 hover:after:w-full",
+                    solid ? "text-ink hover:text-nature-mid" : "text-white hover:text-white text-shadow-soft"
+                  )}
+                  data-testid={`nav-link-${l.label.toLowerCase()}`}
+                >
+                  {l.label}
+                </Link>
+              );
+            })}
           </div>
 
           <div className="flex items-center gap-3">

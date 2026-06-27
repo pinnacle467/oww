@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef } from "react";
 import api, { formatApiError } from "@/lib/api";
 import { AdminShell } from "@/components/admin/AdminShell";
-import { Plus, Trash2, Save, Upload, Download, X, ChevronUp, ChevronDown, Star, StarOff } from "lucide-react";
+import RichTextEditor from "@/components/editor/RichTextEditor";
+import { Plus, Trash2, Save, Upload, Download, X, ChevronUp, ChevronDown, Star, StarOff, ExternalLink } from "lucide-react";
 
 // Trip cards on the public /pricing page. Each row in this manager corresponds
 // to one card on the live site. Edits are saved per-row via PATCH so an
@@ -20,6 +21,13 @@ const EMPTY_DRAFT = {
   cta: "Enquire",
   popular: false,
   is_active: true,
+  // B1 sub-page fields - drive /tours/<slug> detail pages and the nav dropdown.
+  slug: "",                // auto-generated server-side from name if blank
+  hero_media_id: "",       // links to an existing /admin/website-media entry by id
+  body_html: "",           // TipTap rich-text body for the sub-page
+  seo_title: "",
+  seo_description: "",
+  status: "published",     // "draft" or "published"
 };
 
 function includesToArray(text) {
@@ -74,6 +82,13 @@ export default function JourneysManager() {
         cta: j.cta,
         popular: !!j.popular,
         is_active: !!j.is_active,
+        // B1 sub-page fields
+        slug: j.slug || "",
+        hero_media_id: j.hero_media_id || "",
+        body_html: j.body_html || "",
+        seo_title: j.seo_title || "",
+        seo_description: j.seo_description || "",
+        status: j.status || "published",
       });
       await load();
     } catch (e) {
@@ -278,9 +293,30 @@ export default function JourneysManager() {
                     priceNote: j.priceNote || "", summary: j.summary || "",
                     includes: j._includesText || "", cta: j.cta || "Enquire",
                     popular: !!j.popular, is_active: !!j.is_active,
+                    slug: j.slug || "", hero_media_id: j.hero_media_id || "",
+                    body_html: j.body_html || "", seo_title: j.seo_title || "",
+                    seo_description: j.seo_description || "", status: j.status || "published",
                   }}
                   onChange={(p) => updateLocal(j.id, p.includes !== undefined ? { _includesText: p.includes } : p)}
+                  rowId={j.id}
                 />
+
+                {/* B1 - quick link to the public sub-page so the operator can
+                    review the change without leaving the admin. Only shows
+                    when the row has a published slug. */}
+                {j.slug && (
+                  <div className="mt-3 -mb-2">
+                    <a
+                      href={`/tours/${j.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-xs text-[#2E6DA4] hover:underline"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      View /tours/{j.slug}
+                    </a>
+                  </div>
+                )}
 
                 {/* PDF itinerary block */}
                 <div className="mt-6 pt-5 border-t border-gray-100">
@@ -351,7 +387,7 @@ function Field({ label, k, value, onChange, ...rest }) {
   );
 }
 
-function DraftFields({ value, onChange }) {
+function DraftFields({ value, onChange, rowId }) {
   return (
     <div className="grid sm:grid-cols-2 gap-4">
       <Field label="Trip name *" k="name" value={value.name} onChange={onChange} />
@@ -363,7 +399,7 @@ function DraftFields({ value, onChange }) {
       <Field label="Price note (smallest)" k="priceNote" value={value.priceNote} onChange={onChange} placeholder="Single from $4,750 per person" />
       <Field label="CTA button text" k="cta" value={value.cta} onChange={onChange} placeholder="Enquire about Maleny" />
       <label className="sm:col-span-2 block">
-        <span className="block text-sm font-medium text-gray-600 mb-1">Summary (1-2 sentences)</span>
+        <span className="block text-sm font-medium text-gray-600 mb-1">Summary (1-2 sentences, shown on the trip card)</span>
         <textarea
           rows={2}
           className="w-full px-3 py-2 border border-gray-300 rounded focus:border-[#2D4A3E] focus:outline-none focus:ring-1 focus:ring-[#2D4A3E]/40"
@@ -390,6 +426,49 @@ function DraftFields({ value, onChange }) {
         />
         <span className="text-sm text-gray-700">Visible on the public /pricing page</span>
       </label>
+
+      {/* ---- B1: Sub-page content for /tours/<slug> ---------------------- */}
+      <div className="sm:col-span-2 mt-4 pt-5 border-t border-gray-200">
+        <h3 className="text-base font-semibold text-[#1C1C1C] mb-1">Tour sub-page</h3>
+        <p className="text-sm text-gray-500 mb-4">
+          The standalone page at <span className="font-mono text-xs">/tours/{value.slug || "..."}</span>. Leave the body empty and the page will simply show the summary above.
+        </p>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <Field label="URL slug (auto if blank)" k="slug" value={value.slug} onChange={onChange} placeholder="e.g. tasmanian-tour" />
+          <label className="block">
+            <span className="block text-sm font-medium text-gray-600 mb-1">Status</span>
+            <select
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:border-[#2D4A3E] focus:outline-none focus:ring-1 focus:ring-[#2D4A3E]/40 bg-white"
+              value={value.status || "published"}
+              onChange={(e) => onChange({ status: e.target.value })}
+            >
+              <option value="published">Published (visible)</option>
+              <option value="draft">Draft (hidden)</option>
+            </select>
+          </label>
+          <Field label="Hero image media ID (optional)" k="hero_media_id" value={value.hero_media_id} onChange={onChange} placeholder="Copy a media id from /admin/website-media" />
+          <Field label="SEO title (browser tab)" k="seo_title" value={value.seo_title} onChange={onChange} placeholder="Falls back to trip name" />
+          <label className="sm:col-span-2 block">
+            <span className="block text-sm font-medium text-gray-600 mb-1">SEO meta description</span>
+            <textarea
+              rows={2}
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:border-[#2D4A3E] focus:outline-none focus:ring-1 focus:ring-[#2D4A3E]/40"
+              value={value.seo_description || ""}
+              onChange={(e) => onChange({ seo_description: e.target.value })}
+              placeholder="Falls back to the summary above. Aim for 140 to 160 characters."
+            />
+          </label>
+          <div className="sm:col-span-2">
+            <span className="block text-sm font-medium text-gray-600 mb-1">Sub-page body (rich text)</span>
+            <RichTextEditor
+              value={value.body_html || ""}
+              onChange={(html) => onChange({ body_html: html })}
+              placeholder="The main content of the /tours/<slug> page. Use the toolbar for headings, lists, links and inline images."
+              testIdPrefix={`journey-body-${rowId || "new"}`}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
