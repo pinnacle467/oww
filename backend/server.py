@@ -1484,6 +1484,245 @@ async def admin_upload_story_cover(
     return {"cover_url": file_url, "cover_srcset": srcset, "cover_avif_srcset": avif_srcset, "cover_lqip": lqip}
 
 
+# ============================== Blog (standalone /blog) =======================
+# Public blog separate from Stories on the About page. Posts have a slug,
+# featured image (optional), excerpt, rich-text HTML body, draft/published
+# status and a free-form published_date string. Posts are auto-sorted
+# newest-first by published_date.
+
+import re as _re_slug
+
+
+class BlogPostInput(BaseModel):
+    title: str
+    published_date: str = ""        # ISO date string (YYYY-MM-DD); blank => "today"
+    excerpt: str = ""
+    body: str = ""                  # HTML produced by the admin TipTap editor
+    status: str = "draft"           # "draft" | "published"
+
+
+class BlogPostUpdate(BaseModel):
+    title: Optional[str] = None
+    published_date: Optional[str] = None
+    excerpt: Optional[str] = None
+    body: Optional[str] = None
+    status: Optional[str] = None
+
+
+def _slugify(text: str) -> str:
+    s = _re_slug.sub(r"[^a-zA-Z0-9\s-]", "", (text or "").lower()).strip()
+    s = _re_slug.sub(r"[\s_-]+", "-", s).strip("-")
+    return s or uuid.uuid4().hex[:8]
+
+
+async def _unique_blog_slug(base_slug: str, exclude_id: Optional[str] = None) -> str:
+    slug = base_slug
+    n = 2
+    while True:
+        q = {"slug": slug}
+        if exclude_id:
+            q["id"] = {"$ne": exclude_id}
+        existing = await db.blog_posts.find_one(q, {"_id": 0, "id": 1})
+        if not existing:
+            return slug
+        slug = f"{base_slug}-{n}"
+        n += 1
+
+
+def _blog_view(doc: dict) -> dict:
+    doc.pop("_id", None)
+    return doc
+
+
+def _normalise_published_date(value: Optional[str]) -> str:
+    """Accept YYYY-MM-DD or anything else; if blank, default to today."""
+    if value and isinstance(value, str) and value.strip():
+        return value.strip()
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+
+@api_router.get("/blog")
+async def list_blog_posts():
+    """Public list of published posts, newest first."""
+    out = []
+    cursor = db.blog_posts.find({"status": "published"}).sort([
+        ("published_date", -1), ("created_at", -1),
+    ])
+    async for row in cursor:
+        out.append(_blog_view(row))
+    return out
+
+
+@api_router.get("/blog/{slug}")
+async def get_blog_post(slug: str):
+    """Public single post by slug (or id fallback)."""
+    row = await db.blog_posts.find_one({"slug": slug, "status": "published"})
+    if not row:
+        row = await db.blog_posts.find_one({"id": slug, "status": "published"})
+    if not row:
+        raise HTTPException(status_code=404, detail="Post not found")
+    return _blog_view(row)
+
+
+@api_router.get("/admin/blog")
+async def admin_list_blog_posts(admin: dict = Depends(get_current_admin)):
+    out = []
+    cursor = db.blog_posts.find({}).sort([
+        ("published_date", -1), ("created_at", -1),
+    ])
+    async for row in cursor:
+        out.append(_blog_view(row))
+    return out
+
+
+@api_router.get("/admin/blog/{pid}")
+async def admin_get_blog_post(pid: str, admin: dict = Depends(get_current_admin)):
+    row = await db.blog_posts.find_one({"id": pid})
+    if not row:
+        raise HTTPException(status_code=404, detail="Post not found")
+    return _blog_view(row)
+
+
+@api_router.post("/admin/blog")
+async def admin_create_blog_post(data: BlogPostInput, admin: dict = Depends(get_current_admin)):
+    title = data.title.strip()
+    if not title:
+        raise HTTPException(status_code=400, detail="Title is required")
+    status = data.status if data.status in ("draft", "published") else "draft"
+    slug = await _unique_blog_slug(_slugify(title))
+    doc = {
+        "id": str(uuid.uuid4()),
+        "slug": slug,
+        "title": title,
+        "published_date": _normalise_published_date(data.published_date),
+        "excerpt": data.excerpt or "",
+        "body": data.body or "",
+        "status": status,
+        "featured_url": "",
+        "featured_srcset": {},
+        "featured_avif_srcset": {},
+        "featured_lqip": "",
+        "created_at": now_iso(),
+        "updated_at": now_iso(),
+    }
+    await db.blog_posts.insert_one(doc)
+    await schedule_snapshot()
+    return _blog_view(doc)
+
+
+@api_router.patch("/admin/blog/{pid}")
+async def admin_update_blog_post(pid: str, data: BlogPostUpdate, admin: dict = Depends(get_current_admin)):
+    existing = await db.blog_posts.find_one({"id": pid}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Post not found")
+    update = {k: v for k, v in data.model_dump().items() if v is not None}
+    if not update:
+        return {"message": "Nothing to update"}
+    if "title" in update:
+        new_title = update["title"].strip()
+        if not new_title:
+            raise HTTPException(status_code=400, detail="Title cannot be empty")
+        update["title"] = new_title
+        if _slugify(existing.get("title", "")) != _slugify(new_title):
+            update["slug"] = await _unique_blog_slug(_slugify(new_title), exclude_id=pid)
+    if "status" in update and update["status"] not in ("draft", "published"):
+        raise HTTPException(status_code=400, detail="Status must be draft or published")
+    if "published_date" in update:
+        update["published_date"] = _normalise_published_date(update["published_date"])
+    update["updated_at"] = now_iso()
+    await db.blog_posts.update_one({"id": pid}, {"$set": update})
+    await schedule_snapshot()
+    return {"message": "Updated", "slug": update.get("slug") or existing.get("slug")}
+
+
+@api_router.delete("/admin/blog/{pid}")
+async def admin_delete_blog_post(pid: str, admin: dict = Depends(get_current_admin)):
+    existing = await db.blog_posts.find_one({"id": pid}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Post not found")
+    # Best-effort featured image cleanup.
+    urls = [existing.get("featured_url", "")]
+    urls.extend((existing.get("featured_srcset") or {}).values())
+    urls.extend((existing.get("featured_avif_srcset") or {}).values())
+    for u in urls:
+        if u and u.startswith(UPLOADS_URL_PREFIX):
+            try:
+                Path("/app/backend" + u.replace(UPLOADS_URL_PREFIX, "/uploads")).unlink(missing_ok=True)
+            except Exception as e:
+                logger.warning("Could not unlink blog featured image %s: %s", u, e)
+    await db.blog_posts.delete_one({"id": pid})
+    await schedule_snapshot()
+    return {"message": "Removed"}
+
+
+@api_router.post("/admin/blog/{pid}/cover")
+async def admin_upload_blog_cover(
+    pid: str,
+    file: UploadFile = File(...),
+    admin: dict = Depends(get_current_admin),
+):
+    """Encode the featured image to WebP (+ AVIF + srcset + LQIP) and attach
+    the URLs to the post. Replaces any previous cover on this post."""
+    post = await db.blog_posts.find_one({"id": pid}, {"_id": 0})
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    if not (file.content_type or "").startswith("image/"):
+        raise HTTPException(status_code=400, detail="Featured image must be an image")
+    raw = await file.read()
+    try:
+        file_url, lqip, srcset, avif_srcset = _encode_webp_to_disk(raw, "blog")
+    finally:
+        del raw
+
+    prev_urls = (
+        [post.get("featured_url", "")]
+        + list((post.get("featured_srcset") or {}).values())
+        + list((post.get("featured_avif_srcset") or {}).values())
+    )
+    for u in prev_urls:
+        if u and u.startswith(UPLOADS_URL_PREFIX) and u != file_url:
+            try:
+                Path("/app/backend" + u.replace(UPLOADS_URL_PREFIX, "/uploads")).unlink(missing_ok=True)
+            except Exception as e:
+                logger.warning("Could not unlink old blog cover %s: %s", u, e)
+
+    await db.blog_posts.update_one(
+        {"id": pid},
+        {"$set": {
+            "featured_url": file_url,
+            "featured_srcset": srcset,
+            "featured_avif_srcset": avif_srcset,
+            "featured_lqip": lqip,
+            "updated_at": now_iso(),
+        }},
+    )
+    await schedule_snapshot()
+    return {
+        "featured_url": file_url,
+        "featured_srcset": srcset,
+        "featured_avif_srcset": avif_srcset,
+        "featured_lqip": lqip,
+    }
+
+
+@api_router.post("/admin/blog/image")
+async def admin_upload_blog_body_image(
+    file: UploadFile = File(...),
+    admin: dict = Depends(get_current_admin),
+):
+    """Upload an inline image from the rich-text editor's image button.
+    Returns a URL that the editor inserts as an <img src=...>."""
+    if not (file.content_type or "").startswith("image/"):
+        raise HTTPException(status_code=400, detail="Inline content must be an image")
+    raw = await file.read()
+    try:
+        file_url, _lqip, _srcset, _avif = _encode_webp_to_disk(raw, "blog")
+    finally:
+        del raw
+    return {"url": file_url}
+
+
+
 @api_router.get("/")
 async def root():
     return {"message": "Once Were Wild API"}
@@ -1777,15 +2016,17 @@ DEFAULT_CONTENT = [
     _c("brand", "brand.sub", "Travel", "Brand suffix"),
     _c("brand", "brand.tagline", "Rediscover the woman who was always wild at heart.", "Brand tagline (hero)"),
 
-    # Navigation (4 fixed routes)
+    # Navigation (5 routes: Home / Journeys / Gallery / About / Blog)
     _c("nav", "nav.0.label", "Home", "Nav 1 label"),
     _c("nav", "nav.0.to", "/", "Nav 1 link"),
     _c("nav", "nav.1.label", "Journeys", "Nav 2 label"),
     _c("nav", "nav.1.to", "/pricing", "Nav 2 link"),
     _c("nav", "nav.2.label", "Gallery", "Nav 3 label"),
     _c("nav", "nav.2.to", "/gallery", "Nav 3 link"),
-    _c("nav", "nav.3.label", "Contact", "Nav 4 label"),
-    _c("nav", "nav.3.to", "/contact", "Nav 4 link"),
+    _c("nav", "nav.3.label", "About", "Nav 4 label"),
+    _c("nav", "nav.3.to", "/about", "Nav 4 link"),
+    _c("nav", "nav.4.label", "Blog", "Nav 5 label"),
+    _c("nav", "nav.4.to", "/blog", "Nav 5 link"),
     _c("nav", "nav.cta", "Get In Touch", "Header CTA label"),
 
     # Home — hero buttons
@@ -2163,6 +2404,9 @@ async def _write_snapshot_now() -> dict:
     story_docs = []
     async for row in db.stories.find({}, {"_id": 0}):
         story_docs.append(row)
+    blog_docs = []
+    async for row in db.blog_posts.find({}, {"_id": 0}):
+        blog_docs.append(row)
 
     payload = {
         "version": 1,
@@ -2173,6 +2417,7 @@ async def _write_snapshot_now() -> dict:
         "journeys": journey_docs,
         "about_blocks": about_docs,
         "stories": story_docs,
+        "blog_posts": blog_docs,
     }
     # Write atomically: dump to .tmp then rename, so a partial write never
     # leaves a corrupt JSON on disk.
@@ -2320,6 +2565,7 @@ async def _apply_snapshot(snapshot: dict, *, reason: str, protect_media: bool = 
     await _safe_replace("journeys", snapshot.get("journeys") or [], "journeys")
     await _safe_replace("about_blocks", snapshot.get("about_blocks") or [], "about_blocks")
     await _safe_replace("stories", snapshot.get("stories") or [], "stories")
+    await _safe_replace("blog_posts", snapshot.get("blog_posts") or [], "blog_posts")
 
     # Record the snapshot hash so we don't keep re-applying the same file.
     fh = _snapshot_file_hash()
@@ -2344,6 +2590,7 @@ async def seed():
     await db.users.create_index("email", unique=True)
     await db.media.create_index("section")
     await db.content.create_index("key", unique=True)
+    await db.blog_posts.create_index("slug", unique=True, sparse=True)
     admin_email = os.environ["ADMIN_EMAIL"].lower()
     admin_password = os.environ["ADMIN_PASSWORD"]
     existing = await db.users.find_one({"email": admin_email})

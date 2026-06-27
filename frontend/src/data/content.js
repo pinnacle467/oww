@@ -14,6 +14,7 @@ export const NAV_LINKS = [
   { label: "Journeys", to: "/pricing" },
   { label: "Gallery", to: "/gallery" },
   { label: "About", to: "/about" },
+  { label: "Blog", to: "/blog" },
 ];
 
 export const HERO_SLIDES = [

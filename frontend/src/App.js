@@ -17,6 +17,8 @@ const Gallery = lazy(() => import("@/pages/Gallery"));
 const Pricing = lazy(() => import("@/pages/Pricing"));
 const Contact = lazy(() => import("@/pages/Contact"));
 const About = lazy(() => import("@/pages/About"));
+const Blog = lazy(() => import("@/pages/Blog"));
+const BlogPost = lazy(() => import("@/pages/BlogPost"));
 const CookiesPolicy = lazy(() => import("@/pages/CookiesPolicy"));
 
 // Admin pages are lazy-loaded so the public marketing site (which is what
@@ -28,6 +30,7 @@ const HeroManager = lazy(() => import("@/pages/admin/HeroManager"));
 const GalleryManager = lazy(() => import("@/pages/admin/GalleryManager"));
 const JourneysManager = lazy(() => import("@/pages/admin/JourneysManager"));
 const AboutManager = lazy(() => import("@/pages/admin/AboutManager"));
+const BlogManager = lazy(() => import("@/pages/admin/BlogManager"));
 const Submissions = lazy(() => import("@/pages/admin/Submissions"));
 const AdminSettings = lazy(() => import("@/pages/admin/AdminSettings"));
 const WebsiteText = lazy(() => import("@/pages/admin/WebsiteText"));
@@ -78,6 +81,8 @@ function App() {
                     <Route path="/pricing" element={<Public><Suspense fallback={<RouteFallback />}><Pricing /></Suspense></Public>} />
                     <Route path="/contact" element={<Public><Suspense fallback={<RouteFallback />}><Contact /></Suspense></Public>} />
                     <Route path="/about" element={<Public><Suspense fallback={<RouteFallback />}><About /></Suspense></Public>} />
+                    <Route path="/blog" element={<Public><Suspense fallback={<RouteFallback />}><Blog /></Suspense></Public>} />
+                    <Route path="/blog/:slug" element={<Public><Suspense fallback={<RouteFallback />}><BlogPost /></Suspense></Public>} />
                     <Route path="/cookies" element={<Public><Suspense fallback={<RouteFallback />}><CookiesPolicy /></Suspense></Public>} />
 
                     {/* Admin (unlinked, noindex) — each route is a separate
@@ -89,6 +94,7 @@ function App() {
                     <Route path="/admin/gallery" element={<Suspense fallback={<AdminFallback />}><GalleryManager /></Suspense>} />
                     <Route path="/admin/journeys" element={<Suspense fallback={<AdminFallback />}><JourneysManager /></Suspense>} />
                     <Route path="/admin/about" element={<Suspense fallback={<AdminFallback />}><AboutManager /></Suspense>} />
+                    <Route path="/admin/blog" element={<Suspense fallback={<AdminFallback />}><BlogManager /></Suspense>} />
                     <Route path="/admin/website-text" element={<Suspense fallback={<AdminFallback />}><WebsiteText /></Suspense>} />
                     <Route path="/admin/website-media" element={<Suspense fallback={<AdminFallback />}><WebsiteMedia /></Suspense>} />
                     <Route path="/admin/submissions" element={<Suspense fallback={<AdminFallback />}><Submissions /></Suspense>} />

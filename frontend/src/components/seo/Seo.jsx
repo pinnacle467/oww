@@ -39,6 +39,18 @@ const FALLBACKS = {
       "Speak with the team behind Once Were Wild Travel. Email, phone, the Maleny office address and a quick enquiry form.",
     keywords: "Once Were Wild contact, women's tour enquiry Australia, Maleny retreat enquiry",
   },
+  about: {
+    title: "About Once Were Wild Travel | The women behind the wild",
+    description:
+      "The story behind Once Were Wild Travel and the women who guide our slow, soulful journeys for women.",
+    keywords: "about Once Were Wild, women travel guides Australia, Maleny travel team",
+  },
+  blog: {
+    title: "Blog | Once Were Wild Travel",
+    description:
+      "Field notes and travel stories from the women behind Once Were Wild Travel, on journeys taken outside the scheduled calendar.",
+    keywords: "Once Were Wild blog, women's travel stories Australia, Maleny travel journal",
+  },
 };
 
 export function Seo({
