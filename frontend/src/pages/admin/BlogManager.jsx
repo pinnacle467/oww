@@ -8,7 +8,7 @@ import {
   Image as ImageIcon, X, FileText,
 } from "lucide-react";
 
-// /admin/blog — list of posts in a table, plus a full-screen editor opened
+// /admin/blog - list of posts in a table, plus a full-screen editor opened
 // when the operator clicks "New post" or "Edit". Two modes per editor:
 //   - "create"  -> POST /admin/blog
 //   - "edit"    -> PATCH /admin/blog/{id} (+ featured image upload)
@@ -405,7 +405,7 @@ function PostEditorDrawer({ mode, initial, onClose, onSaved }) {
             />
           </div>
 
-          {/* Body — rich text */}
+          {/* Body - rich text */}
           <div>
             <label className="block text-sm font-medium text-[#1C1C1C] mb-1">Post body</label>
             <RichTextEditor
