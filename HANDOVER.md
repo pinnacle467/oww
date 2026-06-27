@@ -22,6 +22,18 @@
 
 ## 2. What's been built (chronological, most recent first)
 
+### O. Homepage "From the Journal" strip (2026-06-27, this session)
+- New component `frontend/src/components/home/FromTheJournal.jsx` mounted on Home.jsx between `MalenyFeature` and `Testimonials`.
+- Fetches `/api/blog`, takes the 3 newest published posts, renders them as cards (date / title / excerpt / featured image / "Read more"), with a "Read the journal" CTA linking to `/blog`.
+- **Auto-hides when there are zero published posts** (`if (!posts || posts.length === 0) return null`) so the homepage never shows an empty section before the client writes the first post.
+- 4 new editable content keys (Home page group in admin Website Text):
+  - `home.journal.eyebrow` = "From the Journal"
+  - `home.journal.title` = "Stories from \*the road less travelled.\*" (asterisks render italic via `useRichText`)
+  - `home.journal.intro` = "Field notes and slow reflections from journeys taken between scheduled tours."
+  - `home.journal.cta` = "Read the journal"
+- Added to `DEFAULT_CONTENT` in `backend/server.py` AND seeded into the live DB via `PUT /api/admin/content`.
+- Verified: strip renders correctly with 3 sample posts (screenshot), self-hides when posts are deleted (DOM count = 0). No regressions on the rest of the homepage.
+
 ### N. Nav copy rename: "Journeys" -> "Tours", "About" -> "About Us" (2026-06-27, this session)
 - DB rows `nav.1.label` and `nav.3.label` updated via the admin content API. Visible nav order is now **HOME / TOURS / GALLERY / ABOUT US / BLOG / GET IN TOUCH**.
 - Defaults updated so a fresh deploy ships the same labels:
@@ -133,7 +145,7 @@
 │   │   ├── hooks/useMediaSlot.js + useGalleryCategories.js
 │   │   ├── components/
 │   │   │   ├── layout/{Navbar,Footer,SiteLayout,StickyCTA,PageHero}.jsx
-│   │   │   ├── home/{HeroSlideshow,ImmersiveTeaser,...}.jsx
+│   │   │   ├── home/{HeroSlideshow,ImmersiveTeaser,MalenyFeature,FromTheJournal,...}.jsx
 │   │   │   ├── gallery/MasonryGallery.jsx
 │   │   │   ├── seo/Seo.jsx       # FALLBACKS now includes a `blog` entry.
 │   │   │   ├── ui/FadeImg.jsx    # <picture> tag with AVIF + WebP + LQIP placeholder.
@@ -196,7 +208,6 @@
 | P2 | `deploy.sh pull` subcommand wrapping `safe-pull.sh` + restart into a single Bluehost command | Trivial. |
 | P3 | Blog: scheduled-publish (`publish_at` future date) | Low priority until volume grows. |
 | P3 | Blog: per-post SEO override (`blog.post.<slug>.seo.*`) | Currently inherits the site-wide `seo.blog.*` for every post. |
-| P3 | Blog: homepage "From the Journal" strip pulling 3 latest posts | Lifts discovery + SEO depth. Quick win when posts exist. |
 | P3 | "Pause / Play" affordance on the hero slideshow | Some visitors who set reduce-motion truly don't want auto-rotation. |
 | P3 | Lighthouse mobile re-run on live after Bluehost picks up the latest push | Target >= 95. |
 
