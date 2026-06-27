@@ -1,0 +1,30 @@
+{
+  "summary": "Iteration_14 retest — verified fix for the iteration_13 CRITICAL bug. /api/admin/content now returns the expected 12 groups (brand, nav, home, pricing, journeys, faqs, gallery, contact, footer, seo, pillars, testimonials) with NO 'general' bucket. The 'contact' group contains all 29 required keys. Admin UI shows a dedicated 'Contact page' card (29 editable fields). Full edit-then-save round-trip works: changing contact.form.first_name_label to 'Your given name' persists across reload AND shows on public /contact, then reverts cleanly. Smoke regression of iter11 GET IN TOUCH styling + iter12 hero slideshow still pass.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/admin/website-text", "issues": ["Group labels for 'pillars' and 'testimonials' render lowercase as the raw key because GROUP_LABELS/GROUP_ORDER in WebsiteText.jsx (lines 7-19) do not include them. Cosmetic only — add labels like 'Our Pillars' and 'Testimonials' for consistency with other cards."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_contact_admin.py",
+    "/app/test_reports/pytest/iter14_contact.xml"
+  ],
+  "action_items": [
+    "(Cosmetic) Add 'pillars' and 'testimonials' entries to GROUP_LABELS + GROUP_ORDER in /app/frontend/src/pages/admin/WebsiteText.jsx so their cards show proper Title-Case headings."
+  ],
+  "critical_code_review_comments": [
+    "server.py admin_list_content (lines 829-855) fix uses key-prefix inference which is correct, but the underlying root cause from iter13 (snapshot writer + _apply_snapshot stripping group/type/label on round-trip) is still present in the data layer. Inference works for our naming convention but any future key that doesn't start with `<group>.` will fall back to 'general'. Long-term, fix the snapshot writer to preserve metadata so the DB rows themselves stay correct.",
+    "admin_update_content (server.py:858) still does not set `group` field on upsert of brand-new keys — relies entirely on the GET endpoint to infer it. Defensive fix: `$setOnInsert: {group: key.split('.')[0], type: 'text', label: key}` to keep DB rows complete."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100% (3/3 pytest)", "frontend": "100% (admin + public edit+revert + smoke regression)"},
+  "test_credentials": "info@oncewerewild.com / WildAtHeart2026 (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "None — edited contact.form.first_name_label to 'Your given name' and reverted to 'First name' within the test run.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Iter14 fix verified. GET /api/admin/content returns 12 groups with 'contact' carrying all 29 keys. Admin UI 'Contact page' card is fully functional. Only outstanding follow-up is the cosmetic GROUP_LABELS for pillars/testimonials, and the deeper snapshot-metadata round-trip issue (server.py admin_update_content + snapshot writer) which is currently masked by the prefix-inference patch in admin_list_content.",
+  "rca_of_the_issue": "Symptom from iter13: /admin/website-text showed all 162 fields under a single 'general' group. Root cause: snapshot replay on startup overwrote each content row with stripped {key,value} entries, wiping the seeded `group` field. Mitigation applied this iteration: admin_list_content infers group from `key.split('.', 1)[0]` when the stored doc has no explicit `group`. Verified: GET /api/admin/content groups list = ['brand','contact','faqs','footer','gallery','home','journeys','nav','pillars','pricing','seo','testimonials']; contact group has exactly 29 items; 'general' bucket has 0 items."
+}

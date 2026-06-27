@@ -1,0 +1,38 @@
+# Caddy reverse proxy with AUTOMATIC HTTPS.
+#
+#   /api/*      -> backend  (FastAPI, keeps the /api prefix)
+#   /static/*   -> frontend (CRA hashed bundles, 1-year cache)
+#   /assets/*   -> frontend (PNG/WebP logos, 1-year cache)
+#   /*          -> frontend (React build via Express)
+#
+# SITE_ADDRESS controls TLS:
+#   :80               -> plain HTTP, reachable by server IP (default)
+#   your-domain.com   -> Caddy auto-issues a free Let's Encrypt cert (HTTPS)
+
+{$SITE_ADDRESS::80} {
+	encode zstd gzip
+
+	# 1-year immutable cache for everything content-addressable. The
+	# previous version used glob patterns like `*.png` which Caddy treats
+	# as suffix matchers anchored at the LAST path segment, so they
+	# silently failed for nested paths like /assets/images/hero/x.webp.
+	# Using prefix-based directory matchers actually hits the assets.
+	@cached_static path /static/* /assets/* /api/uploads/*
+	header @cached_static Cache-Control "public, max-age=31536000, immutable"
+
+	# Modest browser cache for the small "live" public files (sitemap,
+	# robots, llms.txt, favicons in root) so repeat visits don't hammer
+	# the origin.
+	@small_static path /sitemap.xml /robots.txt /llms.txt /llms-full.txt /favicon.ico
+	header @small_static Cache-Control "public, max-age=86400"
+
+	# API + uploaded media (served by the backend under /api/uploads).
+	handle /api/* {
+		reverse_proxy backend:8001
+	}
+
+	# Everything else -> the React app.
+	handle {
+		reverse_proxy frontend:3000
+	}
+}

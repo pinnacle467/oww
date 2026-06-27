@@ -1,0 +1,44 @@
+# CI: validates that the backend and frontend Docker images build cleanly and
+# that docker-compose is valid. This catches dependency or build breakage
+# BEFORE you deploy. It does not deploy anything.
+#
+# NOTE: this runs ONLY on pull requests and manual dispatch - NOT on every push
+# to main - so routine "Save to GitHub" commits don't trigger (and can't spam)
+# CI runs. Trigger it manually from the Actions tab when you want to validate.
+name: docker-build
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: false
+          tags: oww-backend:ci
+
+      - name: Build frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: false
+          tags: oww-frontend:ci
+          build-args: |
+            REACT_APP_BACKEND_URL=
+
+      - name: Create .env for compose validation
+        run: cp .env.example .env
+
+      - name: Validate docker-compose
+        run: docker compose -f docker-compose.yml config

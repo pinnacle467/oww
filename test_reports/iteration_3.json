@@ -1,0 +1,36 @@
+{
+  "summary": "P0-Task 1 follow-up verified end-to-end. (1) Maleny image renders 568x560, src=pillar-retreat.webp, no clip-path inset(100%) on wrapper or ancestors — ScrollReveal mask fix confirmed. (2) Public Gallery pills are exactly ['All','Maleny Retreats','Across Australia','Across the World'] in that order, no 'Community'. (3) Per-category gallery counts pass thresholds (Maleny=5>=3, Australia=5>=4, World=3>=2; counts include gallery hero image so are >= GALLERY_ITEMS by 1). (4) Admin sidebar shows 'Gallery Photos & Videos'; /admin/gallery H1 reads 'Gallery Photos & Videos'; Add modal title 'Add a new photo or video', file accept='image/*,video/*', category dropdown lists ONLY ['Maleny Retreats','Across Australia','Across the World'] (no 'All'), submit text 'Add to website'. (5) /admin/website-media renders both MULTI_SLOTS (media-multi-hero with 5 default thumbs, media-multi-gallery with 6+ default thumbs) plus all 9 SINGLE_SLOTS (pillars-0/1/2, immersive, maleny, pricing-hero, gallery-hero, contact-hero, contact-bg), each with a loaded thumbnail and '• Showing default' label. (6) Hero card is defaultOpen and renders MediaManager (data-testid='media-manager-hero') with Add New button. (7) Backend: GET /api/media?section=hero|gallery (no auth) works; POST without bearer returns 401; full POST→GET→category-check→DELETE round-trip passes for hero and for gallery with category='Maleny Retreats'.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_content.py",
+    "/app/backend/tests/test_media_sections.py",
+    "/app/test_reports/pytest/iteration_3_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "WebsiteMedia.jsx MultiSlotCard/SingleSlotCard each fire api.get('/admin/media',{section}) on mount AND on every open/close toggle (useEffect deps include `open`). With 9 single + 2 multi slots that is 11 admin API calls on first paint, plus another call each time a section is expanded. Fine functionally but consider memoising or removing `open` from deps to halve traffic.",
+    "MULTI_SLOTS default arrays in WebsiteMedia.jsx duplicate the HERO_SLIDES/GALLERY_ITEMS shapes in /app/frontend/src/data/content.js. If a new hero slide is added to content.js the admin thumbnail strip will silently fall out of sync. Import from content.js as the single source of truth.",
+    "SingleSlotCard uses `<img>` for the default thumbnail but the section can store videos (file_type='video' is handled in the live branch but not in the fallback). Today every fallback is a still image so it works; flag for future when defaults could be video.",
+    "GalleryManager.jsx page exists at /admin/gallery in parallel to the unified /admin/website-media gallery card. Both target section='gallery' and both render the same MediaManager — operator can edit the same data from two routes. Consider deprecating one path or adding a 'managed elsewhere' hint to avoid confusion.",
+    "AdminShell sidebar testid for the new label still slugifies '&' literally → 'admin-nav-gallery-photos-&-videos'. Carryover from iter 2 review; prefer stripping non-alphanum for clean selectors.",
+    "MediaManager modal Category dropdown uses categories.slice(1) to drop 'All'. Correct, but the default value `categories[1]` only works when categories[0] is 'All'. If GALLERY_CATEGORIES is ever reordered this defaults to a wrong category silently. A safer default is `catOptions[0]`."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_media_sections.py (new)"
+  ],
+  "success_rate": {
+    "backend": "100% (10/10 pytest cases: 5 content + 5 hero/gallery media round-trip)",
+    "frontend": "100% on all 7 functional flows (Maleny image visible, gallery pills/counts, admin sidebar label, admin gallery modal copy+categories, website-media multi+single layout with defaults, hero MediaManager expansion)"
+  },
+  "test_credentials": "info@oncewerewild.com / WildAtHeart2026 (single-step login, OTP/MFA off)",
+  "seed_data_creation": "Backend tests created and deleted 3 TEST_-prefixed media records (pillars-0, hero, gallery). DB is back to zero media after the run.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Public gallery image counts include the gallery hero image so they exceed GALLERY_ITEMS by ~1. The sidebar nav testid still preserves '&' → 'admin-nav-gallery-photos-&-videos'; prefer querying by text. Hero card on /admin/website-media is defaultOpen=true so MediaManager mounts immediately; toggle is still functional. WebsiteMedia performs ~11 /admin/media GETs on first load (one per slot) — not a bug but visible in network panel.",
+  "rca of the issue": "No bugs identified in this iteration."
+}

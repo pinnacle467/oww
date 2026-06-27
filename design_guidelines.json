@@ -1,0 +1,170 @@
+{
+  "theme_and_archetype": {
+    "domain": "Luxury Travel / Bespoke Boutique",
+    "theme": "Light",
+    "archetype": "5 (Luxury)",
+    "description": "A cinematic, editorial, and highly immersive digital experience designed to evoke wanderlust and intimate transformation for mature women. The site prioritizes generous spacing, rich typography, full-viewport imagery, and elegant glassmorphism over standard corporate layouts.",
+    "tone": "Empowering, refined, warm, adventurous, deeply feminine without being delicate, editorial, personal."
+  },
+  "typography": {
+    "fonts": {
+      "display": {
+        "family": "'Cormorant Garamond', serif",
+        "weights": [300, 400, 600],
+        "styles": ["normal", "italic"],
+        "usage": "Hero sections, primary headings, pull quotes."
+      },
+      "body": {
+        "family": "'DM Sans', sans-serif",
+        "weights": [400, 500],
+        "usage": "Editorial body text, UI elements, paragraphs."
+      },
+      "accent": {
+        "family": "'Montserrat', sans-serif",
+        "weights": [300, 500],
+        "usage": "Category labels, navigation, buttons, overlines."
+      }
+    },
+    "rules": {
+      "line_height_body": "1.8",
+      "letter_spacing_accent": "0.15em to 0.25em (tracking-widest)",
+      "heading_spacing": "tracking-tight for display text larger than text-3xl",
+      "em_dashes": "BANNED. Use alternative punctuation.",
+      "uppercase_labels": "All caps for accent labels (Montserrat) to create editorial structure."
+    }
+  },
+  "color_palette": {
+    "background": {
+      "base": "#FFFFFF",
+      "warm": "#F9F7F4"
+    },
+    "nature_green": {
+      "deep": "#2D4A3E",
+      "mid": "#4A7C6F",
+      "light": "#8DB5A0"
+    },
+    "ocean_blue": {
+      "deep": "#1A3A5C",
+      "mid": "#2E6DA4",
+      "light": "#A8C8E0"
+    },
+    "accent": {
+      "warm_gold": "#C9A96E"
+    },
+    "text": {
+      "primary": "#1C1C1C",
+      "secondary": "#5A5A5A"
+    },
+    "glass": {
+      "background": "rgba(255, 255, 255, 0.12)",
+      "border": "rgba(255, 255, 255, 0.25)",
+      "blur": "18px"
+    },
+    "admin_actions": {
+      "add": "#4A7C6F",
+      "replace": "#2E6DA4",
+      "remove": "#D32F2F"
+    }
+  },
+  "layout_and_spacing": {
+    "spacing_scale": "Use 2x to 3x generous spacing. Minimum padding for major sections is py-20, optimal is py-32.",
+    "mobile_first": true,
+    "grid_system": "Bento grids with asymmetry. Use overlapping elements and empty columns to create negative space.",
+    "alignment": "Left-align dense text. Never center everything. Let layout breath."
+  },
+  "surface_strategies": {
+    "glassmorphism": {
+      "usage": "Site-wide for cards, sticky headers, modals, overlay panels.",
+      "implementation": "backdrop-blur-[18px] bg-white/10 border border-white/25 shadow-lg",
+      "inner_glow": "Add a subtle inner box-shadow (e.g., inset 0 0 20px rgba(255,255,255,0.05)) to simulate premium frosted glass.",
+      "dark_mode_alternative": "For dark sections (like Charity Teaser), use bg-black/20 with border-white/10."
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "Glassmorphism with white border, Montserrat uppercase, warm gold accent on hover.",
+      "admin_buttons": "Solid colors based on action (Green=Add, Blue=Replace, Red=Remove). Large text (text-lg), generous padding (px-8 py-4), high contrast text."
+    },
+    "cards": {
+      "experience_pillars": "Glass cards over a rich image background. Subtle hover translation (-translate-y-2).",
+      "pricing": "3 glass tier cards. The middle 'Most Popular' card must have a warm gold border (border-[#C9A96E])."
+    },
+    "forms": {
+      "style": "Transparent backgrounds with bottom border only (border-b), or fully frosted glass inputs. Montserrat labels."
+    }
+  },
+  "pages": {
+    "home": {
+      "hero": "Cinematic full-viewport (h-screen) slideshow, 5 slides, Ken Burns effect (slow scale), crossfade transitions. Frosted glass sticky nav overlaid.",
+      "manifesto": "Editorial split section. One side deep green background with Cormorant Garamond pull-quote, other side off-white with body text.",
+      "experience_pillars": "Rich background image overlaid with 3 glass cards (Small Group, Maleny Retreats, Corporate).",
+      "maleny_retreat": "Two-column feature, clip-path image reveal on scroll, inline tags (create, explore, feel, taste, transform).",
+      "testimonials": "Horizontal scroll carousel. Use Framer Motion for smooth drag/scroll.",
+      "charity_teaser": "Dark green base (#2D4A3E), masonry image collage, high contrast white serif text.",
+      "footer": "Generous spacing (py-32). Quick-enquiry form with glass inputs."
+    },
+    "gallery": "Masonry grid layout, filter tabs, lightbox with video support.",
+    "charity": "Hero section, impact stat counters, alternating story rows (image left, text right).",
+    "pricing": "3 tier glass cards, middle highlighted with gold. FAQ accordion.",
+    "contact": "Split info and validated form. Glassmorphism styling.",
+    "admin": {
+      "audience": "65-year-old non-technical user.",
+      "design_rules": "No glassmorphism here. Pure function. High contrast (#FFFFFF background, #1C1C1C text). Minimum text size text-lg. Color-coded action buttons (Green/Blue/Red). Clear table layouts.",
+      "features": "Login with MFA, Dashboard, Hero Manager, Gallery Manager, Charity Manager, Submissions Table, Settings."
+    },
+    "global_elements": {
+      "exit_intent": "Glass modal email capture.",
+      "mobile_cta": "Sticky 'Book a Discovery Call' button fixed to bottom on mobile.",
+      "page_transitions": "Glass-curtain transitions between routes."
+    }
+  },
+  "media_and_images": {
+    "hero_slideshow": [
+      {
+        "url": "https://images.unsplash.com/photo-1707291929669-bfc34becd6a9?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzN8MHwxfHNlYXJjaHwzfHxhdXN0cmFsaWElMjBzdW5zaGluZSUyMGNvYXN0JTIwaGludGVybGFuZHxlbnwwfHx8fDE3ODIwNzQ3MDZ8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Lone tree in foggy landscape (Maleny hinterland vibe)"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1723463533634-42d479628e7e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njl8MHwxfHNlYXJjaHwxfHxtYXR1cmUlMjB3b21lbiUyMG5hdHVyZSUyMHJldHJlYXR8ZW58MHx8fHwxNzgyMDc0NzA2fDA&ixlib=rb-4.1.0&q=85",
+        "description": "Mature woman looking out over rocky hillside"
+      },
+      {
+        "url": "https://images.pexels.com/photos/19707957/pexels-photo-19707957.jpeg",
+        "description": "Woman among tall trees in tranquil forest"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1758797316165-986ec92e7ad2?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njl8MHwxfHNlYXJjaHwyfHxtYXR1cmUlMjB3b21lbiUyMG5hdHVyZSUyMHJldHJlYXR8ZW58MHx8fHwxNzgyMDc0NzA2fDA&ixlib=rb-4.1.0&q=85",
+        "description": "Group of people relaxing on a wooden porch"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1649147391870-a170da925530?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODF8MHwxfHNlYXJjaHwzfHxsdXh1cnklMjB0cmF2ZWwlMjBsaWZlc3R5bGV8ZW58MHx8fHwxNzgyMDc0NzA2fDA&ixlib=rb-4.1.0&q=85",
+        "description": "Luxury hallway leading to the ocean"
+      }
+    ],
+    "experience_pillars": [
+      {
+        "url": "https://images.unsplash.com/photo-1769506551162-f56c343f0642?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njl8MHwxfHNlYXJjaHw0fHxtYXR1cmUlMjB3b21lbiUyMG5hdHVyZSUyMHJldHJlYXR8ZW58MHx8fHwxNzgyMDc0NzA2fDA&ixlib=rb-4.1.0&q=85",
+        "description": "Lush green garden (Maleny Retreats)"
+      },
+      {
+        "url": "https://images.pexels.com/photos/15713593/pexels-photo-15713593.jpeg",
+        "description": "Luxury private jet (Corporate & Custom)"
+      }
+    ],
+    "charity_teaser": [
+      {
+        "url": "https://images.pexels.com/photos/8795809/pexels-photo-8795809.jpeg",
+        "description": "Senior woman peacefully meditating"
+      }
+    ]
+  },
+  "accessibility_and_motion": {
+    "motion": "Respect prefers-reduced-motion CSS query. Use fluid, momentum-based scrolling (Lenis).",
+    "animations": "Ken Burns (slow scale 1 to 1.1) for hero, parallax on scroll, soft fade-in for glass cards.",
+    "contrast": "Ensure text over glass meets minimum 4.5:1 ratio. Use text-shadow if necessary over images."
+  },
+  "testing_attributes": {
+    "convention": "data-testid='[role-based-name]'",
+    "requirement": "All buttons, forms, nav links, admin controls MUST have a data-testid. Examples: data-testid='hero-slide-1', data-testid='admin-add-gallery-btn'."
+  }
+}

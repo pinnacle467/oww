@@ -1,0 +1,88 @@
+# Once Were Wild Travel — robots policy
+# We explicitly welcome AI search crawlers so journeys, retreats and FAQs
+# can be surfaced inside ChatGPT search, Perplexity, Claude search, Gemini
+# and Google Search Generative Experience.
+
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin/
+
+# OpenAI — both training crawler and search crawler.
+User-agent: GPTBot
+Allow: /
+Disallow: /admin/
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /admin/
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /admin/
+
+# Anthropic
+User-agent: ClaudeBot
+Allow: /
+Disallow: /admin/
+
+User-agent: anthropic-ai
+Allow: /
+Disallow: /admin/
+
+User-agent: Claude-Web
+Allow: /
+Disallow: /admin/
+
+# Google (Bard / Gemini / SGE pull from Google-Extended)
+User-agent: Google-Extended
+Allow: /
+Disallow: /admin/
+
+User-agent: Googlebot
+Allow: /
+Disallow: /admin/
+
+# Perplexity
+User-agent: PerplexityBot
+Allow: /
+Disallow: /admin/
+
+User-agent: Perplexity-User
+Allow: /
+Disallow: /admin/
+
+# Apple Intelligence
+User-agent: Applebot
+Allow: /
+Disallow: /admin/
+
+User-agent: Applebot-Extended
+Allow: /
+Disallow: /admin/
+
+# Bing / Copilot
+User-agent: Bingbot
+Allow: /
+Disallow: /admin/
+
+# Meta AI
+User-agent: FacebookBot
+Allow: /
+Disallow: /admin/
+
+User-agent: Meta-ExternalAgent
+Allow: /
+Disallow: /admin/
+
+# Common Crawl (used by many LLMs to assemble training sets)
+User-agent: CCBot
+Allow: /
+Disallow: /admin/
+
+# Bytedance / TikTok
+User-agent: Bytespider
+Allow: /
+Disallow: /admin/
+
+Sitemap: https://oncewerewild.com/sitemap.xml

@@ -1,0 +1,61 @@
+{
+  "summary": "Backend + frontend smoke and integration tests for Once Were Wild. 11/11 backend pytest cases pass; all six core UI flows (Home, Pricing, Gallery+Lightbox, Contact validation+submit, Footer quick-enquiry, Admin login -> MFA) pass. One important deployment issue identified: brute-force lockout never triggers via the public preview URL because request.client.host returns the k8s ingress proxy IP, which rotates per request.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "POST /api/auth/login",
+        "issue": "Brute-force lockout never triggers when called through the public ingress URL. server.py uses request.client.host to build the rate-limit identifier (ip+email), but behind the k8s ingress this returns the proxy/load-balancer IP which rotates per request (observed 10.208.138.130, 10.208.138.133, etc). Result: each failed attempt creates a new identifier with count=1, so the 3-strike lockout is effectively bypassed from any real client. Confirmed working on http://localhost:8001 directly. FIX: derive client IP from X-Forwarded-For (first hop) or use only the email as the identifier.",
+        "priority": "CRITICAL"
+      }
+    ],
+    "minor": [
+      {
+        "endpoint": "POST /api/auth/login",
+        "issue": "On the 3rd failed attempt the lockout record is written with count=0 (reset) which is unusual. Subsequent attempts return 429 correctly because of locked_until, but the count field reset makes attempt tracking opaque. Cosmetic only."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Contact page",
+        "issues": [
+          "data-testid naming inconsistency: the contact info <li> blocks use testids 'contact-email', 'contact-phone' which collide conceptually with the form input testids 'contact-email-input', 'contact-phone-input'. The task spec referred to 'contact-email' as the form field testid. Recommend renaming the <li> testids to 'contact-info-email', 'contact-info-phone', etc., to avoid future automation confusion."
+        ]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Fix lockout: read client IP from X-Forwarded-For in /api/auth/login (or key the rate limit on email only). Today the 3-strike 30-min lockout is silently disabled in the deployed environment.",
+    "Optional: rename Contact info-block testids to 'contact-info-*' to remove naming overlap with form inputs."
+  ],
+  "critical_code_review_comments": [
+    "server.py login uses request.client.host without consulting X-Forwarded-For — broken behind reverse proxy / k8s ingress; security control bypassed.",
+    "Login lockout zeroes 'count' on lock; consider keeping count for forensics.",
+    "Mongo _id is correctly excluded in all list endpoints via projection {'_id': 0} — good.",
+    "All admin endpoints depend on get_current_admin (Bearer) — 401 behaviour validated.",
+    "Pydantic validation + custom 422 message for short contact messages works as expected.",
+    "MFA setup flow correctly returns secret only the first time and persists mfa_secret on first successful verify.",
+    "Settings PUT is upsert + GET reflects change — verified end-to-end.",
+    "server.py is 396 lines (single file) — within limits but approaching the soft threshold; consider splitting into routers (auth, admin, contact, media, settings) for maintainability."
+  ],
+  "updated_files": [
+    "/app/backend/tests/backend_test.py (new)"
+  ],
+  "success_rate": {
+    "backend": "100% (11/11 pytest)",
+    "frontend": "100% (6/6 flows: Home, Pricing, Gallery+Lightbox, Contact, Footer quick-enquiry, Admin login -> MFA)"
+  },
+  "test_credentials": "info@oncewerewild.com / WildAtHeart2026. MFA secret retrieved from POST /api/auth/login (status mfa_setup) on first login; on subsequent logins read users.mfa_secret from Mongo or scan QR.",
+  "seed_data_creation": "Test data uses TEST_ prefix in emails, captions, alt_text. Created (and cleaned up) media items, settings updates restored, contact submissions left in DB (admin can use them).",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Admin user already has MFA enabled (mfa_enabled=true) after first login during this test run. Therefore /api/auth/login will now return status=mfa_required (no secret in response). The pytest fixture reads users.mfa_secret directly from Mongo to compute TOTP for subsequent runs — keep using that pattern. To force the mfa_setup path again, unset mfa_enabled/mfa_secret on the users doc. login_attempts collection is cleared at session start and end. The frontend admin route is /admin and reaches mfa-verify (or mfa-setup) after correct email+password.",
+  "rca of the issue": "Brute-force lockout RCA: server.py line 142 uses ip = request.client.host. Behind the Emergent k8s ingress, FastAPI/Uvicorn sees the proxy hop IP, which is not sticky per client — observed values 10.208.138.130 and 10.208.138.133 across consecutive requests from the same test runner. The lockout identifier is therefore different on each request, so the count never reaches the 3-threshold for a real attacker. Reproduction: POST /api/auth/login with bad password 4x from a single client through the preview URL — all 4 return 401, and db.login_attempts shows two separate identifiers each at count=2. Direct localhost:8001 hits do trigger 429 on the 3rd attempt as designed. Mitigation: use the leftmost public IP from X-Forwarded-For (the ingress sets it), or key the lockout on email only (simpler, but enables target lockout by an attacker — accept that risk or combine email-only lockout with a per-IP captcha)."
+}

@@ -1,0 +1,23 @@
+{
+  "summary": "Verified HeroSlideshow reduce-motion fix end-to-end via Playwright with reduced_motion='reduce' emulation. The slideshow now cycles in BOTH motion states. In default state the active slide advances every ~5.5s and the active <img> carries the 'animate-kenburns' class. In reduce-motion state the active slide still advances (verified one increment after ~10.5s using the longer 9s dwell), the active <img> does NOT carry 'animate-kenburns', and matchMedia inside the page reports reduce=true. Dot click manual override (hero-dot-3 -> hero-slide-3) works in both states. Regressions from iteration_11 still hold: GET IN TOUCH desktop button has dark fill rgba(28,28,28,0.85) + 1px gold border rgb(201,169,110) + white text; glass-dark panel bg is rgba(28,42,36,0.92) (alpha 0.92 >= 0.5). No console errors observed. Edge case of 1/0 hero images was not exercised against a mocked API, but the code path is guarded by `if (HERO.length <= 1) return undefined;` in the setInterval effect, which is the correct behaviour.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "HeroSlideshow.jsx line 14: `items.map(...)` rebuilds a fresh HERO array on every render. The cycling useEffect depends on `HERO.length` (a primitive) so it does not re-fire unnecessarily, but the slides JSX re-creates 6 wrapper divs every render. Minor — wrap items->HERO mapping in useMemo for cleanliness, not a bug.",
+    "HeroSlideshow.jsx line 64: guard is `HERO.length <= 1` which correctly skips the setInterval when 0 or 1 hero images exist (matches the requested edge case), good.",
+    "HeroSlideshow.jsx line 78: `key={i}` on .map iterating an array that can change (admin adds/removes hero images at runtime). Should ideally key by `slide.src`. Low priority — only affects rare admin live-edit case."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a", "frontend": "100%"},
+  "seed_data_creation": "",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Hero slideshow reduce-motion fix verified. Production preview URL https://load-central.preview.emergentagent.com/ currently serves 6 hero images from /api/media?section=hero. Use playwright `page.emulate_media(reduced_motion='reduce')` BEFORE navigation to reproduce the client's PC config. Default dwell 5.5s, reduce-motion dwell 9s.",
+  "rca of the issue": "Original bug: HeroSlideshow.jsx returned early from the rotation useEffect whenever window.matchMedia('(prefers-reduced-motion: reduce)').matches was true, which is the default on Windows boxes with 'Show animations' off and corporate-managed devices. Result: the hero looked frozen on the client's PCs while working everywhere the dev tested. Fix verified in this iteration: the setInterval is ALWAYS scheduled (only guarded by HERO.length <= 1), with dwell conditionally lengthened to 9s and the Ken Burns zoom dropped from the active image when reduce-motion is on. A matchMedia 'change' listener also lets the visitor toggle the OS setting at runtime."
+}

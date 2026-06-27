@@ -1,0 +1,36 @@
+{
+  "summary": "Iteration 4 verifies (1) default-media seed (24 items spanning hero=5, gallery=10, 9 single slots) is present and idempotent via the media_seeded_v1 flag, (2) MediaManager UI upgrades — aspect-[4/3] images, 3-column Save/Replace/Delete labelled action grid, filterable category pills — and (3) public Gallery + Home still consume the same DB data without regressions. 27 backend pytest cases pass (15 seed-coverage params + 5 auth-gating + 1 content round-trip + 1 idempotency + 1 sticky-delete + 5 hero/gallery round-trip + 1 flag). All 7 frontend functional flows pass: /admin/gallery pills exactly ['All (10)','Maleny Retreats (4)','Across Australia (4)','Across the World (2)'] with filter narrowing to 4 and back to 10; /admin/website-media hero auto-expanded with 5 Slide cards; 0 'Showing default' labels; each single slot shows '1 uploaded'; expanding pillars-0 reveals 1 MediaManager card with caption='First pillar card' + Save/Replace/Delete; the gallery slot inside website-media renders the same filterable pills; public /gallery filter counts All/Maleny/Australia/World = 10/4/4/2, no 'Community' label; Home Maleny + Pillar images render with 0 broken images.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_default_media_seed.py",
+    "/app/backend/tests/test_media_sections.py",
+    "/app/test_reports/pytest/iteration_4_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "MediaManager.jsx — filter pill testids use raw text with hyphenated lowercasing (e.g. admin-gallery-filter-across-the-world). Works today, but slugifier doesn't strip non-alphanum, so any future pill containing '&' will collide with the same admin sidebar bug flagged in iter 3.",
+    "WebsiteMedia.jsx fallback 'Showing default' branch in SingleSlotCard (line ~79) is now unreachable since DB always has rows post-seed. Either remove dead branch or keep as defensive fallback with a code comment so reviewers don't read it as a live state.",
+    "MediaManager.jsx — the categories pill 'count' for the 'All' pill uses items.length (total in section). If a future filter ever needs only items with a category set, all-count vs sum-of-pills will differ silently. Today they always equal 10.",
+    "server.py DEFAULT_MEDIA — gallery entry index 8 reuses /assets/images/pillar-retreat.webp (also used by pillars-1 and maleny). Cosmetic only; same image appears in 3 places by default. Recommend distinct gallery asset.",
+    "Idempotency flag site_settings.media_seeded_v1 is boolean-only and not section-scoped. If a future iteration adds new default sections (e.g. footer-bg), bumping to v2 will re-seed ALL 24 items unless the loop checks per-section existence. Consider per-section seed records to avoid duplication on schema growth.",
+    "backend_test.py (existing) still expects MFA flow (mfa_setup/mfa_required) on /auth/login, but .env has OTP_LOGIN_ENABLED=false so login returns status='success' immediately. The new test_default_media_seed.py fixture handles this correctly; legacy backend_test.py would fail if run as-is — flagged but not blocking."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_default_media_seed.py (new — 27 cases incl. parametrized)"
+  ],
+  "success_rate": {
+    "backend": "100% (27/27: 14 seed coverage + 2 idempotency/sticky-delete + 5 auth gating + 1 content round-trip + 5 hero/gallery round-trip from prior file)",
+    "frontend": "100% on all 7 review-request flows"
+  },
+  "test_credentials": "info@oncewerewild.com / WildAtHeart2026 (single-step login, OTP disabled)",
+  "seed_data_creation": "test_delete_sticks_then_restore deletes 1 seeded contact-bg row then restores it via POST so the public site ends in the same state. test_content_update creates+deletes a TEST_iter4_temp content key. DB final state: 24 seeded media + admin user + media_seeded_v1 flag intact.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "DB now boots with 24 media rows on first startup; site_settings.media_seeded_v1=true blocks re-seeding. Deleting a seeded item is permanent across restarts. Public /gallery img count is GALLERY (10) + gallery-hero (1) = 11 main imgs. /admin/website-media gallery card now uses filterable=true so the same pill UI appears inside the slot card. The 'Showing default' string still exists in WebsiteMedia.jsx as a dead branch — every slot now shows 'N uploaded' instead. backend_test.py (legacy) still references MFA endpoints which no longer match the OTP-disabled flow; prefer test_default_media_seed.py + test_media_sections.py for regression.",
+  "rca of the issue": "No bugs identified in this iteration."
+}

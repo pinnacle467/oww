@@ -1,0 +1,35 @@
+{
+  "summary": "Iteration 5 validates the new About + Stories feature end-to-end plus a quick live-sync regression. Backend pytest: 17/17 passing (public list endpoints + auth gating + full CRUD lifecycle for about-blocks and stories + reorder + multipart cover upload with fetchable URL + visibility toggle hides from public but not admin + debounced snapshot persistence + live-sync regression for gallery-hero file, gallery-categories exact list, and 89 unique gallery URLs + 3 existing hero sections still load). Frontend: public /about renders correctly (eyebrow ABOUT US, title 'The women behind the wild.', 'OUR STORY' column shows the seeded heading 'Our path to here.' + 2 paragraphs, 'FIELD NOTES' column renders the 'Sunrise on Cradle Mountain' story). Desktop nav order is exactly Home/Journeys/Gallery/About/Contact and the mobile drawer matches. Admin /admin/dashboard shows the 'About Us & Stories' tile, the AdminShell sidebar contains the '/admin/about' link labelled 'About Us & Stories', and /admin/about renders both the BlocksPanel (3 seeded blocks with kind selector, Visible toggle, Save & Delete) and the StoriesPanel (1 seeded story card with Upload cover, region/date/excerpt fields, Visible toggle) stacked vertically.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_about_stories.py",
+    "/app/test_reports/pytest/iteration_5_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py line ~1257: GET /api/about-blocks filters {is_visible: True} but does not pass projection {_id:0}. The list comprehension at ~1262 does pop the _id manually — works, but is inconsistent with other endpoints that use projection. Cosmetic.",
+    "server.py /api/admin/stories/{sid}/cover (~line 1432): when the multipart upload PIL.Image.open raises a SyntaxError (broken PNG), it bubbles up as a generic 500. Wrap _encode_webp_to_disk in try/except and return 400 with 'Invalid image file' so the admin UI can show a friendly error rather than crashing.",
+    "AboutManager.jsx: 'add-block' button in the admin UI did not increment the visible [data-testid^=\"block-\"] count from 6 to 7 during my smoke click — backend POST /api/admin/about-blocks works (verified by pytest), so this is either a list-refresh delay or duplicate testid attribution (the seeded-rows-vs-children mismatch — 3 blocks but 6 nodes matched the prefix selector). Worth verifying testids are placed only on the outermost block container and that the UI refetches/optimistic-updates after POST.",
+    "site_snapshot.json debounced writer triggers on every write (observed 2 snapshot writes within 2s during cover upload). Consider coalescing to 1 write per debounce window to reduce disk churn under bulk-admin operations.",
+    "Story model returns cover_url/cover_srcset/cover_avif_srcset/cover_lqip as empty string / empty dict on create — frontend should treat falsy and empty-dict srcset identically; verify About.jsx renders the green placeholder when cover_url is empty (it currently does).",
+    "Public /about Field Notes column shows 2 green placeholder cards even though /api/stories returns only 1 story — looks cosmetic (single card spanning a 2-col grid) but worth confirming the column count vs items.length math in About.jsx so a single story doesn't render as a duplicate-looking pair."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_about_stories.py (new — 17 cases covering public, admin auth, about CRUD + reorder, story CRUD + reorder + cover upload, snapshot, live-sync regression, hero regression)"
+  ],
+  "success_rate": {
+    "backend": "100% (17/17)",
+    "frontend": "100% on the 4 review-request flows (public /about hero+columns, desktop nav order, mobile drawer order, /admin/dashboard tile + /admin/about with both panels + sidebar link)"
+  },
+  "test_credentials": "info@oncewerewild.com / WildAtHeart2026 — login lands at /admin (not /admin/login) and redirects to /admin/dashboard; OTP_LOGIN_ENABLED=false so single-step login.",
+  "seed_data_creation": "Tests create TEST_iter5-prefixed about-blocks and stories and clean each up via DELETE in their teardown step. Cover-upload test creates a 64x64 PIL-generated PNG, uploads it (which produces a real WebP under /api/uploads/stories/), verifies the URL is fetchable, then deletes the story. Snapshot test inserts a marker block, polls site_snapshot.json for ~12s for the id to appear, then deletes the block. DB final state: 3 seeded about_blocks + 1 seeded story + the existing media_seeded_v1 24 media rows, identical to pre-test state.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Login URL is /admin (NOT /admin/login). Login response uses access_token (NOT token). /api/media returns objects with field 'file_url' (NOT 'url'). /api/gallery-categories returns a plain list of strings: ['Maleny Retreats','Across the world','Across Australia']. Cover upload endpoint requires a VALID image — invalid bytes raise PIL SyntaxError which bubbles to 500 (see critical_code_review_comments). Snapshot writer is debounced at 2s — wait at least 3-5s after admin writes before re-reading site_snapshot.json. test_about_stories.py is now the canonical regression file for the About+Stories feature.",
+  "rca of the issue": "No bugs requiring main-agent fixes. Three minor code-review notes captured above for future hardening."
+}

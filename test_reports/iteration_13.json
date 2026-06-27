@@ -1,0 +1,49 @@
+{
+  "summary": "Tested iteration_13 Contact-section admin editing. Backend: 29 contact keys are all seeded and returned by /api/content; admin PUT/GET persistence works. Frontend public /contact renders correctly with all driven labels, placeholders, sidebar labels and validation messages. CRITICAL bug: Admin Website Text page does NOT show a 'Contact page' group — ALL 162 content fields render under a single 'general' group, defeating the whole iteration goal. Root cause is in the snapshot replay code.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "GET /api/admin/content",
+        "issue": "All 162 content rows are grouped under 'general' instead of 'brand/nav/home/pricing/journeys/faqs/gallery/contact/footer/seo'. The seeded `group` field is being wiped by the on-startup snapshot replay. As a result, /admin/website-text shows one giant 'general' group with no 'Contact page' (or any other) section.",
+        "priority": "CRITICAL"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "WebsiteText admin page",
+        "issue": "No 'Contact page' group card rendered. Only one 'general' group with 162 fields. Group labels (Brand / Navigation / Home page / ... / Contact page / Footer / SEO) are completely missing because the API response has only the 'general' key.",
+        "selector": "[data-testid='text-group-contact']",
+        "priority": "HIGH"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_contact_admin.py",
+    "/app/test_reports/pytest/iter13_contact.xml"
+  ],
+  "action_items": [
+    "Fix the snapshot replay so the `group` (and `type`/`label`) field is preserved. Two viable fixes: (a) Re-save /app/backend/seed_data/site_snapshot.json so each `content` entry includes the original `group`, `type`, `label` fields (currently every row is just {key,value}). The snapshot writer in server.py is stripping these. (b) Defensively in _apply_snapshot (server.py:2279-2282), look up the existing row's `group/type/label` and preserve them if the snapshot entry is missing them, OR fall back to inferring group from the key prefix.",
+    "After the snapshot fix, restart backend so the DB rows get the correct `group` value. Then re-verify GET /api/admin/content returns >=10 groups (brand, nav, home, pricing, journeys, faqs, gallery, contact, footer, seo) and that /admin/website-text shows a 'Contact page' card with 29 editable fields.",
+    "Bonus (also worth fixing): PUT /api/admin/content (server.py:846) does not set `group` on upsert. New keys created via the admin UI will have no group and land in 'general'. Either require the client to pass `group`, or infer group from `key.split('.')[0]`."
+  ],
+  "critical_code_review_comments": [
+    "server.py:2279-2282 — `_apply_snapshot` does `db.content.update_one({key},{ $set: entry })` with a snapshot entry that only contains {key,value}, silently destroying the existing `group/type/label` metadata of every content row. This is the root cause of the 'one giant general group' bug.",
+    "Snapshot writer (presumably `schedule_snapshot`/save logic) is serialising content rows as just {key,value} (162/162 entries lack the `group` field). The snapshot must round-trip group/type/label too, otherwise every deploy/restart corrupts the admin grouping.",
+    "server.py:846 `admin_update_content` — upsert path does not set `group` on insert of brand-new keys. Combine with the inference-from-prefix idea above (`key.split('.')[0]`)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_contact_admin.py (new)"
+  ],
+  "success_rate": {"backend": "67% (2/3 pytest)", "frontend": "50% (public page OK, admin grouping broken)"},
+  "test_credentials": "info@oncewerewild.com / WildAtHeart2026 (read from /app/backend/.env — /app/memory/test_credentials.md is missing)",
+  "seed_data_creation": "None — only PUT/GET on first_name_label which was reverted to 'First name' after the assertion.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "After main agent fixes the snapshot/grouping bug, re-run /app/backend/tests/test_contact_admin.py — the `test_admin_content_contains_all_contact_keys` test is the one that asserts the 'contact' group exists. Also re-open /admin/website-text and confirm a 'Contact page' card is present with 29 fields and that the 'Preview on site' pill links to /contact. Public /contact rendering is already verified working.",
+  "rca_of_the_issue": "Symptom: /admin/website-text shows everything under one 'general' group. Reproduction: 1) GET /api/admin/content with admin Bearer token → response has a single 'general' key with 162 items. 2) Inspect /app/backend/seed_data/site_snapshot.json content array → every entry has only {key,value}, no group/type/label. Cause: on backend startup the snapshot is replayed (server.py:2402 `_apply_snapshot(... reason='auto-migration-on-startup')`) and overwrites each content row with `$set: entry` (line 2282) where `entry` is the stripped-down {key,value} from snapshot.json. This wipes the `group` field that DEFAULT_CONTENT had originally seeded. Mitigation: see action_items — preserve metadata in the snapshot writer AND defensively guard `_apply_snapshot` against missing fields."
+}

@@ -1,0 +1,65 @@
+# One-command full-stack deploy for "Once Were Wild Travel".
+#
+#   ./deploy.sh        builds + starts everything
+#
+# Services:
+#   mongo    - database (ONLY started when you use a local DB; skipped for Atlas).
+#              Data persisted in the named volume `mongo_data`.
+#   backend  - FastAPI. Uploaded media persisted via bind mount ./backend/uploads.
+#   frontend - React build served by Express.
+#   caddy    - single public entry point on 80/443 with AUTOMATIC HTTPS.
+
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    # Only runs when the "localdb" profile is active (see deploy.sh). If you use
+    # MongoDB Atlas, this container is never started.
+    profiles: ["localdb"]
+    volumes:
+      - mongo_data:/data/db
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      # Persist uploaded images/videos on the host so they survive rebuilds.
+      - ./backend/uploads:/app/backend/uploads
+    expose:
+      - "8001"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Baked into the bundle at build time. Empty = same-origin /api via Caddy.
+        REACT_APP_BACKEND_URL: ${REACT_APP_BACKEND_URL:-}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    expose:
+      - "3000"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      # Pulled from ./.env by docker compose. ":80" = HTTP only (by IP);
+      # set SITE_ADDRESS=your-domain.com in .env for automatic HTTPS.
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - backend
+
+volumes:
+  mongo_data:
+  caddy_data:
+  caddy_config:
