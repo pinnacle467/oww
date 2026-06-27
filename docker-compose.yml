@@ -13,9 +13,9 @@ services:
   mongo:
     image: mongo:7
     restart: unless-stopped
-    # Only runs when the "localdb" profile is active (see deploy.sh). If you use
-    # MongoDB Atlas, this container is never started.
-    profiles: ["localdb"]
+    # This container starts unconditionally so a plain `docker compose up -d`
+    # always brings the database with it. If you ever switch to MongoDB Atlas,
+    # remove this service and point MONGO_URL at the Atlas connection string.
     volumes:
       - mongo_data:/data/db
 

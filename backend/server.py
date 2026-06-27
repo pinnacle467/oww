@@ -633,6 +633,44 @@ async def list_leads(admin: dict = Depends(get_current_admin)):
 
 
 # ----------------------------- Media -----------------------------
+def _media_doc_file_urls(doc: dict) -> list[str]:
+    """Every /api/uploads/... URL this media doc references, across all
+    responsive variants. Used to wipe files from disk when the row is
+    deleted or the underlying file is replaced, so we never leak orphans."""
+    urls: list[str] = []
+    if not doc:
+        return urls
+    fu = doc.get("file_url")
+    if fu:
+        urls.append(fu)
+    tu = doc.get("thumb_url")
+    if tu:
+        urls.append(tu)
+    for k in ("srcset", "avif_srcset"):
+        d = doc.get(k) or {}
+        if isinstance(d, dict):
+            urls.extend(v for v in d.values() if v)
+    return urls
+
+
+def _unlink_media_files(urls: list[str], exclude: set[str] | None = None) -> None:
+    """Best-effort unlink of every uploads-path URL in `urls`. Anything in
+    `exclude` is kept (used when a PATCH replaces a file - we keep the new
+    URL even if it happens to match an old variant by coincidence)."""
+    exclude = exclude or set()
+    for u in urls:
+        if not u or not isinstance(u, str):
+            continue
+        if u in exclude:
+            continue
+        if not u.startswith(UPLOADS_URL_PREFIX):
+            continue
+        try:
+            Path("/app/backend" + u.replace(UPLOADS_URL_PREFIX, "/uploads")).unlink(missing_ok=True)
+        except Exception as e:
+            logger.warning("Could not unlink media file %s: %s", u, e)
+
+
 @api_router.get("/media")
 async def list_media(section: Optional[str] = Query(None)):
     q = {"is_active": True}
@@ -741,8 +779,10 @@ async def update_media(mid: str, data: MediaUpdate, admin: dict = Depends(get_cu
     # file. Images become responsive WebP variants (with a fresh srcset so the
     # public <img srcset> never keeps pointing at the OLD photo); videos are
     # written to disk and get a poster frame.
+    old_files: list[str] = []
     if _looks_like_data_url(update.get("file_url")):
-        existing = await db.media.find_one({"id": mid}, {"section": 1, "file_type": 1, "_id": 0})
+        existing = await db.media.find_one({"id": mid}, {"_id": 0})
+        old_files = _media_doc_file_urls(existing or {})
         section = (existing or {}).get("section") or "misc"
         header = update["file_url"].split(",", 1)[0]
         ftype = update.get("file_type") or ("video" if header.startswith("data:video/") else (existing or {}).get("file_type")) or "image"
@@ -763,6 +803,10 @@ async def update_media(mid: str, data: MediaUpdate, admin: dict = Depends(get_cu
     res = await db.media.update_one({"id": mid}, {"$set": update})
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Media not found")
+    # Wipe the previous file variants from disk now that the row points at
+    # the new ones. Excludes the new file_url just in case (paranoia).
+    if old_files:
+        _unlink_media_files(old_files, exclude={update.get("file_url", "")})
     existing = await db.media.find_one({"id": mid}, {"section": 1, "_id": 0})
     if existing and existing.get("section") == "hero":
         await regenerate_hero_preload()
@@ -772,8 +816,12 @@ async def update_media(mid: str, data: MediaUpdate, admin: dict = Depends(get_cu
 
 @api_router.delete("/admin/media/{mid}")
 async def delete_media(mid: str, admin: dict = Depends(get_current_admin)):
-    existing = await db.media.find_one({"id": mid}, {"section": 1, "_id": 0})
+    existing = await db.media.find_one({"id": mid}, {"_id": 0})
     await db.media.delete_one({"id": mid})
+    # Best-effort cleanup of the underlying webp/avif/mp4 variants so we
+    # don't leak orphan files on disk every time the admin removes a photo.
+    if existing:
+        _unlink_media_files(_media_doc_file_urls(existing))
     if existing and existing.get("section") == "hero":
         await regenerate_hero_preload()
     await schedule_snapshot()
