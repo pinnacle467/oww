@@ -2047,6 +2047,15 @@ DEFAULT_CONTENT = [
        "Manifesto paragraph 3", "richtext"),
     _c("home", "home.manifesto.pullQuote", "This is travel lived, and life truly loved.", "Manifesto pull quote"),
 
+    # Home — "From the Journal" strip (3 latest blog posts)
+    _c("home", "home.journal.eyebrow", "From the Journal", "Journal strip eyebrow"),
+    _c("home", "home.journal.title", "Stories from *the road less travelled.*",
+       "Journal strip title (italic part wrapped in asterisks)", "richtext"),
+    _c("home", "home.journal.intro",
+       "Field notes and slow reflections from journeys taken between scheduled tours.",
+       "Journal strip intro"),
+    _c("home", "home.journal.cta", "Read the journal", "Journal strip CTA button label"),
+
     # Home — Pillars (3)
     _c("home", "home.pillars.eyebrow", "How We Travel", "Pillars eyebrow"),
     _c("home", "home.pillars.title", "Three ways to step *beyond the familiar.*", "Pillars title"),

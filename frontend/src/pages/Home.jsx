@@ -3,6 +3,7 @@ import { BrandManifesto } from "@/components/home/BrandManifesto";
 import { ExperiencePillars } from "@/components/home/ExperiencePillars";
 import { ImmersiveTeaser } from "@/components/home/ImmersiveTeaser";
 import { MalenyFeature } from "@/components/home/MalenyFeature";
+import { FromTheJournal } from "@/components/home/FromTheJournal";
 import { Testimonials } from "@/components/home/Testimonials";
 import { Seo } from "@/components/seo/Seo";
 
@@ -28,6 +29,7 @@ export default function Home() {
       <ExperiencePillars />
       <ImmersiveTeaser />
       <MalenyFeature />
+      <FromTheJournal />
       <Testimonials />
     </article>
   );

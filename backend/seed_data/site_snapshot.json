@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-06-27T09:18:30.879989+00:00",
+  "generated_at": "2026-06-27T09:35:38.683807+00:00",
   "media": [
     {
       "file_url": "/api/uploads/contact-bg/c6213da9b39140b19135fb900221e491.webp",
@@ -5030,6 +5030,42 @@
     {
       "key": "contact.errors.message",
       "value": "A few more words please, at least 20 characters."
+    },
+    {
+      "key": "home.journal.eyebrow",
+      "created_at": "2026-06-27T09:33:59.666033+00:00",
+      "group": "home",
+      "label": "Journal strip eyebrow",
+      "type": "text",
+      "value": "From the Journal",
+      "updated_at": "2026-06-27T09:34:07.367538+00:00"
+    },
+    {
+      "key": "home.journal.title",
+      "created_at": "2026-06-27T09:33:59.666342+00:00",
+      "group": "home",
+      "label": "Journal strip title (italic part wrapped in asterisks)",
+      "type": "richtext",
+      "value": "Stories from *the road less travelled.*",
+      "updated_at": "2026-06-27T09:34:07.368050+00:00"
+    },
+    {
+      "key": "home.journal.intro",
+      "created_at": "2026-06-27T09:33:59.666604+00:00",
+      "group": "home",
+      "label": "Journal strip intro",
+      "type": "text",
+      "value": "Field notes and slow reflections from journeys taken between scheduled tours.",
+      "updated_at": "2026-06-27T09:34:07.368368+00:00"
+    },
+    {
+      "key": "home.journal.cta",
+      "created_at": "2026-06-27T09:33:59.666855+00:00",
+      "group": "home",
+      "label": "Journal strip CTA button label",
+      "type": "text",
+      "value": "Read the journal",
+      "updated_at": "2026-06-27T09:34:07.368651+00:00"
     }
   ],
   "site_settings": [
