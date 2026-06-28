@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-06-27T12:21:41.105733+00:00",
+  "generated_at": "2026-06-28T06:53:18.547043+00:00",
   "media": [
     {
       "file_url": "/api/uploads/contact-bg/c6213da9b39140b19135fb900221e491.webp",
@@ -5797,10 +5797,10 @@
       "itinerary_filename": "",
       "sort_order": 0,
       "created_at": "2026-06-24T07:30:57.634047+00:00",
-      "updated_at": "2026-06-27T12:05:50.969329+00:00",
+      "updated_at": "2026-06-28T06:52:52.180367+00:00",
       "slug": "maleny-creative-immersion",
       "status": "published",
-      "type": "retreat",
+      "type": "tour",
       "gallery_media_ids": [],
       "description_html": "",
       "itinerary_html": "",

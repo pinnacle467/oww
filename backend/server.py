@@ -3275,20 +3275,13 @@ async def seed():
     if copy_rows:
         logger.info("B2: copied body_html -> description_html on %d rows", len(copy_rows))
 
-    # B2 migration #3 - re-tag "Maleny Creative Immersion" to type='retreat'
-    # so it appears under the Corporate Retreats nav dropdown instead of
-    # the Tours dropdown (per user decision Q4). Idempotent: matches by
-    # slug AND only updates when current type != 'retreat'.
-    maleny = await db.journeys.find_one(
-        {"slug": "maleny-creative-immersion", "type": {"$ne": "retreat"}},
-        {"_id": 0, "id": 1},
-    )
-    if maleny:
-        await db.journeys.update_one(
-            {"id": maleny["id"]},
-            {"$set": {"type": "retreat", "updated_at": now_iso()}},
-        )
-        logger.info("B2: re-tagged Maleny Creative Immersion to type='retreat'")
+    # B2 migration #3 - REMOVED (2026-06-27)
+    # Originally re-tagged "Maleny Creative Immersion" to type='retreat' per
+    # an early Q4 answer, but the user clarified that Maleny stays as a Tour
+    # (it's an already-planned upcoming trip). Corporate Retreats is a
+    # SEPARATE empty category for future bookings. Leaving this comment in
+    # place so the rationale is clear and we don't accidentally reintroduce
+    # the migration on a future pass.
 
     # Seed default home FAQs ("Questions Gently Answered"). Idempotent — only
     # inserts if the collection is empty so the client's edits are never lost.
