@@ -184,10 +184,53 @@ class MediaInput(BaseModel):
     alt_text: Optional[str] = ""
     category: Optional[str] = ""
     sort_order: int = 0
+    # Phase 2 (Change 6) - embed metadata for YouTube / Vimeo rows. When
+    # file_type == "embed", file_url stores the canonical embed page URL
+    # (e.g. https://youtu.be/abc123) and these fields cache the parsed
+    # provider + id so the frontend doesn't re-parse on every render.
+    embed_provider: Optional[str] = ""    # "youtube" | "vimeo" | ""
+    embed_id: Optional[str] = ""
 
 
 def _looks_like_data_url(s: Optional[str]) -> bool:
     return isinstance(s, str) and s.startswith("data:")
+
+
+# Phase 2 (Change 6) - parse YouTube / Vimeo URLs into (provider, id) for
+# embed-type media rows. Mirrors the frontend parseEmbedUrl() in
+# components/media/SwipeableMedia.jsx so the server caches the same metadata.
+import re as _re_embed
+from urllib.parse import urlparse as _urlparse_embed, parse_qs as _parse_qs_embed
+
+
+def _parse_embed_url_py(raw: str):
+    if not raw or not isinstance(raw, str):
+        return (None, None)
+    try:
+        u = _urlparse_embed(raw.strip())
+        host = (u.hostname or "").replace("www.", "")
+        if host == "youtu.be":
+            vid = (u.path or "").lstrip("/").split("/")[0]
+            if vid:
+                return ("youtube", vid)
+        if host in {"youtube.com", "m.youtube.com", "youtube-nocookie.com"}:
+            qs = _parse_qs_embed(u.query or "")
+            if "v" in qs and qs["v"]:
+                return ("youtube", qs["v"][0])
+            m = _re_embed.match(r"^/(shorts|embed|v)/([\w-]{6,})", u.path or "")
+            if m:
+                return ("youtube", m.group(2))
+        if host == "vimeo.com":
+            m = _re_embed.search(r"(\d{6,})", u.path or "")
+            if m:
+                return ("vimeo", m.group(1))
+        if host == "player.vimeo.com":
+            m = _re_embed.search(r"/video/(\d+)", u.path or "")
+            if m:
+                return ("vimeo", m.group(1))
+    except Exception:
+        return (None, None)
+    return (None, None)
 
 
 """Image utilities. Variants and quality tuning live at the top so future
@@ -423,6 +466,10 @@ class MediaUpdate(BaseModel):
     alt_text: Optional[str] = None
     category: Optional[str] = None
     sort_order: Optional[int] = None
+    # Phase 2 (Change 6) - embed metadata updates.
+    embed_provider: Optional[str] = None
+    embed_id: Optional[str] = None
+    file_type: Optional[str] = None
 
 
 class SettingsUpdate(BaseModel):
@@ -693,9 +740,20 @@ async def admin_list_media(section: Optional[str] = Query(None), admin: dict = D
 async def create_media(data: MediaInput, admin: dict = Depends(get_current_admin)):
     doc = data.model_dump()
     lqip = ""
-    if doc.get("file_type", "image") == "image":
+    file_type = doc.get("file_type", "image")
+    if file_type == "image":
         new_url, lqip = convert_image_to_webp(doc["file_url"], doc.get("section") or "misc")
         doc["file_url"] = new_url
+    elif file_type == "embed":
+        # YouTube / Vimeo embed - file_url IS the user-supplied embed URL.
+        # Parse provider + id server-side and cache them on the row so the
+        # frontend doesn't need to re-parse the URL on every render.
+        provider, eid = _parse_embed_url_py(doc.get("file_url", ""))
+        if provider and eid:
+            doc["embed_provider"] = provider
+            doc["embed_id"] = eid
+        else:
+            raise HTTPException(status_code=400, detail="Unsupported embed URL (YouTube and Vimeo are accepted)")
     doc.update({"id": str(uuid.uuid4()), "created_at": now_iso(), "is_active": True, "lqip": lqip})
     await db.media.insert_one(doc)
     doc.pop("_id", None)

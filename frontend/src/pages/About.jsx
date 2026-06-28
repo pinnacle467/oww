@@ -5,6 +5,7 @@ import { useText, useRichText } from "@/context/ContentContext";
 import { useMediaSlot } from "@/hooks/useMediaSlot";
 import { Seo } from "@/components/seo/Seo";
 import { FadeImg } from "@/components/ui/FadeImg";
+import { TravelGallery } from "@/components/about/TravelGallery";
 
 // Public About page. Content blocks + cover stories are entirely admin-driven.
 export default function About() {
@@ -131,6 +132,9 @@ export default function About() {
           </div>
         </div>
       </section>
+
+      {/* Phase 2 (Change 5) - travel photos and videos in a swipeable strip. */}
+      <TravelGallery />
     </div>
   );
 }

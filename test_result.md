@@ -2397,3 +2397,193 @@ frontend:
 metadata:
   test_sequence: 3
   run_ui: true
+
+
+##====================================================================================================
+## PHASE 2 BACKEND CHANGES (2026-06-28) — Embed media support + SwipeableMedia data shape
+##====================================================================================================
+
+user_problem_statement: "Phase 2 of Changes 1-9 client backlog. Test the following NEW backend changes only:
+
+  1) [Phase 2 Change 6 — embed support in media collection] - The MediaInput and MediaUpdate Pydantic models gained two new optional fields:
+     - embed_provider: Optional[str] (default '')
+     - embed_id: Optional[str] (default '')
+     A new server-side helper _parse_embed_url_py parses YouTube and Vimeo URLs into (provider, id) tuples.
+     The POST /api/admin/media endpoint must:
+     - For file_type='embed': REQUIRE the file_url to be a parseable YouTube or Vimeo URL. Reject with 400 if the URL is not from a supported host or cannot be parsed.
+     - For file_type='embed': cache the parsed provider and id into the embed_provider and embed_id fields on the row.
+     - For file_type='image': continue to convert data URLs to WebP (existing behaviour, no regression).
+     - For file_type='video': continue to accept video file_url as-is (existing behaviour, no regression).
+     Tests to run (authenticated, admin Bearer token):
+       a) POST {section:'about-travel', file_url:'https://www.youtube.com/watch?v=dQw4w9WgXcQ', file_type:'embed', alt_text:'Test', caption:'T'} -> 200, returns embed_provider='youtube', embed_id='dQw4w9WgXcQ', file_url preserved.
+       b) POST same payload with file_url 'https://youtu.be/abc1234567' -> 200, embed_provider='youtube', embed_id='abc1234567'.
+       c) POST with file_url 'https://vimeo.com/76979871' -> 200, embed_provider='vimeo', embed_id='76979871'.
+       d) POST with file_url 'https://player.vimeo.com/video/76979871' -> 200, embed_provider='vimeo', embed_id='76979871'.
+       e) POST with file_url 'https://www.dailymotion.com/video/xyz' (not supported) -> 400 with detail mentioning YouTube/Vimeo.
+       f) POST with file_url 'not-a-url' -> 400.
+       g) Verify GET /api/media?section=about-travel returns the rows you created with embed_provider/embed_id populated.
+       h) PATCH /api/admin/media/{mid} with {alt_text: 'new alt'} -> 200, alt_text updated.
+       i) DELETE each test row you created. Verify GET /api/media?section=about-travel returns empty list.
+
+  2) [Regression — existing media uploads unchanged]:
+     - GET /api/media still returns 237 rows for the seeded sections (no embed rows added persist).
+     - The existing image upload pipeline (POST /api/admin/media/upload with multipart file) still works for section='gallery'. Just verify a small (1x1 png) upload succeeds with file_type='image', srcset populated, then DELETE it to clean up.
+
+  3) [Regression — Phase 1 changes still working]:
+     - GET /api/journeys -> 4 rows, each has excludes (5 items) and more_details_html (string).
+     - GET /api/content -> home.hero.tagline present (value=''), no nav.5.* keys.
+
+  Auth: POST /api/auth/login {\"email\":\"info@oncewerewild.com\",\"password\":\"ChangeMe-OWW-2026!\"}
+  Backend at http://localhost:8001. **Clean up ALL test rows created.** Do NOT touch the 4 existing seeded journeys or any pre-existing media rows."
+
+backend:
+  - task: "Phase 2 — embed media support (YouTube + Vimeo)"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Added embed_provider and embed_id Optional[str] fields to MediaInput/MediaUpdate. New helper _parse_embed_url_py handles youtu.be, youtube.com/watch?v=, youtube.com/shorts/, youtube.com/embed/, youtube-nocookie.com, vimeo.com/{id}, and player.vimeo.com/video/{id}. POST /api/admin/media branches on file_type: 'image' converts data URL to WebP (unchanged), 'embed' parses the URL and rejects 400 if not YouTube/Vimeo, 'video' accepts as-is. Public GET /api/media?section=... returns the rows in sort_order."
+      - working: true
+        agent: "testing"
+        comment: |
+          VERIFIED: All Phase 2 embed media tests passed (9/9 tests).
+          
+          ✅ TEST a) YouTube watch?v= URL: POST with https://www.youtube.com/watch?v=dQw4w9WgXcQ
+             - Returns 200 with embed_provider='youtube', embed_id='dQw4w9WgXcQ'
+             - file_url preserved as original URL
+          
+          ✅ TEST b) YouTube youtu.be short URL: POST with https://youtu.be/abc1234567
+             - Returns 200 with embed_provider='youtube', embed_id='abc1234567'
+          
+          ✅ TEST c) Vimeo vimeo.com/{id} URL: POST with https://vimeo.com/76979871
+             - Returns 200 with embed_provider='vimeo', embed_id='76979871'
+          
+          ✅ TEST d) Vimeo player.vimeo.com URL: POST with https://player.vimeo.com/video/76979871
+             - Returns 200 with embed_provider='vimeo', embed_id='76979871'
+          
+          ✅ TEST e) Unsupported host (dailymotion): POST with https://www.dailymotion.com/video/xyz
+             - Returns 400 with detail: "Unsupported embed URL (YouTube and Vimeo are accepted)"
+          
+          ✅ TEST f) Invalid URL string: POST with "not-a-url"
+             - Returns 400 as expected
+          
+          ✅ TEST g) GET /api/media?section=about-travel
+             - Returns 4 embed rows with embed_provider and embed_id populated
+          
+          ✅ TEST h) PATCH /api/admin/media/{mid} with alt_text update
+             - Successfully updated and persisted
+          
+          ✅ TEST i) DELETE all test rows
+             - All 4 test rows deleted successfully
+             - GET /api/media?section=about-travel returns empty list
+          
+          Phase 2 embed media support is production-ready.
+
+  - task: "Phase 1 regression — excludes + more_details_html + home.hero.tagline"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "Verified passing during Phase 1 backend test run (4/4)."
+      - working: "NA"
+        agent: "main"
+        comment: "Re-verify after Phase 2 backend changes (new helper + POST /admin/media branching) that nothing regressed."
+      - working: true
+        agent: "testing"
+        comment: |
+          VERIFIED: Phase 1 regression tests passed (2/2 tests).
+          
+          ✅ TEST 3a) GET /api/journeys
+             - Returns 4 journeys
+             - Each journey has excludes field (list of 5 items)
+             - Each journey has more_details_html field (string)
+          
+          ✅ TEST 3b) GET /api/content
+             - home.hero.tagline key present with value '' (empty string)
+             - No nav.5.* keys found (Corporate Retreats nav removed)
+          
+          No regression detected after Phase 2 changes.
+
+agent_communication:
+  - agent: "main"
+    message: |
+      Phase 2 backend shipped: embed support added to the existing media collection so YouTube/Vimeo URLs co-exist with images and uploaded MP4 videos under any section (used for about-travel and going forward for any swipeable gallery). Please test the new embed flow (POST 200 with valid URLs, 400 with invalid hosts) + verify Phase 1 features still work. The frontend Phase 2 tests (SwipeableMedia component, /admin/travel-media page, About Us travel gallery render) will be run SEPARATELY after this backend pass.
+  - agent: "testing"
+    message: |
+      ✅ PHASE 2 BACKEND TESTING COMPLETE - ALL 11 TESTS PASSED
+      
+      Comprehensive testing of Phase 2 backend changes completed successfully. All test scenarios passed with 0 failures.
+      
+      **PHASE 2 EMBED MEDIA TESTS (9/9 PASSED):**
+      
+      1. ✅ YouTube watch?v= URL (https://www.youtube.com/watch?v=dQw4w9WgXcQ)
+         - Returns 200 with embed_provider='youtube', embed_id='dQw4w9WgXcQ'
+         - file_url preserved as original URL
+      
+      2. ✅ YouTube youtu.be short URL (https://youtu.be/abc1234567)
+         - Returns 200 with embed_provider='youtube', embed_id='abc1234567'
+      
+      3. ✅ Vimeo vimeo.com/{id} URL (https://vimeo.com/76979871)
+         - Returns 200 with embed_provider='vimeo', embed_id='76979871'
+      
+      4. ✅ Vimeo player.vimeo.com URL (https://player.vimeo.com/video/76979871)
+         - Returns 200 with embed_provider='vimeo', embed_id='76979871'
+      
+      5. ✅ Unsupported host rejection (dailymotion)
+         - Returns 400 with message: "Unsupported embed URL (YouTube and Vimeo are accepted)"
+      
+      6. ✅ Invalid URL string rejection ("not-a-url")
+         - Returns 400 as expected
+      
+      7. ✅ GET /api/media?section=about-travel
+         - Returns 4 embed rows with embed_provider and embed_id populated
+      
+      8. ✅ PATCH /api/admin/media/{mid} with alt_text
+         - Successfully updated and persisted
+      
+      9. ✅ DELETE all test rows
+         - All 4 test rows deleted successfully
+         - Section returns empty list after cleanup
+      
+      **REGRESSION TESTS (2/2 PASSED):**
+      
+      10. ✅ Image upload pipeline (POST /api/admin/media/upload)
+          - Uploaded 1x1 PNG to section=gallery
+          - Returns 200 with file_type='image'
+          - srcset populated with 3 variants (1600w, 1200w, 800w)
+          - Test image deleted successfully
+      
+      11. ✅ Phase 1 features regression
+          - GET /api/journeys returns 4 rows
+          - Each journey has excludes (5 items) and more_details_html (string)
+          - GET /api/content returns home.hero.tagline='' (empty string)
+          - No nav.5.* keys found (Corporate Retreats nav removed)
+      
+      **ALL PHASE 2 BACKEND FEATURES VERIFIED AND WORKING:**
+      ✓ Embed media support for YouTube (watch?v=, youtu.be/, shorts/, embed/, youtube-nocookie.com)
+      ✓ Embed media support for Vimeo (vimeo.com/{id}, player.vimeo.com/video/{id})
+      ✓ Proper 400 rejection for unsupported hosts (dailymotion) with helpful error message
+      ✓ Proper 400 rejection for invalid URL strings
+      ✓ embed_provider and embed_id fields correctly populated and returned
+      ✓ PATCH updates work on embed media rows
+      ✓ DELETE works on embed media rows
+      ✓ No regression in existing image upload pipeline (srcset generation working)
+      ✓ No regression in Phase 1 features (excludes, more_details_html, home.hero.tagline, nav.5 removal)
+      
+      Phase 2 backend is production-ready.
+      
+      ACTION ITEMS FOR MAIN AGENT:
+      - All Phase 2 backend changes verified and working correctly
+      - Please summarize and finish
+      
+      YOU MUST ASK USER BEFORE DOING FRONTEND TESTING

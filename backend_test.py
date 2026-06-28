@@ -1,551 +1,556 @@
 #!/usr/bin/env python3
 """
-Phase 1 Backend Testing Script
-Tests C4, C5, C7, and Corporate Retreats nav removal
+Phase 2 Backend Testing - Embed Media Support + Regressions
+Tests the new embed media POST endpoint with YouTube/Vimeo URLs
+and verifies Phase 1 features still work.
 """
+
 import requests
+import base64
 import json
-import sys
+from typing import Optional
 
-# Backend URL - using localhost:8001 as per instructions
-BASE_URL = "http://localhost:8001/api"
+# Backend URL - using internal port since we're running inside the container
+BACKEND_URL = "http://localhost:8001/api"
 
-# Test credentials
+# Test credentials from /app/memory/test_credentials.md
 ADMIN_EMAIL = "info@oncewerewild.com"
 ADMIN_PASSWORD = "ChangeMe-OWW-2026!"
 
-# Standard excludes for C4
-STANDARD_EXCLUDES = [
-    "International and domestic airfares",
-    "Travel insurance",
-    "Visa fees (if applicable)",
-    "Personal expenses",
-    "Optional activities not listed in the itinerary"
-]
+# Track test media IDs for cleanup
+test_media_ids = []
 
-def login():
-    """Login and return access token"""
-    print("\n🔐 Logging in...")
-    response = requests.post(
-        f"{BASE_URL}/auth/login",
-        json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD}
+
+def login() -> str:
+    """Login and return Bearer token"""
+    print("\n🔐 Logging in as admin...")
+    resp = requests.post(
+        f"{BACKEND_URL}/auth/login",
+        json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD},
+        timeout=10
     )
-    if response.status_code != 200:
-        print(f"❌ Login failed: {response.status_code} - {response.text}")
-        sys.exit(1)
-    
-    data = response.json()
+    if resp.status_code != 200:
+        raise Exception(f"Login failed: {resp.status_code} {resp.text}")
+    data = resp.json()
     token = data.get("access_token")
     if not token:
-        print(f"❌ No access token in response: {data}")
-        sys.exit(1)
-    
+        raise Exception(f"No access_token in login response: {data}")
     print(f"✅ Login successful")
     return token
 
-def test_c4_excludes_field(token):
-    """Test C4 — Tour excludes field (What is Not Included)"""
-    print("\n" + "="*80)
-    print("TEST C4 — Tour excludes field (What is Not Included)")
-    print("="*80)
+
+def test_embed_youtube_watch(token: str):
+    """Test a) POST with YouTube watch?v= URL"""
+    print("\n📹 TEST a) YouTube watch?v= URL")
+    payload = {
+        "section": "about-travel",
+        "file_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        "file_type": "embed",
+        "alt_text": "Test YouTube watch",
+        "caption": "Test caption",
+        "sort_order": 0
+    }
+    resp = requests.post(
+        f"{BACKEND_URL}/admin/media",
+        json=payload,
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=10
+    )
+    if resp.status_code != 200:
+        print(f"❌ FAILED: Expected 200, got {resp.status_code}")
+        print(f"   Response: {resp.text}")
+        return False
     
-    headers = {"Authorization": f"Bearer {token}"}
-    test_journey_ids = []
+    data = resp.json()
+    test_media_ids.append(data.get("id"))
     
-    try:
-        # 1. Verify all 4 existing journeys have excludes field with 5 standard items
-        print("\n📋 Step 1: Verify all 4 existing journeys have excludes field...")
-        response = requests.get(f"{BASE_URL}/journeys")
-        if response.status_code != 200:
-            print(f"❌ GET /api/journeys failed: {response.status_code}")
-            return False
-        
-        journeys = response.json()
-        if len(journeys) != 4:
-            print(f"❌ Expected 4 journeys, got {len(journeys)}")
-            return False
-        
-        print(f"✅ Found 4 journeys")
-        
-        all_have_excludes = True
-        for journey in journeys:
-            name = journey.get("name", "Unknown")
-            excludes = journey.get("excludes", [])
-            
-            if not isinstance(excludes, list):
-                print(f"❌ Journey '{name}': excludes is not a list: {type(excludes)}")
-                all_have_excludes = False
-                continue
-            
-            if excludes != STANDARD_EXCLUDES:
-                print(f"❌ Journey '{name}': excludes mismatch")
-                print(f"   Expected: {STANDARD_EXCLUDES}")
-                print(f"   Got: {excludes}")
-                all_have_excludes = False
-            else:
-                print(f"✅ Journey '{name}': has correct excludes field with 5 standard items")
-        
-        if not all_have_excludes:
-            return False
-        
-        # 2. POST a new test journey with custom excludes
-        print("\n📋 Step 2: POST new journey with custom excludes...")
-        custom_excludes = ["Custom item 1", "Custom item 2"]
-        new_journey_data = {
-            "name": "Test Journey C4 Excludes",
-            "region": "Test Region",
-            "excludes": custom_excludes,
-            "status": "published",
-            "type": "tour"
-        }
-        
-        response = requests.post(
-            f"{BASE_URL}/admin/journeys",
-            headers=headers,
-            json=new_journey_data
-        )
-        
-        if response.status_code != 200:
-            print(f"❌ POST /api/admin/journeys failed: {response.status_code} - {response.text}")
-            return False
-        
-        created_journey = response.json()
-        test_journey_id = created_journey.get("id")
-        test_journey_ids.append(test_journey_id)
-        
-        if created_journey.get("excludes") != custom_excludes:
-            print(f"❌ Created journey excludes mismatch")
-            print(f"   Expected: {custom_excludes}")
-            print(f"   Got: {created_journey.get('excludes')}")
-            return False
-        
-        print(f"✅ Created journey with custom excludes: {custom_excludes}")
-        
-        # 3. Verify round-trip through GET
-        print("\n📋 Step 3: Verify round-trip through GET /api/journeys...")
-        response = requests.get(f"{BASE_URL}/journeys")
-        if response.status_code != 200:
-            print(f"❌ GET /api/journeys failed: {response.status_code}")
-            return False
-        
-        journeys = response.json()
-        found = False
-        for journey in journeys:
-            if journey.get("id") == test_journey_id:
-                found = True
-                if journey.get("excludes") != custom_excludes:
-                    print(f"❌ Round-trip failed: excludes mismatch")
-                    print(f"   Expected: {custom_excludes}")
-                    print(f"   Got: {journey.get('excludes')}")
-                    return False
-                print(f"✅ Round-trip successful: excludes persisted correctly")
-                break
-        
-        if not found:
-            print(f"❌ Created journey not found in GET /api/journeys")
-            return False
-        
-        # 4. PATCH the journey with different excludes
-        print("\n📋 Step 4: PATCH journey with different excludes...")
-        updated_excludes = ["Updated item A", "Updated item B", "Updated item C"]
-        response = requests.patch(
-            f"{BASE_URL}/admin/journeys/{test_journey_id}",
-            headers=headers,
-            json={"excludes": updated_excludes}
-        )
-        
-        if response.status_code != 200:
-            print(f"❌ PATCH /api/admin/journeys/{test_journey_id} failed: {response.status_code} - {response.text}")
-            return False
-        
-        print(f"✅ PATCH successful")
-        
-        # 5. Verify PATCH persisted
-        print("\n📋 Step 5: Verify PATCH persisted...")
-        response = requests.get(f"{BASE_URL}/journeys")
-        if response.status_code != 200:
-            print(f"❌ GET /api/journeys failed: {response.status_code}")
-            return False
-        
-        journeys = response.json()
-        found = False
-        for journey in journeys:
-            if journey.get("id") == test_journey_id:
-                found = True
-                if journey.get("excludes") != updated_excludes:
-                    print(f"❌ PATCH persistence failed: excludes mismatch")
-                    print(f"   Expected: {updated_excludes}")
-                    print(f"   Got: {journey.get('excludes')}")
-                    return False
-                print(f"✅ PATCH persisted: excludes updated correctly to {updated_excludes}")
-                break
-        
-        if not found:
-            print(f"❌ Journey not found after PATCH")
-            return False
-        
-        # 6. Verify excludes appears on GET /api/tours/{slug}
-        print("\n📋 Step 6: Verify excludes appears on GET /api/tours/{slug}...")
-        # Get slug from one of the existing published tours
-        response = requests.get(f"{BASE_URL}/journeys?type=tour")
-        if response.status_code != 200:
-            print(f"❌ GET /api/journeys?type=tour failed: {response.status_code}")
-            return False
-        
-        tours = response.json()
-        if not tours:
-            print(f"❌ No tours found")
-            return False
-        
-        # Use the first tour
-        first_tour = tours[0]
-        slug = first_tour.get("slug")
-        if not slug:
-            print(f"❌ First tour has no slug")
-            return False
-        
-        response = requests.get(f"{BASE_URL}/tours/{slug}")
-        if response.status_code != 200:
-            print(f"❌ GET /api/tours/{slug} failed: {response.status_code}")
-            return False
-        
-        tour_detail = response.json()
-        if "excludes" not in tour_detail:
-            print(f"❌ excludes field missing from GET /api/tours/{slug}")
-            return False
-        
-        print(f"✅ excludes field present on GET /api/tours/{slug}: {tour_detail.get('excludes')}")
-        
-        print("\n✅ TEST C4 PASSED: All excludes field tests successful")
+    # Verify response
+    if data.get("embed_provider") != "youtube":
+        print(f"❌ FAILED: embed_provider is '{data.get('embed_provider')}', expected 'youtube'")
+        return False
+    if data.get("embed_id") != "dQw4w9WgXcQ":
+        print(f"❌ FAILED: embed_id is '{data.get('embed_id')}', expected 'dQw4w9WgXcQ'")
+        return False
+    if data.get("file_url") != payload["file_url"]:
+        print(f"❌ FAILED: file_url not preserved")
+        return False
+    
+    print(f"✅ PASSED: embed_provider='youtube', embed_id='dQw4w9WgXcQ', file_url preserved")
+    return True
+
+
+def test_embed_youtube_short(token: str):
+    """Test b) POST with youtu.be short URL"""
+    print("\n📹 TEST b) YouTube youtu.be short URL")
+    payload = {
+        "section": "about-travel",
+        "file_url": "https://youtu.be/abc1234567",
+        "file_type": "embed",
+        "alt_text": "Test YouTube short",
+        "caption": "T",
+        "sort_order": 1
+    }
+    resp = requests.post(
+        f"{BACKEND_URL}/admin/media",
+        json=payload,
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=10
+    )
+    if resp.status_code != 200:
+        print(f"❌ FAILED: Expected 200, got {resp.status_code}")
+        print(f"   Response: {resp.text}")
+        return False
+    
+    data = resp.json()
+    test_media_ids.append(data.get("id"))
+    
+    if data.get("embed_provider") != "youtube":
+        print(f"❌ FAILED: embed_provider is '{data.get('embed_provider')}', expected 'youtube'")
+        return False
+    if data.get("embed_id") != "abc1234567":
+        print(f"❌ FAILED: embed_id is '{data.get('embed_id')}', expected 'abc1234567'")
+        return False
+    
+    print(f"✅ PASSED: embed_provider='youtube', embed_id='abc1234567'")
+    return True
+
+
+def test_embed_vimeo_standard(token: str):
+    """Test c) POST with vimeo.com/{id} URL"""
+    print("\n📹 TEST c) Vimeo vimeo.com/{id} URL")
+    payload = {
+        "section": "about-travel",
+        "file_url": "https://vimeo.com/76979871",
+        "file_type": "embed",
+        "alt_text": "Test Vimeo",
+        "caption": "T",
+        "sort_order": 2
+    }
+    resp = requests.post(
+        f"{BACKEND_URL}/admin/media",
+        json=payload,
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=10
+    )
+    if resp.status_code != 200:
+        print(f"❌ FAILED: Expected 200, got {resp.status_code}")
+        print(f"   Response: {resp.text}")
+        return False
+    
+    data = resp.json()
+    test_media_ids.append(data.get("id"))
+    
+    if data.get("embed_provider") != "vimeo":
+        print(f"❌ FAILED: embed_provider is '{data.get('embed_provider')}', expected 'vimeo'")
+        return False
+    if data.get("embed_id") != "76979871":
+        print(f"❌ FAILED: embed_id is '{data.get('embed_id')}', expected '76979871'")
+        return False
+    
+    print(f"✅ PASSED: embed_provider='vimeo', embed_id='76979871'")
+    return True
+
+
+def test_embed_vimeo_player(token: str):
+    """Test d) POST with player.vimeo.com/video/{id} URL"""
+    print("\n📹 TEST d) Vimeo player.vimeo.com/video/{id} URL")
+    payload = {
+        "section": "about-travel",
+        "file_url": "https://player.vimeo.com/video/76979871",
+        "file_type": "embed",
+        "alt_text": "Test Vimeo player",
+        "caption": "T",
+        "sort_order": 3
+    }
+    resp = requests.post(
+        f"{BACKEND_URL}/admin/media",
+        json=payload,
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=10
+    )
+    if resp.status_code != 200:
+        print(f"❌ FAILED: Expected 200, got {resp.status_code}")
+        print(f"   Response: {resp.text}")
+        return False
+    
+    data = resp.json()
+    test_media_ids.append(data.get("id"))
+    
+    if data.get("embed_provider") != "vimeo":
+        print(f"❌ FAILED: embed_provider is '{data.get('embed_provider')}', expected 'vimeo'")
+        return False
+    if data.get("embed_id") != "76979871":
+        print(f"❌ FAILED: embed_id is '{data.get('embed_id')}', expected '76979871'")
+        return False
+    
+    print(f"✅ PASSED: embed_provider='vimeo', embed_id='76979871'")
+    return True
+
+
+def test_embed_unsupported_host(token: str):
+    """Test e) POST with unsupported host (dailymotion) - should return 400"""
+    print("\n📹 TEST e) Unsupported host (dailymotion) - expect 400")
+    payload = {
+        "section": "about-travel",
+        "file_url": "https://www.dailymotion.com/video/xyz",
+        "file_type": "embed",
+        "alt_text": "Test",
+        "caption": "T",
+        "sort_order": 4
+    }
+    resp = requests.post(
+        f"{BACKEND_URL}/admin/media",
+        json=payload,
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=10
+    )
+    if resp.status_code != 400:
+        print(f"❌ FAILED: Expected 400, got {resp.status_code}")
+        print(f"   Response: {resp.text}")
+        return False
+    
+    data = resp.json()
+    detail = data.get("detail", "")
+    if "YouTube" not in detail or "Vimeo" not in detail:
+        print(f"❌ FAILED: Error message should mention YouTube/Vimeo, got: {detail}")
+        return False
+    
+    print(f"✅ PASSED: Returned 400 with message: {detail}")
+    return True
+
+
+def test_embed_invalid_url(token: str):
+    """Test f) POST with invalid URL string - should return 400"""
+    print("\n📹 TEST f) Invalid URL string - expect 400")
+    payload = {
+        "section": "about-travel",
+        "file_url": "not-a-url",
+        "file_type": "embed",
+        "alt_text": "Test",
+        "caption": "T",
+        "sort_order": 5
+    }
+    resp = requests.post(
+        f"{BACKEND_URL}/admin/media",
+        json=payload,
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=10
+    )
+    if resp.status_code != 400:
+        print(f"❌ FAILED: Expected 400, got {resp.status_code}")
+        print(f"   Response: {resp.text}")
+        return False
+    
+    print(f"✅ PASSED: Returned 400 for invalid URL")
+    return True
+
+
+def test_get_media_section(token: str):
+    """Test g) GET /api/media?section=about-travel returns embed rows"""
+    print("\n📹 TEST g) GET /api/media?section=about-travel")
+    resp = requests.get(
+        f"{BACKEND_URL}/media",
+        params={"section": "about-travel"},
+        timeout=10
+    )
+    if resp.status_code != 200:
+        print(f"❌ FAILED: Expected 200, got {resp.status_code}")
+        return False
+    
+    data = resp.json()
+    if not isinstance(data, list):
+        print(f"❌ FAILED: Expected list, got {type(data)}")
+        return False
+    
+    # Should have 4 embed rows we created (tests a-d)
+    if len(data) < 4:
+        print(f"❌ FAILED: Expected at least 4 rows, got {len(data)}")
+        return False
+    
+    # Verify embed_provider and embed_id are present
+    embed_rows = [r for r in data if r.get("file_type") == "embed"]
+    if len(embed_rows) < 4:
+        print(f"❌ FAILED: Expected at least 4 embed rows, got {len(embed_rows)}")
+        return False
+    
+    # Check first row has embed fields
+    first = embed_rows[0]
+    if not first.get("embed_provider") or not first.get("embed_id"):
+        print(f"❌ FAILED: embed_provider or embed_id missing in response")
+        return False
+    
+    print(f"✅ PASSED: GET returned {len(data)} rows, {len(embed_rows)} embed rows with provider/id")
+    return True
+
+
+def test_patch_media(token: str):
+    """Test h) PATCH /api/admin/media/{mid} with alt_text update"""
+    print("\n📹 TEST h) PATCH /api/admin/media/{mid} with alt_text")
+    if not test_media_ids:
+        print("❌ FAILED: No test media IDs to patch")
+        return False
+    
+    mid = test_media_ids[0]
+    payload = {"alt_text": "Updated alt text via PATCH"}
+    resp = requests.patch(
+        f"{BACKEND_URL}/admin/media/{mid}",
+        json=payload,
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=10
+    )
+    if resp.status_code != 200:
+        print(f"❌ FAILED: Expected 200, got {resp.status_code}")
+        print(f"   Response: {resp.text}")
+        return False
+    
+    # Verify by fetching the row again
+    resp2 = requests.get(f"{BACKEND_URL}/media", params={"section": "about-travel"}, timeout=10)
+    if resp2.status_code != 200:
+        print(f"❌ FAILED: Could not verify PATCH")
+        return False
+    
+    rows = resp2.json()
+    updated_row = next((r for r in rows if r.get("id") == mid), None)
+    if not updated_row:
+        print(f"❌ FAILED: Could not find updated row")
+        return False
+    
+    if updated_row.get("alt_text") != "Updated alt text via PATCH":
+        print(f"❌ FAILED: alt_text not updated, got: {updated_row.get('alt_text')}")
+        return False
+    
+    print(f"✅ PASSED: alt_text updated and persisted")
+    return True
+
+
+def test_delete_media(token: str):
+    """Test i) DELETE each test row and verify empty list"""
+    print("\n📹 TEST i) DELETE all test rows")
+    if not test_media_ids:
+        print("⚠️  No test media IDs to delete")
         return True
-        
-    finally:
-        # Cleanup: delete test journeys
-        print("\n🧹 Cleaning up test journeys...")
-        for jid in test_journey_ids:
-            try:
-                response = requests.delete(
-                    f"{BASE_URL}/admin/journeys/{jid}",
-                    headers=headers
-                )
-                if response.status_code == 200:
-                    print(f"✅ Deleted test journey {jid}")
-                else:
-                    print(f"⚠️  Failed to delete test journey {jid}: {response.status_code}")
-            except Exception as e:
-                print(f"⚠️  Error deleting test journey {jid}: {e}")
-
-def test_c5_more_details_html(token):
-    """Test C5 — Tour more_details_html field"""
-    print("\n" + "="*80)
-    print("TEST C5 — Tour more_details_html field")
-    print("="*80)
     
-    headers = {"Authorization": f"Bearer {token}"}
-    test_journey_ids = []
-    
-    try:
-        # 1. Verify all 4 existing journeys have more_details_html field (default empty)
-        print("\n📋 Step 1: Verify all 4 existing journeys have more_details_html field...")
-        response = requests.get(f"{BASE_URL}/journeys")
-        if response.status_code != 200:
-            print(f"❌ GET /api/journeys failed: {response.status_code}")
-            return False
-        
-        journeys = response.json()
-        if len(journeys) != 4:
-            print(f"❌ Expected 4 journeys, got {len(journeys)}")
-            return False
-        
-        all_have_field = True
-        for journey in journeys:
-            name = journey.get("name", "Unknown")
-            more_details_html = journey.get("more_details_html")
-            
-            if more_details_html is None:
-                print(f"❌ Journey '{name}': more_details_html field missing")
-                all_have_field = False
-            elif not isinstance(more_details_html, str):
-                print(f"❌ Journey '{name}': more_details_html is not a string: {type(more_details_html)}")
-                all_have_field = False
-            else:
-                print(f"✅ Journey '{name}': has more_details_html field (value: '{more_details_html}')")
-        
-        if not all_have_field:
-            return False
-        
-        # 2. POST a new test journey with more_details_html
-        print("\n📋 Step 2: POST new journey with more_details_html...")
-        test_html = "<p>Hello <strong>world</strong></p>"
-        new_journey_data = {
-            "name": "Test Journey C5 More Details",
-            "region": "Test Region",
-            "more_details_html": test_html,
-            "status": "published",
-            "type": "tour"
-        }
-        
-        response = requests.post(
-            f"{BASE_URL}/admin/journeys",
-            headers=headers,
-            json=new_journey_data
+    for mid in test_media_ids:
+        resp = requests.delete(
+            f"{BACKEND_URL}/admin/media/{mid}",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=10
         )
-        
-        if response.status_code != 200:
-            print(f"❌ POST /api/admin/journeys failed: {response.status_code} - {response.text}")
+        if resp.status_code != 200:
+            print(f"❌ FAILED: DELETE {mid} returned {resp.status_code}")
             return False
-        
-        created_journey = response.json()
-        test_journey_id = created_journey.get("id")
-        test_journey_ids.append(test_journey_id)
-        
-        if created_journey.get("more_details_html") != test_html:
-            print(f"❌ Created journey more_details_html mismatch")
-            print(f"   Expected: {test_html}")
-            print(f"   Got: {created_journey.get('more_details_html')}")
-            return False
-        
-        print(f"✅ Created journey with more_details_html: {test_html}")
-        
-        # 3. Verify round-trip through GET
-        print("\n📋 Step 3: Verify round-trip through GET /api/journeys...")
-        response = requests.get(f"{BASE_URL}/journeys")
-        if response.status_code != 200:
-            print(f"❌ GET /api/journeys failed: {response.status_code}")
-            return False
-        
-        journeys = response.json()
-        found = False
-        for journey in journeys:
-            if journey.get("id") == test_journey_id:
-                found = True
-                if journey.get("more_details_html") != test_html:
-                    print(f"❌ Round-trip failed: more_details_html mismatch")
-                    print(f"   Expected: {test_html}")
-                    print(f"   Got: {journey.get('more_details_html')}")
-                    return False
-                print(f"✅ Round-trip successful: more_details_html persisted correctly")
-                break
-        
-        if not found:
-            print(f"❌ Created journey not found in GET /api/journeys")
-            return False
-        
-        # 4. PATCH the journey with different more_details_html
-        print("\n📋 Step 4: PATCH journey with different more_details_html...")
-        updated_html = "<h2>Updated</h2><p>New content with <em>emphasis</em></p>"
-        response = requests.patch(
-            f"{BASE_URL}/admin/journeys/{test_journey_id}",
-            headers=headers,
-            json={"more_details_html": updated_html}
-        )
-        
-        if response.status_code != 200:
-            print(f"❌ PATCH /api/admin/journeys/{test_journey_id} failed: {response.status_code} - {response.text}")
-            return False
-        
-        print(f"✅ PATCH successful")
-        
-        # 5. Verify PATCH persisted
-        print("\n📋 Step 5: Verify PATCH persisted...")
-        response = requests.get(f"{BASE_URL}/journeys")
-        if response.status_code != 200:
-            print(f"❌ GET /api/journeys failed: {response.status_code}")
-            return False
-        
-        journeys = response.json()
-        found = False
-        for journey in journeys:
-            if journey.get("id") == test_journey_id:
-                found = True
-                if journey.get("more_details_html") != updated_html:
-                    print(f"❌ PATCH persistence failed: more_details_html mismatch")
-                    print(f"   Expected: {updated_html}")
-                    print(f"   Got: {journey.get('more_details_html')}")
-                    return False
-                print(f"✅ PATCH persisted: more_details_html updated correctly")
-                break
-        
-        if not found:
-            print(f"❌ Journey not found after PATCH")
-            return False
-        
-        print("\n✅ TEST C5 PASSED: All more_details_html field tests successful")
-        return True
-        
-    finally:
-        # Cleanup: delete test journeys
-        print("\n🧹 Cleaning up test journeys...")
-        for jid in test_journey_ids:
-            try:
-                response = requests.delete(
-                    f"{BASE_URL}/admin/journeys/{jid}",
-                    headers=headers
-                )
-                if response.status_code == 200:
-                    print(f"✅ Deleted test journey {jid}")
-                else:
-                    print(f"⚠️  Failed to delete test journey {jid}: {response.status_code}")
-            except Exception as e:
-                print(f"⚠️  Error deleting test journey {jid}: {e}")
-
-def test_c7_hero_tagline(token):
-    """Test C7 — home.hero.tagline content key"""
-    print("\n" + "="*80)
-    print("TEST C7 — home.hero.tagline content key")
-    print("="*80)
     
-    print("\n📋 Verify GET /api/content returns home.hero.tagline with value ''...")
-    response = requests.get(f"{BASE_URL}/content")
-    if response.status_code != 200:
-        print(f"❌ GET /api/content failed: {response.status_code}")
+    # Verify section is now empty
+    resp = requests.get(f"{BACKEND_URL}/media", params={"section": "about-travel"}, timeout=10)
+    if resp.status_code != 200:
+        print(f"❌ FAILED: Could not verify deletion")
         return False
     
-    content = response.json()
-    
-    if "home.hero.tagline" not in content:
-        print(f"❌ home.hero.tagline key not found in content")
-        print(f"   Available keys: {list(content.keys())}")
+    rows = resp.json()
+    if len(rows) != 0:
+        print(f"❌ FAILED: Expected 0 rows after deletion, got {len(rows)}")
         return False
     
-    tagline_value = content.get("home.hero.tagline")
-    if tagline_value != "":
-        print(f"❌ home.hero.tagline value mismatch")
-        print(f"   Expected: '' (empty string)")
-        print(f"   Got: '{tagline_value}'")
-        return False
-    
-    print(f"✅ home.hero.tagline exists with value '' (empty string)")
-    print("\n✅ TEST C7 PASSED: home.hero.tagline content key verified")
+    print(f"✅ PASSED: All {len(test_media_ids)} test rows deleted, section empty")
+    test_media_ids.clear()
     return True
 
-def test_corporate_retreats_nav_removal(token):
-    """Test Corporate Retreats nav removal"""
-    print("\n" + "="*80)
-    print("TEST — Corporate Retreats nav removal")
-    print("="*80)
-    
-    print("\n📋 Verify GET /api/content does NOT return any nav.5.* keys...")
-    response = requests.get(f"{BASE_URL}/content")
-    if response.status_code != 200:
-        print(f"❌ GET /api/content failed: {response.status_code}")
-        return False
-    
-    content = response.json()
-    
-    # Check for any nav.5.* keys
-    nav_5_keys = [key for key in content.keys() if key.startswith("nav.5.")]
-    
-    if nav_5_keys:
-        print(f"❌ Found nav.5.* keys (should not exist): {nav_5_keys}")
-        return False
-    
-    print(f"✅ No nav.5.* keys found (correct)")
-    
-    # Verify nav.0 through nav.4 exist
-    print("\n📋 Verify nav.0.* through nav.4.* keys exist...")
-    expected_nav_prefixes = ["nav.0.", "nav.1.", "nav.2.", "nav.3.", "nav.4."]
-    found_prefixes = set()
-    
-    for key in content.keys():
-        for prefix in expected_nav_prefixes:
-            if key.startswith(prefix):
-                found_prefixes.add(prefix)
-                break
-    
-    if len(found_prefixes) != 5:
-        print(f"⚠️  Expected 5 nav prefixes (nav.0 through nav.4), found {len(found_prefixes)}: {found_prefixes}")
-    else:
-        print(f"✅ All expected nav prefixes (nav.0 through nav.4) exist")
-    
-    # Check for nav.cta
-    if "nav.cta" in content:
-        print(f"✅ nav.cta exists")
-    else:
-        print(f"⚠️  nav.cta not found")
-    
-    print("\n✅ TEST PASSED: Corporate Retreats nav removal verified")
-    return True
 
-def test_regression(token):
-    """Test regression: verify journey and media counts"""
-    print("\n" + "="*80)
-    print("REGRESSION TEST — Verify journey and media counts")
-    print("="*80)
+def test_image_upload_regression(token: str):
+    """Test 2) Regression - existing image upload pipeline"""
+    print("\n🖼️  TEST 2) Image upload regression - POST /api/admin/media/upload")
     
-    # Test 1: GET /api/journeys returns exactly 4 rows
-    print("\n📋 Step 1: Verify GET /api/journeys returns exactly 4 rows...")
-    response = requests.get(f"{BASE_URL}/journeys")
-    if response.status_code != 200:
-        print(f"❌ GET /api/journeys failed: {response.status_code}")
-        return False
+    # Create a tiny 1x1 PNG
+    png_bytes = base64.b64decode(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+    )
     
-    journeys = response.json()
-    if len(journeys) != 4:
-        print(f"❌ Expected 4 journeys, got {len(journeys)}")
-        return False
-    
-    print(f"✅ GET /api/journeys returns exactly 4 rows")
-    
-    # Test 2: GET /api/media returns exactly 237 rows
-    print("\n📋 Step 2: Verify GET /api/media returns exactly 237 rows...")
-    response = requests.get(f"{BASE_URL}/media")
-    if response.status_code != 200:
-        print(f"❌ GET /api/media failed: {response.status_code}")
-        return False
-    
-    media = response.json()
-    if len(media) != 237:
-        print(f"❌ Expected 237 media items, got {len(media)}")
-        return False
-    
-    print(f"✅ GET /api/media returns exactly 237 rows")
-    
-    print("\n✅ REGRESSION TEST PASSED: All counts verified")
-    return True
-
-def main():
-    print("="*80)
-    print("PHASE 1 BACKEND TESTING — C4, C5, C7, Corporate Retreats nav removal")
-    print("="*80)
-    
-    # Login
-    token = login()
-    
-    # Run all tests
-    results = {
-        "C4 — Tour excludes field": test_c4_excludes_field(token),
-        "C5 — Tour more_details_html field": test_c5_more_details_html(token),
-        "C7 — home.hero.tagline content key": test_c7_hero_tagline(token),
-        "Corporate Retreats nav removal": test_corporate_retreats_nav_removal(token),
-        "Regression test": test_regression(token)
+    files = {"file": ("test.png", png_bytes, "image/png")}
+    data = {
+        "section": "gallery",
+        "category": "",
+        "alt_text": "Test image upload",
+        "sort_order": 9999
     }
     
-    # Summary
-    print("\n" + "="*80)
-    print("TEST SUMMARY")
-    print("="*80)
+    resp = requests.post(
+        f"{BACKEND_URL}/admin/media/upload",
+        files=files,
+        data=data,
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=10
+    )
     
-    passed = 0
-    failed = 0
+    if resp.status_code != 200:
+        print(f"❌ FAILED: Expected 200, got {resp.status_code}")
+        print(f"   Response: {resp.text}")
+        return False
     
-    for test_name, result in results.items():
-        status = "✅ PASSED" if result else "❌ FAILED"
-        print(f"{status}: {test_name}")
-        if result:
-            passed += 1
+    result = resp.json()
+    media_id = result.get("id")
+    
+    # Verify response
+    if result.get("file_type") != "image":
+        print(f"❌ FAILED: file_type is '{result.get('file_type')}', expected 'image'")
+        return False
+    
+    srcset = result.get("srcset", {})
+    if not srcset or not isinstance(srcset, dict):
+        print(f"❌ FAILED: srcset not populated or not a dict: {srcset}")
+        return False
+    
+    # Should have 3 variants: 1600w, 1200w, 800w
+    expected_keys = {"1600w", "1200w", "800w"}
+    if set(srcset.keys()) != expected_keys:
+        print(f"❌ FAILED: srcset keys are {set(srcset.keys())}, expected {expected_keys}")
+        return False
+    
+    print(f"✅ PASSED: Image upload successful, file_type='image', srcset has 3 variants")
+    
+    # Clean up
+    if media_id:
+        print(f"   Cleaning up test image {media_id}...")
+        resp = requests.delete(
+            f"{BACKEND_URL}/admin/media/{media_id}",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=10
+        )
+        if resp.status_code == 200:
+            print(f"   ✅ Test image deleted")
         else:
-            failed += 1
+            print(f"   ⚠️  Could not delete test image: {resp.status_code}")
     
-    print("\n" + "="*80)
-    print(f"TOTAL: {passed} passed, {failed} failed out of {len(results)} tests")
-    print("="*80)
+    return True
+
+
+def test_phase1_regression(token: str):
+    """Test 3) Phase 1 regression - journeys and content"""
+    print("\n🔄 TEST 3) Phase 1 regression checks")
     
-    if failed > 0:
-        sys.exit(1)
-    else:
-        print("\n🎉 ALL TESTS PASSED!")
-        sys.exit(0)
+    # Test 3a: GET /api/journeys - 4 rows with excludes and more_details_html
+    print("   3a) GET /api/journeys - checking excludes and more_details_html")
+    resp = requests.get(f"{BACKEND_URL}/journeys", timeout=10)
+    if resp.status_code != 200:
+        print(f"   ❌ FAILED: GET /api/journeys returned {resp.status_code}")
+        return False
+    
+    journeys = resp.json()
+    if len(journeys) != 4:
+        print(f"   ❌ FAILED: Expected 4 journeys, got {len(journeys)}")
+        return False
+    
+    for j in journeys:
+        excludes = j.get("excludes")
+        if not isinstance(excludes, list) or len(excludes) != 5:
+            print(f"   ❌ FAILED: Journey '{j.get('name')}' excludes is not a list of 5 items: {excludes}")
+            return False
+        
+        more_details = j.get("more_details_html")
+        if not isinstance(more_details, str):
+            print(f"   ❌ FAILED: Journey '{j.get('name')}' more_details_html is not a string: {type(more_details)}")
+            return False
+    
+    print(f"   ✅ PASSED: All 4 journeys have excludes (5 items) and more_details_html (string)")
+    
+    # Test 3b: GET /api/content - home.hero.tagline present, no nav.5.*
+    print("   3b) GET /api/content - checking home.hero.tagline and nav.5 removal")
+    resp = requests.get(f"{BACKEND_URL}/content", timeout=10)
+    if resp.status_code != 200:
+        print(f"   ❌ FAILED: GET /api/content returned {resp.status_code}")
+        return False
+    
+    content = resp.json()
+    
+    # Content is a dict, not a list
+    if not isinstance(content, dict):
+        print(f"   ❌ FAILED: Expected dict, got {type(content)}")
+        return False
+    
+    # Check home.hero.tagline exists with value ''
+    if "home.hero.tagline" not in content:
+        print(f"   ❌ FAILED: home.hero.tagline key not found in content")
+        return False
+    if content["home.hero.tagline"] != "":
+        print(f"   ❌ FAILED: home.hero.tagline value is '{content['home.hero.tagline']}', expected ''")
+        return False
+    
+    # Check no nav.5.* keys exist
+    nav5_keys = [k for k in content.keys() if k.startswith("nav.5.")]
+    if nav5_keys:
+        print(f"   ❌ FAILED: Found nav.5.* keys (should be removed): {nav5_keys}")
+        return False
+    
+    print(f"   ✅ PASSED: home.hero.tagline='' present, no nav.5.* keys")
+    
+    return True
+
+
+def main():
+    print("=" * 70)
+    print("PHASE 2 BACKEND TESTING - Embed Media Support + Regressions")
+    print("=" * 70)
+    
+    try:
+        token = login()
+        
+        results = []
+        
+        # Phase 2 embed tests
+        print("\n" + "=" * 70)
+        print("PHASE 2 - EMBED MEDIA TESTS")
+        print("=" * 70)
+        
+        results.append(("a) YouTube watch?v=", test_embed_youtube_watch(token)))
+        results.append(("b) YouTube youtu.be", test_embed_youtube_short(token)))
+        results.append(("c) Vimeo vimeo.com/{id}", test_embed_vimeo_standard(token)))
+        results.append(("d) Vimeo player.vimeo.com", test_embed_vimeo_player(token)))
+        results.append(("e) Unsupported host (400)", test_embed_unsupported_host(token)))
+        results.append(("f) Invalid URL (400)", test_embed_invalid_url(token)))
+        results.append(("g) GET /api/media?section", test_get_media_section(token)))
+        results.append(("h) PATCH alt_text", test_patch_media(token)))
+        results.append(("i) DELETE all test rows", test_delete_media(token)))
+        
+        # Regression tests
+        print("\n" + "=" * 70)
+        print("REGRESSION TESTS")
+        print("=" * 70)
+        
+        results.append(("2) Image upload pipeline", test_image_upload_regression(token)))
+        results.append(("3) Phase 1 features", test_phase1_regression(token)))
+        
+        # Summary
+        print("\n" + "=" * 70)
+        print("TEST SUMMARY")
+        print("=" * 70)
+        
+        passed = sum(1 for _, result in results if result)
+        total = len(results)
+        
+        print(f"\nTotal: {total} tests")
+        print(f"Passed: {passed} ✅")
+        print(f"Failed: {total - passed} ❌")
+        
+        if total - passed > 0:
+            print("\nFailed tests:")
+            for name, result in results:
+                if not result:
+                    print(f"  ❌ {name}")
+        
+        print("\n" + "=" * 70)
+        if passed == total:
+            print("🎉 ALL TESTS PASSED!")
+        else:
+            print("⚠️  SOME TESTS FAILED")
+        print("=" * 70)
+        
+        return 0 if passed == total else 1
+        
+    except Exception as e:
+        print(f"\n❌ FATAL ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        return 1
+
 
 if __name__ == "__main__":
-    main()
+    exit(main())
