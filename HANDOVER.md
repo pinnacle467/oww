@@ -477,4 +477,56 @@ Production `.env` values live on Bluehost only (see Docker compose).
 
 ---
 
+## 12. Open backlog — Phase C and Phase D (planned 2026-06-28, NOT YET STARTED)
+
+The client filed a 9-item change request after B1/B2. I've split it into two roughly-80-credit phases. **Read this whole section before executing — phase order and task order within a phase BOTH matter** (e.g. Change 7 deliberately runs after the new pages from Change 2 and Change 5 are added, so the sidebar audit picks them up automatically).
+
+### Phase C — "Quick wins + Hero Carousel" (target ≤80cr, planned 63cr + 17cr buffer)
+
+Self-contained changes that don't depend on the new shared swipeable component. Ship as one deploy.
+
+| Order | Change | Notes for implementer |
+|---|---|---|
+| C0 | Setup | Repo pull, recreate .env (Section 11), run `python3 backend/sync_from_live.py`, `sudo supervisorctl restart all` |
+| C1 | **#9** Remove Corporate Retreats from nav | Drop the 6th `NAV_LINKS` entry in `frontend/src/data/content.js`. Hide the `<RetreatsDropdown />` branch in `Navbar.jsx` (don't delete the file — page stays accessible via direct link). Remove the `nav.5.label` / `nav.5.to` rows from the nav-label editor list in `WebsiteText` admin if it lists nav rows. Footer — check `Footer.jsx` for a Corporate Retreats link and remove if present. |
+| C2 | **#8** Blog hero image upload | New content key `blog.hero.image_id` (or reuse `media` collection with a section like `blog-hero`). Add an image picker block to the Blog admin section. `Blog.jsx` already renders a hero — just wire the new image source through `<PageHero>`. |
+| C3 | **#2** Hide "Maleny, arrive and exhale" Home section | Find `MalenyFeature.jsx` (or whatever currently renders the highland cow). Add `is_visible` toggle if not present, default false on next deploy. Keep the file on disk + register it as a hidden `home_sections` row so the client can re-enable it on About/Retreats later. Confirm `Home.jsx` flows cleanly with no gap. |
+| C4 | **#4** "What's Not Included" field | Backend: add `excludes: List[str]` to `JourneyInput`/`JourneyUpdate`. Migration in `seed()`: default the new field to the standard exclusions list (`["International and domestic airfares", "Travel insurance", "Visa fees (if applicable)", "Personal expenses", "Optional activities not listed in the itinerary"]`) but ONLY when `excludes` is missing — idempotent. Frontend admin: new textarea below the existing `includes` textarea in `JourneysManager.jsx`. Public render: in `TourDetail.jsx` mirror the bullet-list styling of "What's Included" right below it. |
+| C5 | **#3** Tour detail "More Details" reorder | Two tweaks: (a) relabel the "About this journey" H3 in `TourDetail.jsx` to "More Details" (or keep both editors but rename the heading); (b) move the `<TourGallery>` from BELOW the Enquire CTA to ABOVE the price + CTA block so a media-rich "More Details" experience surfaces before the user is asked to act. The existing 3-section body editors and gallery picker from B2 cover the content needs — no new admin field required. |
+| C6 | **#7** Admin sidebar route sync | In `AdminShell.jsx`, the sidebar uses `<NavLink>` (or should) so React Router gives an active class automatically. Audit each entry: confirm `to=` exactly matches the registered route in `App.js`. Add any new admin pages from C2/C5 to the LINKS array (Phase C order is deliberate — do C7 AFTER C2/C5). Test by clicking each item; the active highlight must move and persist on direct URL load. |
+| C7 | **#1** Hero carousel + admin manager | New collection `hero_carousel` (fields: id, media_id, alt, caption, sort_order, is_visible, created_at, updated_at). Full CRUD + reorder under `/api/admin/hero-carousel`. Public read `GET /api/hero-carousel`. Rewrite `frontend/src/components/home/HeroSlideshow.jsx` to fetch this list and rotate every 4500ms with smooth fade transitions, arrow buttons + dot indicators. **Remove** all the "Slow and Soulful Tasmania" tour copy / per-slide overlay. A single brand tagline content key (`home.hero.tagline`) may exist but defaults to empty — leave it blank unless the client supplies copy. New admin page `pages/admin/HeroCarouselManager.jsx` patterned on `WebsiteMediaManager` (upload + list + reorder via up/down arrows + delete with confirm). **Warn on delete-of-last** via `window.confirm`. Add to AdminShell sidebar (under C6's audit). Wire into `_write_snapshot_now()` and `_apply_snapshot()`. |
+| C8 | Test + finalize | `deep_testing_backend_v2` for new endpoints (hero_carousel CRUD, journey excludes field, blog hero, home_sections visibility), public visual smoke screenshots, regen snapshot, ask user before pushing. |
+
+**Cumulative result of Phase C:** Home hero is a clean photo carousel, Maleny exhale section is gone, every tour now has Includes + Excludes, Tour details surface the gallery+content above the CTA, Blog has a configurable hero image, Corporate Retreats nav item is gone but the page remains, admin sidebar always matches the active route.
+
+### Phase D — "Site-wide Swipeable Media + Mixed Photo/Video" (target ≤80cr, planned 78cr)
+
+The heavy refactor: build ONE shared swipeable component and ripple it through every existing gallery + admin manager. Mixed photo + video everywhere (MP4 upload OR YouTube/Vimeo URL).
+
+| Order | Change | Notes for implementer |
+|---|---|---|
+| D0 | Setup | Same as C0 |
+| D1 | Build `<SwipeableMedia>` shared component | Touch swipe (left/right) on mobile/tablet, arrow buttons on desktop, dot indicators below, full-screen lightbox for images, inline `<video>` play for MP4, embed for YouTube + Vimeo (parse video ID from URL). Lives in `frontend/src/components/media/SwipeableMedia.jsx`. Accepts `items: [{ kind: 'image'|'video'|'embed', url, srcset?, lqip?, alt?, embed_provider?, embed_id? }]`. **Build this FIRST** — every subsequent task consumes it. |
+| D2 | **#5** About Us travel gallery | New collection `travel_media` (id, kind ∈ image/video/embed, file_url, srcset, lqip, embed_provider, embed_id, alt, caption, sort_order, is_visible). Admin page `pages/admin/TravelMediaManager.jsx` with multi-upload (drop or file picker), embed URL input, drag-reorder, delete-with-confirm. Public render on `pages/About.jsx` using `<SwipeableMedia>` — single-row horizontal, no vertical stacking; mobile/tablet swipe; full-screen on tap. Snapshot integration. |
+| D3 | **#6 part 1** Backend extensions for multi-media | Extend `Blog`, `Stories`, `Home Sections` (or anywhere else with a single `cover_url`) with `media_ids: List[str]`. Idempotent migration copies the existing single `cover_url` -> first entry. Old `cover_url` stays on the schema as a read-only fallback for one release (same pattern as B2's `body_html` -> `description_html`). Add `kind` field to `media` collection so video uploads (MP4) and embed records (YouTube/Vimeo) co-exist with images. Public endpoints accept `?include_video=true|false` if any caller needs to filter. |
+| D4 | **#6 part 2** Admin audit + multi-upload everywhere | Convert every single-file upload field across `BlogManager` (cover), `AboutManager` (story covers), `HomeContentManager` (section images), `WebsiteMediaManager` (already multi but add video support) to use a shared `<MultiMediaPicker>` component (extract + generalise the `<GalleryPicker>` built in B2). Drag-and-drop reorder, individual delete with `window.confirm`, embed URL field for YouTube/Vimeo. **Audit each existing admin field — list them in PR before touching code, get user sign-off.** |
+| D5 | **#6 part 3** Public refactor | Rewrite `TourGallery`, `Gallery` page, `FromTheJournal`, `BlogPost`, blog index cards, `About` page, the hero carousel from C7 — all consume `<SwipeableMedia>`. Same swipe gesture, same arrows, same dots, same lightbox, same inline video everywhere. **One implementation, six consumers.** |
+| D6 | Test + finalize | Backend tests on every new endpoint + migration, frontend tests (with explicit user permission per protocol), regen snapshot, push prompt. |
+
+**Cumulative result of Phase D:** Every gallery on the site behaves identically. Every admin media field accepts multi-file + video. Photos and videos can be freely mixed in any context. Future pages should reach for `<SwipeableMedia>` by default — make this a style-guide note in HANDOVER.
+
+### Optional Phase E (only if Phase D blows budget)
+
+If D4 or D5 runs long, the rewrite of `Gallery` page and `BlogIndex` cards is the lowest-risk thing to defer. Shape: ~15cr, one session. Don't defer the migrations or the shared component — those are blocking for everything else.
+
+### Cross-phase notes
+
+- **No new third-party integrations needed.** Everything Phase C/D uses already exists: TipTap, native HTML5 drag, existing `/api/admin/media/upload` pipeline for files. YouTube/Vimeo embeds don't need API keys for public videos.
+- **Mobile-first** for D1's swipe gestures. Test on a 375px viewport before declaring done.
+- **Don't introduce `@dnd-kit`.** B2 chose native HTML5 drag; keep parity.
+- **Don't downgrade React versions.** Package.json is source of truth (currently React 19).
+- **Em-dash rule still applies.** No `—` in any user-facing copy (DB content, seeded examples, SEO text, JSON-LD, alt text). Hyphens are fine in admin code and code comments.
+
+---
+
 - End of handover (2026-06-28).
