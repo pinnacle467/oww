@@ -1737,12 +1737,16 @@ class HomeSectionInput(BaseModel):
     heading: str = ""
     body: str = ""             # HTML (rich text)
     is_visible: bool = True
+    # Phase 3: optional ordered list of media.id values for an inline gallery
+    # rendered above the body via the shared <SwipeableMedia> component.
+    media_ids: List[str] = Field(default_factory=list)
 
 
 class HomeSectionUpdate(BaseModel):
     heading: Optional[str] = None
     body: Optional[str] = None
     is_visible: Optional[bool] = None
+    media_ids: Optional[List[str]] = None
 
 
 class HomeSectionReorder(BaseModel):
@@ -1775,9 +1779,14 @@ async def admin_list_home_sections(admin: dict = Depends(get_current_admin)):
 @api_router.post("/admin/home-sections")
 async def admin_create_home_section(data: HomeSectionInput, admin: dict = Depends(get_current_admin)):
     next_order = await db.home_sections.count_documents({})
+    payload = data.model_dump()
+    # Phase 3: ensure media_ids defaults to [] (Pydantic Field handles new POSTs,
+    # this keeps shape consistent even if older clients omit the field entirely).
+    if "media_ids" not in payload or payload.get("media_ids") is None:
+        payload["media_ids"] = []
     doc = {
         "id": str(uuid.uuid4()),
-        **data.model_dump(),
+        **payload,
         "sort_order": next_order,
         "created_at": now_iso(),
         "updated_at": now_iso(),
@@ -1987,6 +1996,10 @@ class BlogPostInput(BaseModel):
     excerpt: str = ""
     body: str = ""                  # HTML produced by the admin TipTap editor
     status: str = "draft"           # "draft" | "published"
+    # Phase 3: optional ordered list of media.id values for a multi-cover
+    # gallery shown at the top of the public post via <SwipeableMedia>.
+    # When empty, the existing single `featured_url` is used as the cover.
+    media_ids: List[str] = Field(default_factory=list)
 
 
 class BlogPostUpdate(BaseModel):
@@ -1995,6 +2008,7 @@ class BlogPostUpdate(BaseModel):
     excerpt: Optional[str] = None
     body: Optional[str] = None
     status: Optional[str] = None
+    media_ids: Optional[List[str]] = None
 
 
 def _slugify(text: str) -> str:
@@ -2090,6 +2104,7 @@ async def admin_create_blog_post(data: BlogPostInput, admin: dict = Depends(get_
         "featured_srcset": {},
         "featured_avif_srcset": {},
         "featured_lqip": "",
+        "media_ids": list(data.media_ids or []),
         "created_at": now_iso(),
         "updated_at": now_iso(),
     }
@@ -3376,6 +3391,24 @@ async def seed():
     )
     if res_md.modified_count:
         logger.info("C5: defaulted more_details_html on %d journey rows", res_md.modified_count)
+
+    # Phase 3 migration - default `media_ids` to [] on every existing blog_post
+    # and home_section row. Idempotent (only $sets when missing). When
+    # `media_ids` is non-empty the public page renders <SwipeableMedia> above
+    # the body; when empty the existing single-cover code paths still apply.
+    res_blog_mids = await db.blog_posts.update_many(
+        {"media_ids": {"$exists": False}},
+        {"$set": {"media_ids": []}},
+    )
+    if res_blog_mids.modified_count:
+        logger.info("Phase 3: defaulted media_ids on %d blog_post rows", res_blog_mids.modified_count)
+
+    res_hs_mids = await db.home_sections.update_many(
+        {"media_ids": {"$exists": False}},
+        {"$set": {"media_ids": []}},
+    )
+    if res_hs_mids.modified_count:
+        logger.info("Phase 3: defaulted media_ids on %d home_section rows", res_hs_mids.modified_count)
 
     # Seed default home FAQs ("Questions Gently Answered"). Idempotent — only
     # inserts if the collection is empty so the client's edits are never lost.

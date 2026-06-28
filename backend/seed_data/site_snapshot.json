@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-06-28T12:15:06.471030+00:00",
+  "generated_at": "2026-06-28T14:12:47.432485+00:00",
   "media": [
     {
       "file_url": "/api/uploads/contact-bg/c6213da9b39140b19135fb900221e491.webp",
@@ -4512,6 +4512,14 @@
       "value": "Join a Retreat"
     },
     {
+      "key": "home.hero.tagline",
+      "created_at": "2026-06-28T09:53:54.059278+00:00",
+      "group": "home",
+      "label": "Optional hero overlay text (leave blank for pure photo carousel)",
+      "type": "text",
+      "value": ""
+    },
+    {
       "key": "home.manifesto.eyebrow",
       "created_at": "2026-06-27T11:12:08.012658+00:00",
       "group": "home",
@@ -5706,14 +5714,6 @@
     {
       "key": "contact.errors.message",
       "value": "A few more words please, at least 20 characters."
-    },
-    {
-      "key": "home.hero.tagline",
-      "created_at": "2026-06-28T09:53:54.059278+00:00",
-      "group": "home",
-      "label": "Optional hero overlay text (leave blank for pure photo carousel)",
-      "type": "text",
-      "value": ""
     }
   ],
   "site_settings": [
@@ -6070,7 +6070,8 @@
       "is_visible": true,
       "sort_order": 4,
       "created_at": "2026-06-27T11:12:08.191603+00:00",
-      "updated_at": "2026-06-27T11:17:04.930526+00:00"
+      "updated_at": "2026-06-27T11:17:04.930526+00:00",
+      "media_ids": []
     },
     {
       "id": "fae84988-c1c0-49c8-b6e3-286d8cc53dd0",
@@ -6079,7 +6080,8 @@
       "is_visible": true,
       "sort_order": 3,
       "created_at": "2026-06-27T11:12:08.200540+00:00",
-      "updated_at": "2026-06-27T11:17:04.930271+00:00"
+      "updated_at": "2026-06-27T11:17:04.930271+00:00",
+      "media_ids": []
     },
     {
       "id": "bcebb71b-651a-4a64-96c6-b71bef3d16cf",
@@ -6088,7 +6090,8 @@
       "is_visible": true,
       "sort_order": 2,
       "created_at": "2026-06-27T11:12:08.200862+00:00",
-      "updated_at": "2026-06-27T11:17:04.929997+00:00"
+      "updated_at": "2026-06-27T11:17:04.929997+00:00",
+      "media_ids": []
     },
     {
       "id": "c5a5acc2-856d-44f1-81cb-2bdbde416885",
@@ -6097,7 +6100,8 @@
       "is_visible": true,
       "sort_order": 1,
       "created_at": "2026-06-27T11:12:08.201076+00:00",
-      "updated_at": "2026-06-27T11:17:04.929588+00:00"
+      "updated_at": "2026-06-28T14:12:45.385789+00:00",
+      "media_ids": []
     }
   ]
 }

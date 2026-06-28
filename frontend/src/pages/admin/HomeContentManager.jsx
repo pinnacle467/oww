@@ -2,17 +2,19 @@ import { useEffect, useState } from "react";
 import api, { formatApiError } from "@/lib/api";
 import { AdminShell } from "@/components/admin/AdminShell";
 import RichTextEditor from "@/components/editor/RichTextEditor";
+import { MultiMediaPicker } from "@/components/admin/MultiMediaPicker";
 import { Plus, Trash2, Save, ChevronUp, ChevronDown, Eye, EyeOff, X } from "lucide-react";
 
 // /admin/home-content - long-form rich-text sections shown on the home page.
 // Same pattern as Home FAQs but the field is heading + body instead of
 // question + answer, and the body uses TipTap for headings/lists/links.
 
-const EMPTY_SECTION = { heading: "", body: "", is_visible: true };
+const EMPTY_SECTION = { heading: "", body: "", is_visible: true, media_ids: [] };
 
 export default function HomeContentManager() {
   useEffect(() => { document.title = "Home Content | Once Were Wild Admin"; }, []);
   const [items, setItems] = useState([]);
+  const [allMedia, setAllMedia] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null);
@@ -23,8 +25,12 @@ export default function HomeContentManager() {
   const load = async () => {
     setLoading(true);
     try {
-      const { data } = await api.get("/admin/home-sections");
-      setItems(data || []);
+      const [itemsRes, mediaRes] = await Promise.all([
+        api.get("/admin/home-sections"),
+        api.get("/media"),
+      ]);
+      setItems(itemsRes.data || []);
+      setAllMedia(mediaRes.data || []);
     } catch (e) {
       setError(formatApiError(e?.response?.data?.detail) || "Could not load sections");
     } finally {
@@ -34,7 +40,16 @@ export default function HomeContentManager() {
   useEffect(() => { load(); }, []);
 
   const openCreate = () => { setDraft(EMPTY_SECTION); setCreating(true); setEditing(null); };
-  const openEdit = (s) => { setDraft({ heading: s.heading, body: s.body, is_visible: !!s.is_visible }); setEditing(s); setCreating(false); };
+  const openEdit = (s) => {
+    setDraft({
+      heading: s.heading || "",
+      body: s.body || "",
+      is_visible: !!s.is_visible,
+      media_ids: Array.isArray(s.media_ids) ? s.media_ids : [],
+    });
+    setEditing(s);
+    setCreating(false);
+  };
   const closeDrawer = () => { setEditing(null); setCreating(false); setDraft(EMPTY_SECTION); };
 
   const save = async () => {
@@ -141,6 +156,8 @@ export default function HomeContentManager() {
             onSave={save}
             draft={draft}
             setDraft={setDraft}
+            allMedia={allMedia}
+            editingId={editing?.id}
           />
         )}
       </div>
@@ -148,7 +165,7 @@ export default function HomeContentManager() {
   );
 }
 
-function Drawer({ title, onClose, saving, onSave, draft, setDraft }) {
+function Drawer({ title, onClose, saving, onSave, draft, setDraft, allMedia, editingId }) {
   return (
     <div className="fixed inset-0 z-50 flex" data-testid="home-content-drawer">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
@@ -178,6 +195,21 @@ function Drawer({ title, onClose, saving, onSave, draft, setDraft }) {
               testIdPrefix="home-section-body"
             />
           </div>
+
+          {/* Phase 3 - optional inline gallery shown above the body via SwipeableMedia */}
+          <div className="pt-3 border-t border-gray-200">
+            <MultiMediaPicker
+              value={draft.media_ids}
+              onChange={(ids) => setDraft({ ...draft, media_ids: ids })}
+              allMedia={allMedia || []}
+              rowId={editingId || "new-section"}
+              label="Section gallery (optional)"
+              description="Add images, MP4 videos or YouTube / Vimeo URLs. When set, a swipeable gallery renders above the section body. Drag to reorder. A single item renders as a plain image."
+              allowVideos={true}
+              allowEmbeds={true}
+            />
+          </div>
+
           <label className="flex items-center gap-2 text-sm text-gray-700">
             <input
               type="checkbox"

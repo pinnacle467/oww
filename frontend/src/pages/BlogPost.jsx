@@ -1,9 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 import { Seo } from "@/components/seo/Seo";
 import { FadeImg } from "@/components/ui/FadeImg";
+import { SwipeableMedia } from "@/components/media/SwipeableMedia";
 import { ArrowLeft } from "lucide-react";
+
+const API_BASE = process.env.REACT_APP_BACKEND_URL || "";
+const abs = (u) => (u && API_BASE && u.startsWith("/") ? `${API_BASE}${u}` : u);
+const absMap = (m) => {
+  if (!m || typeof m !== "object") return null;
+  return Object.fromEntries(Object.entries(m).map(([k, v]) => [k, abs(v)]));
+};
 
 function formatPublishedDate(raw) {
   if (!raw) return "";
@@ -16,12 +24,22 @@ export default function BlogPost() {
   const { slug } = useParams();
   const navigate = useNavigate();
   const [post, setPost] = useState(null);
+  const [mediaMap, setMediaMap] = useState({});
   const [status, setStatus] = useState("loading");
 
   useEffect(() => {
     setStatus("loading");
-    api.get(`/blog/${encodeURIComponent(slug)}`)
-      .then(({ data }) => { setPost(data); setStatus("ready"); })
+    Promise.all([
+      api.get(`/blog/${encodeURIComponent(slug)}`),
+      api.get(`/media`).catch(() => ({ data: [] })),
+    ])
+      .then(([postRes, mediaRes]) => {
+        setPost(postRes.data);
+        const m = {};
+        (mediaRes.data || []).forEach((row) => { m[row.id] = row; });
+        setMediaMap(m);
+        setStatus("ready");
+      })
       .catch((e) => {
         if (e?.response?.status === 404) setStatus("not-found");
         else setStatus("error");
@@ -31,6 +49,32 @@ export default function BlogPost() {
   useEffect(() => {
     if (post?.title) document.title = `${post.title} | Once Were Wild`;
   }, [post]);
+
+  // Phase 3 - multi-cover gallery items resolved from media_ids on the post.
+  const galleryItems = useMemo(() => {
+    if (!post) return [];
+    const ids = Array.isArray(post.media_ids) ? post.media_ids : [];
+    return ids
+      .map((id) => mediaMap[id])
+      .filter(Boolean)
+      .map((m) => {
+        const kind = m.file_type === "video" ? "video"
+          : m.file_type === "embed" ? "embed"
+          : "image";
+        return {
+          id: m.id,
+          kind,
+          url: abs(m.file_url),
+          srcset: kind === "image" ? absMap(m.srcset) : null,
+          avif_srcset: kind === "image" ? absMap(m.avif_srcset) : null,
+          lqip: m.lqip || null,
+          alt: m.alt_text || m.caption || m.alt || post.title || "",
+          caption: m.caption || "",
+          embed_provider: m.embed_provider || null,
+          embed_id: m.embed_id || null,
+        };
+      });
+  }, [post, mediaMap]);
 
   if (status === "loading") {
     return (
@@ -90,7 +134,47 @@ export default function BlogPost() {
         </div>
       </header>
 
-      {post.featured_url && (
+      {/* Phase 3 - prefer multi-cover gallery (media_ids) when set; fall back
+          to single featured_url. Single gallery item renders as plain image
+          (cleaner UX, fewer chrome elements). */}
+      {galleryItems.length > 1 && (
+        <div
+          className="mx-auto max-w-5xl px-5 sm:px-8 mb-12 sm:mb-16"
+          data-testid="blog-post-multicover"
+        >
+          <SwipeableMedia
+            items={galleryItems}
+            aspectRatio="16/9"
+            testId="blog-post-swiper"
+          />
+        </div>
+      )}
+
+      {galleryItems.length === 1 && (
+        <div className="mx-auto max-w-5xl px-5 sm:px-8 mb-12 sm:mb-16" data-testid="blog-post-multicover-single">
+          {galleryItems[0].kind === "image" ? (
+            <div className="aspect-[16/9] sm:aspect-[21/9] overflow-hidden rounded-md bg-nature-deep/5">
+              <FadeImg
+                src={galleryItems[0].url}
+                srcset={galleryItems[0].srcset}
+                avifSrcset={galleryItems[0].avif_srcset}
+                lqip={galleryItems[0].lqip}
+                alt={galleryItems[0].alt}
+                className="w-full h-full object-cover"
+                sizes="(min-width: 1024px) 1024px, 100vw"
+              />
+            </div>
+          ) : (
+            <SwipeableMedia
+              items={galleryItems}
+              aspectRatio="16/9"
+              testId="blog-post-swiper"
+            />
+          )}
+        </div>
+      )}
+
+      {galleryItems.length === 0 && post.featured_url && (
         <div className="mx-auto max-w-5xl px-5 sm:px-8 mb-12 sm:mb-16" data-testid="blog-post-featured-image">
           <div className="aspect-[16/9] sm:aspect-[21/9] overflow-hidden rounded-md bg-nature-deep/5">
             <FadeImg

@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useMemo } from "react";
 import api, { formatApiError } from "@/lib/api";
 import { AdminShell } from "@/components/admin/AdminShell";
 import RichTextEditor from "@/components/editor/RichTextEditor";
+import { MultiMediaPicker } from "@/components/admin/MultiMediaPicker";
 import {
   Plus, Trash2, Save, Upload, Download, X, ChevronUp, ChevronDown,
   Star, StarOff, ExternalLink, Copy, Eye, GripVertical,
@@ -505,145 +506,6 @@ function Field({ label, k, value, onChange, ...rest }) {
   );
 }
 
-// Native HTML5 drag-and-drop gallery picker. No external deps. Operator
-// clicks a thumbnail in the picker to add it; existing items can be
-// reordered via drag-handles and removed via the X button.
-function GalleryPicker({ value, onChange, allMedia, rowId }) {
-  const [filter, setFilter] = useState("");
-  const [dragId, setDragId] = useState(null);
-  const ids = Array.isArray(value) ? value : [];
-  const mediaMap = useMemo(() => {
-    const m = {};
-    (allMedia || []).forEach((x) => { m[x.id] = x; });
-    return m;
-  }, [allMedia]);
-
-  const filteredAvailable = useMemo(() => {
-    const q = filter.trim().toLowerCase();
-    return (allMedia || [])
-      .filter((m) => m.file_type !== "video")        // gallery is for images only
-      .filter((m) => !ids.includes(m.id))
-      .filter((m) => !q || (m.section || "").toLowerCase().includes(q) || (m.alt || "").toLowerCase().includes(q))
-      .slice(0, 60);
-  }, [allMedia, ids, filter]);
-
-  const add = (id) => {
-    if (ids.includes(id)) return;
-    onChange({ gallery_media_ids: [...ids, id] });
-  };
-  const remove = (id) => {
-    onChange({ gallery_media_ids: ids.filter((x) => x !== id) });
-  };
-  const onDragStart = (id) => () => setDragId(id);
-  const onDragOver = (id) => (e) => { e.preventDefault(); };
-  const onDrop = (overId) => (e) => {
-    e.preventDefault();
-    if (!dragId || dragId === overId) { setDragId(null); return; }
-    const fromIdx = ids.indexOf(dragId);
-    const toIdx = ids.indexOf(overId);
-    if (fromIdx === -1 || toIdx === -1) { setDragId(null); return; }
-    const next = [...ids];
-    next.splice(fromIdx, 1);
-    next.splice(toIdx, 0, dragId);
-    onChange({ gallery_media_ids: next });
-    setDragId(null);
-  };
-
-  const thumbUrl = (m) => {
-    if (!m) return "";
-    const u = m.thumb_url || m.file_url || "";
-    return u && u.startsWith("/") && API_BASE ? `${API_BASE}${u}` : u;
-  };
-
-  return (
-    <div className="sm:col-span-2 mt-4 pt-5 border-t border-gray-200" data-testid={`gallery-picker-${rowId || "new"}`}>
-      <h3 className="text-base font-semibold text-[#1C1C1C] mb-1">Photo gallery</h3>
-      <p className="text-sm text-gray-500 mb-4">
-        Pick images from your Website Media library. Drag the thumbnails to reorder. Up to 30 images recommended.
-      </p>
-
-      {/* Selected (ordered, draggable) */}
-      <div className="mb-5">
-        <div className="text-xs font-medium uppercase tracking-widest text-gray-500 mb-2">In this gallery ({ids.length})</div>
-        {ids.length === 0 ? (
-          <div className="text-sm text-gray-400 bg-gray-50 rounded p-4 text-center">No images selected yet. Click thumbnails below to add.</div>
-        ) : (
-          <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 gap-2">
-            {ids.map((id) => {
-              const m = mediaMap[id];
-              return (
-                <div
-                  key={id}
-                  draggable
-                  onDragStart={onDragStart(id)}
-                  onDragOver={onDragOver(id)}
-                  onDrop={onDrop(id)}
-                  className={
-                    "group relative aspect-square overflow-hidden rounded border bg-gray-100 cursor-move " +
-                    (dragId === id ? "ring-2 ring-[#2D4A3E] opacity-60" : "border-gray-200")
-                  }
-                  data-testid={`gallery-selected-${id}`}
-                >
-                  {m ? (
-                    <img src={thumbUrl(m)} alt="" className="absolute inset-0 h-full w-full object-cover" />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-xs text-red-600">missing</div>
-                  )}
-                  <div className="absolute top-1 left-1 bg-black/40 text-white rounded px-1.5 py-0.5 text-[10px] uppercase tracking-widest flex items-center gap-1">
-                    <GripVertical className="h-3 w-3" /> drag
-                  </div>
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); remove(id); }}
-                    className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Remove from gallery"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Available pool */}
-      <div>
-        <div className="flex items-center gap-3 mb-2">
-          <div className="text-xs font-medium uppercase tracking-widest text-gray-500">Available images</div>
-          <input
-            type="text"
-            placeholder="Filter by section or alt text..."
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            className="ml-auto w-64 px-3 py-1.5 text-sm border border-gray-300 rounded focus:border-[#2D4A3E] focus:outline-none"
-          />
-        </div>
-        {filteredAvailable.length === 0 ? (
-          <div className="text-sm text-gray-400 bg-gray-50 rounded p-4 text-center">No matching media. Upload images via /admin/website-media first.</div>
-        ) : (
-          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 max-h-80 overflow-y-auto p-2 bg-gray-50 rounded">
-            {filteredAvailable.map((m) => (
-              <button
-                type="button"
-                key={m.id}
-                onClick={() => add(m.id)}
-                className="group relative aspect-square overflow-hidden rounded border border-gray-200 bg-white hover:ring-2 hover:ring-[#2D4A3E] transition-all"
-                title={m.section ? `Section: ${m.section}` : "Click to add"}
-              >
-                <img src={thumbUrl(m)} alt="" className="absolute inset-0 h-full w-full object-cover" />
-                <div className="absolute inset-x-0 bottom-0 bg-black/55 text-white text-[10px] uppercase tracking-widest px-1.5 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity text-center">
-                  Add
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 function DraftFields({ value, onChange, rowId, allMedia }) {
   return (
     <div className="grid sm:grid-cols-2 gap-4">
@@ -785,13 +647,19 @@ function DraftFields({ value, onChange, rowId, allMedia }) {
         </div>
       </div>
 
-      {/* B2 - gallery picker */}
-      <GalleryPicker
-        value={value.gallery_media_ids}
-        onChange={onChange}
-        allMedia={allMedia || []}
-        rowId={rowId}
-      />
+      {/* B2 - gallery picker (uses shared MultiMediaPicker from Phase 3) */}
+      <div className="sm:col-span-2 mt-4 pt-5 border-t border-gray-200">
+        <MultiMediaPicker
+          value={value.gallery_media_ids}
+          onChange={(ids) => onChange({ gallery_media_ids: ids })}
+          allMedia={allMedia || []}
+          rowId={rowId}
+          label="Photo gallery"
+          description="Pick images from your Website Media library. Drag the thumbnails to reorder. Up to 30 images recommended."
+          allowVideos={false}
+          allowEmbeds={false}
+        />
+      </div>
     </div>
   );
 }

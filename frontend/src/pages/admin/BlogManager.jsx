@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import api, { formatApiError } from "@/lib/api";
 import { AdminShell } from "@/components/admin/AdminShell";
 import RichTextEditor from "@/components/editor/RichTextEditor";
+import { MultiMediaPicker } from "@/components/admin/MultiMediaPicker";
 import {
   Plus, Trash2, Save, Pencil, Eye, EyeOff, Upload, ExternalLink,
   Image as ImageIcon, X, FileText,
@@ -25,6 +26,7 @@ const blankDraft = () => ({
   body: "",
   status: "draft",
   published_date: todayIso(),
+  media_ids: [],
 });
 
 function formatDate(raw) {
@@ -38,13 +40,18 @@ export default function BlogManager() {
   useEffect(() => { document.title = "Blog | Once Were Wild Admin"; }, []);
 
   const [posts, setPosts] = useState([]);
+  const [allMedia, setAllMedia] = useState([]);
   const [error, setError] = useState("");
   const [editorPost, setEditorPost] = useState(null);   // { mode: 'create'|'edit', post: {} }
 
   const load = async () => {
     try {
-      const { data } = await api.get("/admin/blog");
-      setPosts(data || []);
+      const [postsRes, mediaRes] = await Promise.all([
+        api.get("/admin/blog"),
+        api.get("/media"),
+      ]);
+      setPosts(postsRes.data || []);
+      setAllMedia(mediaRes.data || []);
     } catch (e) {
       setError(formatApiError(e?.response?.data?.detail) || "Could not load posts");
     }
@@ -178,6 +185,7 @@ export default function BlogManager() {
         <PostEditorDrawer
           mode={editorPost.mode}
           initial={editorPost.post}
+          allMedia={allMedia}
           onClose={closeEditor}
           onSaved={async () => { await load(); closeEditor(); }}
         />
@@ -186,7 +194,7 @@ export default function BlogManager() {
   );
 }
 
-function PostEditorDrawer({ mode, initial, onClose, onSaved }) {
+function PostEditorDrawer({ mode, initial, allMedia, onClose, onSaved }) {
   const [draft, setDraft] = useState(() => ({
     id: initial.id || null,
     title: initial.title || "",
@@ -199,6 +207,7 @@ function PostEditorDrawer({ mode, initial, onClose, onSaved }) {
     featured_avif_srcset: initial.featured_avif_srcset || {},
     featured_lqip: initial.featured_lqip || "",
     slug: initial.slug || "",
+    media_ids: Array.isArray(initial.media_ids) ? initial.media_ids : [],
   }));
   const [saving, setSaving] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
@@ -221,6 +230,7 @@ function PostEditorDrawer({ mode, initial, onClose, onSaved }) {
           body: draft.body,
           status,
           published_date: draft.published_date,
+          media_ids: draft.media_ids || [],
         });
         // If a cover image was selected before the post existed, upload it now.
         if (fileRef.current?.files?.[0] && data?.id) {
@@ -233,6 +243,7 @@ function PostEditorDrawer({ mode, initial, onClose, onSaved }) {
           body: draft.body,
           status,
           published_date: draft.published_date,
+          media_ids: draft.media_ids || [],
         });
       }
       await onSaved();
@@ -402,6 +413,20 @@ function PostEditorDrawer({ mode, initial, onClose, onSaved }) {
               placeholder="A short summary (1-2 sentences) shown on the blog index card."
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
               data-testid="blog-excerpt-input"
+            />
+          </div>
+
+          {/* Phase 3 - multi-cover gallery (optional, overrides single featured image on the public post when set) */}
+          <div className="pt-2 border-t border-gray-200">
+            <MultiMediaPicker
+              value={draft.media_ids}
+              onChange={(ids) => set({ media_ids: ids })}
+              allMedia={allMedia || []}
+              rowId={draft.id || "new-post"}
+              label="Cover gallery (optional, multi-cover)"
+              description="Add multiple cover images, MP4 videos or YouTube / Vimeo URLs. When set, the public post replaces the single featured image with a swipeable gallery. Drag to reorder. Single item renders as a plain hero."
+              allowVideos={true}
+              allowEmbeds={true}
             />
           </div>
 
