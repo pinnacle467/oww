@@ -1,13 +1,14 @@
-# Once Were Wild Travel - Detailed Handover (v2026-06-28, Sessions B1 + B2 of Changes 4-7 COMPLETE in preview, NOT YET PUSHED TO LIVE)
+# Once Were Wild Travel - Detailed Handover (v2026-06-28, Sessions B1 + B2 + T COMPLETE in preview, NOT YET PUSHED TO LIVE)
 
 > **Loading instructions for the next agent:**
 > 1. Pull the GitHub repo (`pinnacle467/oww`, branch `main`) into `/app` - that's the source of truth for **all code**.
 > 2. Restore `backend/.env` and `frontend/.env` (the repo doesn't carry them - see Section 11).
-> 3. Immediately run the LIVE-SYNC sequence at the bottom of this doc (`python3 /app/backend/sync_from_live.py`) - that pulls **every DB row, every image, every video** from production at https://oncewerewild.com into your preview environment so you're working against real data, not an empty shell.
+> 3. Immediately run the LIVE-SYNC sequence at the bottom of this doc (`python3 /app/backend/sync_from_live.py`) - that pulls **every DB row, every image, every video** from production at https://oncewerewild.com into your preview environment so you're working against real data, not an empty shell. **You can SKIP this step if you only need to develop against the snapshot that ships in the repo** — the snapshot is auto-applied on backend startup and already contains 237 media rows + 4 published tours + 176 content keys.
 > 4. The sync script + repo together cost **< 10 credits** to re-hydrate the entire project; do not rebuild any of the features below from scratch.
 > 5. **Respond to the user in English only.** They have explicitly disliked em dashes ("—") in user-facing copy - never use them in DB content, SEO text, alt text, JSON-LD, or seeded examples. Hyphens (`-`), commas, or colons are fine.
-> 6. **▶︎ START HERE for this hand-off:** Sessions B1 and B2 are both COMPLETE in preview (read **Section 2 entries R and S** for full detail). Both backends passed 9/9 and 8/8 tests; public surfaces verified. The user has NOT yet pushed to live (waiting on a final manual smoke-test of the admin interactive flows). The IMMEDIATE next task is whatever the user nominates next — likely Session C (Blog enhancements) or D (contact deliverability) from the original backlog. **Do NOT redo any B1 or B2 work — it's already shipped to disk and the snapshot has been regenerated. Just verify supervisor + .env then ask the user what's next.**
-> 7. **MALENY DECISION (important — read before touching journeys):** The user reversed an earlier Q4 answer. "Maleny Creative Immersion" **stays as `type="tour"`** on `/pricing` — it's an already-planned upcoming trip. Corporate Retreats is a SEPARATE empty category awaiting future bookings. Do NOT re-tag Maleny. The migration that would have done so has been removed from `seed()` (a comment block remains in its place explaining why so it doesn't get reintroduced).
+> 6. **▶︎ START HERE for this hand-off:** Sessions B1, B2 and **T (Phase 1 of Changes 1-9)** are all COMPLETE in preview. Both backends + frontend passed 4/4 backend and 41/41 frontend tests. Public surfaces verified. The user has NOT yet pushed to live. The IMMEDIATE next task is **Phase 2 of Changes 1-9** — shared `<SwipeableMedia>` component + About Us travel gallery + site-wide multi-photo/video + admin multi-upload audit. **Do NOT redo any B1, B2 or T work — it's already shipped to disk and the snapshot has been regenerated. Just verify supervisor + .env then ask the user before starting Phase 2.**
+> 7. **MALENY DECISION (important — read before touching journeys):** The user reversed an earlier Q4 answer. "Maleny Creative Immersion" **stays as `type="tour"`** on `/pricing` — it's an already-planned upcoming trip. Do NOT re-tag Maleny.
+> 8. **CORPORATE RETREATS WAS REMOVED FROM PUBLIC SITE (Session T, 2026-06-28):** Per client direction the entire "Corporate Retreats" public surface area is gone — no nav entry, no separate /corporate-retreats page. The "Corporate and Custom" tour remains as just another card on `/pricing` (it is `type="tour"`). The component files (`Retreats.jsx`, `RetreatsDropdown.jsx`) + backend endpoints (`/api/retreats`, `/api/retreats/{slug}`) + admin JourneysManager tabs are still on disk in case the client asks for re-enable later, but no public route consumes them. See Session T for full detail.
 
 ---
 
@@ -23,6 +24,77 @@
 ---
 
 ## 2. What's been built (chronological, most recent first)
+
+### T. Phase 1 of Changes 1-9 — Quick wins + Tour content + Hero carousel + Corporate Retreats removal (2026-06-28, **COMPLETE in preview, backend 4/4 + frontend 41/41 tests PASSED, NOT YET PUSHED TO LIVE**)
+
+**Client backlog received at start of session:** 9 changes spanning home page, tour pages, About Us, admin sidebar sync, blog hero, and site-wide media swipeability. Items were split into two credit-bounded phases (≤75 cr each). Phase 1 shipped 7 of the smaller/structural items; Phase 2 will ship the heavy `<SwipeableMedia>` + multi-media work (items #5, #6).
+
+**Decisions confirmed by client before starting:**
+- a) Blog hero image upload field lives in `WebsiteMediaManager` alongside other section heros (NOT inside `BlogManager`).
+- b) New `home.hero.tagline` content key defaults to **blank** so the hero is a pure photo carousel by default.
+- c) Hero Carousel admin uploader supports **multi-file** uploads.
+- d) On tour detail pages, **keep both** the existing "About this journey" intro paragraph AND add a new "More Details" rich-text block below.
+- e) Site-wide swipeable media (Phase 2) applies to **every content-bearing gallery** (purely decorative single-image spots are exempt).
+
+**Backend changes (`backend/server.py`):**
+- Extended `JourneyInput` / `JourneyUpdate` Pydantic models with 2 new fields:
+  - `excludes: List[str]` — "What's Not Included" bullet list, mirrors `includes`.
+  - `more_details_html: str` — rich-text content block, independent of description/itinerary/practical.
+- 2 idempotent startup migrations in `seed()` (search for "C4 migration" and "C5 migration"):
+  - C4: defaults `excludes` to the 5 standard items on any row where the field is missing:
+    - "International and domestic airfares"
+    - "Travel insurance"
+    - "Visa fees (if applicable)"
+    - "Personal expenses"
+    - "Optional activities not listed in the itinerary"
+  - C5: defaults `more_details_html` to empty string on any row where the field is missing.
+- Added `home.hero.tagline` content key to `DEFAULT_CONTENT` (group `home`) with empty default value — when blank, the public hero is a pure photo carousel; when set, a glass panel with the tagline overlays the photo.
+- **Removed** `nav.5.label` ("Corporate Retreats") and `nav.5.to` ("/corporate-retreats") from `DEFAULT_CONTENT`. Both rows also deleted from MongoDB and from `backend/seed_data/site_snapshot.json` so deploys don't re-seed them.
+
+**Frontend changes:**
+- **`src/data/content.js`** — removed `{ label: "Corporate Retreats", to: "/corporate-retreats" }` from `NAV_LINKS`. Top nav is now 5 items: Home / Tours / Gallery / About Us / Blog.
+- **`src/components/layout/Navbar.jsx`** — removed `RetreatsDropdown` import + branch.
+- **`src/App.js`** — removed `Retreats` lazy import + both `/corporate-retreats` and `/corporate-retreats/:slug` routes.
+- **`src/components/home/HeroSlideshow.jsx`** — major rewrite:
+  - Reads `home.hero.tagline` (blank default → no overlay panel).
+  - Added left/right arrow nav buttons (`hero-prev`, `hero-next`) with auto-advance timer reset on click.
+  - Auto-advance dwell shortened from 5500ms to 4500ms (per brief).
+  - When tagline is blank, only CTAs + dots render (no eyebrow, no H1).
+  - When tagline is set, the glass panel returns (no eyebrow — just the tagline + CTAs).
+- **`src/components/admin/MediaManager.jsx`** — added `minItems` prop. When deleting the last item under that floor, the confirm dialog uses stronger copy ("Remove the last image?") warning the client the public hero will be empty.
+- **`src/pages/admin/HeroManager.jsx`** — passes `minItems={1}` + brief-aligned title/subtitle. Brief language: "Hero Carousel" everywhere.
+- **`src/components/admin/AdminShell.jsx`** — sidebar label "Hero Slideshow" → "Hero Carousel".
+- **`src/pages/admin/AdminDashboard.jsx`** — dashboard tile label "Hero Slideshow" → "Hero Carousel".
+- **`src/pages/admin/WebsiteMedia.jsx`** — added a "Blog page header image" single-image slot (`section="blog-hero"`) between Gallery hero and Contact hero. The public `Blog.jsx` page was already consuming `useMediaSlot("blog-hero")` so this is the missing admin half.
+- **`src/pages/TourDetail.jsx`** — major reorder + 2 new sections:
+  - Reads new `more_details_html` field and renders a 4th "More Details" H3 block alongside existing About / Itinerary / Practical sections.
+  - **Gallery moved above the price + CTA block** (per brief — media-rich content before the call to action).
+  - New 2-column "What's Included / What's Not Included" section with `Check` and `X` icons, sits between the gallery and the price block.
+- **`src/pages/admin/JourneysManager.jsx`** — admin form additions:
+  - "What's not included" textarea (5 rows, monospace) directly below the existing "What's included" textarea. New rows pre-populate with the 5 default exclusions.
+  - 4th TipTap rich-text editor labelled "More Details / Destination Description" below Practical info. Supports inline images via the existing `/api/admin/blog/image` pipe.
+
+**Files NOT deleted (kept for future re-enable):** `pages/Retreats.jsx`, `components/layout/RetreatsDropdown.jsx`, backend `/api/retreats` + `/api/retreats/{slug}` endpoints, `JourneysManager` retreat-type tabs. The data model still supports `type="retreat"` so the admin can create retreat rows from the admin even with no public route consuming them.
+
+**Files NOT changed:** `MalenyFeature.jsx` was already unmounted from `Home.jsx` in Session Q. The component file plus content keys (`home.maleny.*`) plus the `maleny` media slot all remain on disk — the client can repurpose this content on the About or any future page via the admin.
+
+**Admin sidebar audit (Change #7 of the client brief):** every `to=` in `AdminShell.jsx` LINKS already matches a registered `Route` in `App.js`, the sidebar already uses `NavLink` with the `isActive` class. No code changes needed beyond the "Hero Carousel" rename. Verified end-to-end by the frontend testing agent (every left-pane item navigates correctly and highlights the active page).
+
+**Test results:**
+- Backend (`deep_testing_backend_v2`): **4/4 PASSED** (C4 excludes round-trip, C5 more_details_html round-trip, home.hero.tagline content key present + empty, nav.5.* absent, regression OK with 4 journeys + 237 media intact).
+- Frontend (`auto_frontend_testing_agent`): **41/41 PASSED** across all 8 frontend tasks (hero carousel + arrows, tour detail reorder + excludes, top nav cleaned, admin sidebar sync + Hero Carousel rename, blog hero slot, excludes textarea persistence + revert, more_details TipTap persistence + public render + revert, hero carousel page heading).
+
+**Snapshot regenerated** via `POST /api/admin/snapshot/save`. New snapshot contains 4 journeys with both `excludes` and `more_details_html` fields, 177 content keys including `home.hero.tagline`, zero `nav.5.*` rows.
+
+**What is still in the backlog (Phase 2 of Changes 1-9, est. ≤75 cr):**
+1. Build shared `<SwipeableMedia>` component (touch swipe, arrows, dots, lightbox, image/video/embed).
+2. Change #5 — About Us travel photo/video gallery: new `travel_media` collection + admin manager + public render.
+3. Change #6 backend extensions: add `kind` field to existing `media`, `media_ids: List[str]` to `blog_posts` / `stories` / `home_sections`, migrate single `cover_url` → first entry of `media_ids`.
+4. Change #6 admin multi-upload audit: generalise `GalleryPicker` into `<MultiMediaPicker>` (supports YouTube/Vimeo URLs + MP4 uploads + drag-reorder + delete-confirm), ripple through every single-file upload field across `BlogManager`, `AboutManager`, `HomeContentManager`, `WebsiteMediaManager`, `HeroCarouselManager`.
+5. Change #6 public refactor: every gallery on the site (TourGallery, Gallery page lightbox, FromTheJournal, BlogPost, BlogIndex, the new hero carousel) consumes `<SwipeableMedia>`.
+6. Backend + frontend tests + snapshot regen.
+
+---
 
 ### S. Tour gallery + 3-section body + Corporate Retreats + duplicate + preview-token (2026-06-28, Session B2 of Changes 4-7 — **COMPLETE in preview, backend tested 8/8, public surfaces verified, NOT YET PUSHED TO LIVE**)
 
