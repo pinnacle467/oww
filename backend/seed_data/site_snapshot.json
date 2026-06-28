@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-06-28T14:14:55.810004+00:00",
+  "generated_at": "2026-06-28T14:41:52.086259+00:00",
   "media": [
     {
       "file_url": "/api/uploads/contact-bg/c6213da9b39140b19135fb900221e491.webp",
@@ -5987,7 +5987,24 @@
       "updated_at": "2026-06-25T08:41:38.740728+00:00"
     }
   ],
-  "blog_posts": [],
+  "blog_posts": [
+    {
+      "id": "845c8377-c30e-4d6d-9774-8b261848e629",
+      "slug": "phase3-ui-smoke",
+      "title": "Phase3 UI Smoke",
+      "published_date": "2026-06-28",
+      "excerpt": "",
+      "body": "",
+      "status": "published",
+      "featured_url": "",
+      "featured_srcset": {},
+      "featured_avif_srcset": {},
+      "featured_lqip": "",
+      "media_ids": [],
+      "created_at": "2026-06-28T14:41:27.765414+00:00",
+      "updated_at": "2026-06-28T14:41:30.498491+00:00"
+    }
+  ],
   "home_faqs": [
     {
       "id": "ad9eaa61-b689-4cfd-8582-f95bfe8c59b8",
@@ -6100,7 +6117,7 @@
       "is_visible": true,
       "sort_order": 1,
       "created_at": "2026-06-27T11:12:08.201076+00:00",
-      "updated_at": "2026-06-28T14:12:45.385789+00:00",
+      "updated_at": "2026-06-28T14:41:50.079734+00:00",
       "media_ids": []
     }
   ]
