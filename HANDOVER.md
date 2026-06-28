@@ -599,7 +599,7 @@ The admin user is seeded idempotently on every backend startup.
 
 **`/app/frontend/.env`**
 ```
-REACT_APP_BACKEND_URL=<your preview URL, e.g. https://auto-build-pull.preview.emergentagent.com>
+REACT_APP_BACKEND_URL=<your preview URL, e.g. https://handover-phase.preview.emergentagent.com>
 WDS_SOCKET_PORT=443
 ENABLE_HEALTH_CHECK=false
 ```

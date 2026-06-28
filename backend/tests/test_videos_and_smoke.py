@@ -6,7 +6,7 @@ import os
 import pytest
 import requests
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://load-central.preview.emergentagent.com").rstrip("/")
+BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://handover-phase.preview.emergentagent.com").rstrip("/")
 UPLOAD_DIR = "/app/backend/uploads/gallery"
 
 COMPRESSED_VIDEOS = [

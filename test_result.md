@@ -780,7 +780,7 @@ frontend:
     status_history:
       - working: true
         agent: "testing"
-        comment: "VERIFIED: No 'undefined/api' requests detected in network logs. Frontend .env correctly configured with REACT_APP_BACKEND_URL=https://3215347c-9457-4510-b48b-0337cd1128a6.preview.emergentagent.com. All API calls use correct backend URL. Backend URL fix is working correctly."
+        comment: "VERIFIED: No 'undefined/api' requests detected in network logs. Frontend .env correctly configured with REACT_APP_BACKEND_URL=https://handover-phase.preview.emergentagent.com. All API calls use correct backend URL. Backend URL fix is working correctly."
 
 metadata:
   created_by: "testing_agent"
@@ -801,7 +801,7 @@ agent_communication:
   - agent: "testing"
     message: "Smoke test completed successfully. All critical functionality verified: 1) Homepage hero images render correctly (5 high-quality images in slideshow), 2) Gallery page shows 14 photos in grid layout, 3) Journeys/Pricing page loads with 4 images, 4) Contact page loads with 5 images and form, 5) Admin login works and redirects to dashboard. Backend URL fix confirmed - no 'undefined/api' errors detected. Only non-critical failures: posthog.com analytics and cdn-cgi/rum monitoring (third-party services). Site is ready for client demo."
 
-user_problem_statement: "Verify the site at https://abff5f41-4e78-4f6c-98cb-bc7e35f8db0c.preview.emergentagent.com/ still works correctly after performance optimization changes. Check: 1) Homepage loads with hero slideshow cycling through images and fonts applied, 2) Gallery page with category filters (Maleny Retreats, Across Australia, Across the World - NO 'All' tab), 3) Gallery image lightbox (lazy-loaded, <100ms delay expected), 4) Pricing and Contact pages load, 5) Admin login works, 6) Check browser console for JavaScript errors."
+user_problem_statement: "Verify the site at https://handover-phase.preview.emergentagent.com/ still works correctly after performance optimization changes. Check: 1) Homepage loads with hero slideshow cycling through images and fonts applied, 2) Gallery page with category filters (Maleny Retreats, Across Australia, Across the World - NO 'All' tab), 3) Gallery image lightbox (lazy-loaded, <100ms delay expected), 4) Pricing and Contact pages load, 5) Admin login works, 6) Check browser console for JavaScript errors."
 
 frontend:
   - task: "Homepage Hero Slideshow After Performance Optimization"
@@ -1063,7 +1063,7 @@ agent_communication:
       
       Site is stable after lazy-loading and WebP logo changes. No action items for main agent.
 
-user_problem_statement: "Quick test of the new admin Journeys Manager at https://abff5f41-4e78-4f6c-98cb-bc7e35f8db0c.preview.emergentagent.com/admin. Test: 1) Login to /admin, 2) Navigate to /admin/journeys via 'Trips & Journeys' tile, 3) Verify 3 existing trips (Maleny Creative Immersion, Slow and Soulful Journeys marked Most Popular, Corporate and Custom), 4) Test 'Add a trip' button and cancel, 5) Edit 'Price headline' on Maleny row to 'From $4,500' and save, 6) Verify 'Upload itinerary (PDF, max 25 MB)' button on each row, 7) Toggle 'Mark as Most Popular' on Maleny row, 8) Check for JavaScript console errors."
+user_problem_statement: "Quick test of the new admin Journeys Manager at https://handover-phase.preview.emergentagent.com/admin. Test: 1) Login to /admin, 2) Navigate to /admin/journeys via 'Trips & Journeys' tile, 3) Verify 3 existing trips (Maleny Creative Immersion, Slow and Soulful Journeys marked Most Popular, Corporate and Custom), 4) Test 'Add a trip' button and cancel, 5) Edit 'Price headline' on Maleny row to 'From $4,500' and save, 6) Verify 'Upload itinerary (PDF, max 25 MB)' button on each row, 7) Toggle 'Mark as Most Popular' on Maleny row, 8) Check for JavaScript console errors."
 
 frontend:
   - task: "Admin Login to /admin"
@@ -1209,7 +1209,7 @@ agent_communication:
       
       No action items for main agent. All requirements met.
 
-user_problem_statement: "SMOKE TEST (2 min budget) on https://abff5f41-4e78-4f6c-98cb-bc7e35f8db0c.preview.emergentagent.com/ to confirm no visual regressions after adding critters-webpack-plugin (inlines critical CSS into HTML head and async-loads the rest). Risk: critters can sometimes produce a brief flash-of-unstyled-content (FOUC) on first load, or miss some Tailwind classes used dynamically. Check: 1) Homepage hero photo paints normally, 2) Headline uses SERIF font (Cormorant Garamond) NOT sans-serif, 3) Nav logo positioned correctly, 4) No obvious layout shifts or unstyled flash >200ms, 5) Footer properly styled (dark background, gold accent), 6) /pricing page with 3 trip cards styled correctly, 7) No console errors about missing CSS."
+user_problem_statement: "SMOKE TEST (2 min budget) on https://handover-phase.preview.emergentagent.com/ to confirm no visual regressions after adding critters-webpack-plugin (inlines critical CSS into HTML head and async-loads the rest). Risk: critters can sometimes produce a brief flash-of-unstyled-content (FOUC) on first load, or miss some Tailwind classes used dynamically. Check: 1) Homepage hero photo paints normally, 2) Headline uses SERIF font (Cormorant Garamond) NOT sans-serif, 3) Nav logo positioned correctly, 4) No obvious layout shifts or unstyled flash >200ms, 5) Footer properly styled (dark background, gold accent), 6) /pricing page with 3 trip cards styled correctly, 7) No console errors about missing CSS."
 
 frontend:
   - task: "Homepage Hero Photo Rendering After Critters Plugin"
@@ -1392,7 +1392,7 @@ agent_communication:
       
       CONCLUSION: Site is production-ready after critters-webpack-plugin optimization. No action items for main agent.
 
-user_problem_statement: "SMOKE TEST (2 min budget) on https://abff5f41-4e78-4f6c-98cb-bc7e35f8db0c.preview.emergentagent.com/ to verify nothing broke after THREE changes: 1) Cache headers fixed in frontend's Express server (long cache for /assets/*), 2) critters-webpack-plugin inlining critical CSS, 3) AVIF format generation alongside WebP (modern browsers serve AVIF via <picture><source>). Check: 1) Homepage hero photo loads correctly with Cormorant Garamond serif font, 2) 3 Experience Pillars tiles show images and text, 3) Nav logo renders, 4) Chrome DevTools Network tab shows hero image as Content-Type: image/avif (NOT WebP), 5) /pricing page loads with 3 trip cards, 6) /gallery page loads with category filters and images, 7) No console errors, especially no AVIF-related decode errors."
+user_problem_statement: "SMOKE TEST (2 min budget) on https://handover-phase.preview.emergentagent.com/ to verify nothing broke after THREE changes: 1) Cache headers fixed in frontend's Express server (long cache for /assets/*), 2) critters-webpack-plugin inlining critical CSS, 3) AVIF format generation alongside WebP (modern browsers serve AVIF via <picture><source>). Check: 1) Homepage hero photo loads correctly with Cormorant Garamond serif font, 2) 3 Experience Pillars tiles show images and text, 3) Nav logo renders, 4) Chrome DevTools Network tab shows hero image as Content-Type: image/avif (NOT WebP), 5) /pricing page loads with 3 trip cards, 6) /gallery page loads with category filters and images, 7) No console errors, especially no AVIF-related decode errors."
 
 frontend:
   - task: "Homepage Hero Photo and Fonts After AVIF + Cache Changes"
