@@ -1,4 +1,4 @@
-# Once Were Wild Travel - Detailed Handover (v2026-06-28, Sessions B1 + B2 + T COMPLETE in preview, NOT YET PUSHED TO LIVE)
+# Once Were Wild Travel - Detailed Handover (v2026-06-28, Sessions B1 + B2 + T + U COMPLETE in preview, NOT YET PUSHED TO LIVE)
 
 > **Loading instructions for the next agent:**
 > 1. Pull the GitHub repo (`pinnacle467/oww`, branch `main`) into `/app` - that's the source of truth for **all code**.
@@ -6,9 +6,10 @@
 > 3. Immediately run the LIVE-SYNC sequence at the bottom of this doc (`python3 /app/backend/sync_from_live.py`) - that pulls **every DB row, every image, every video** from production at https://oncewerewild.com into your preview environment so you're working against real data, not an empty shell. **You can SKIP this step if you only need to develop against the snapshot that ships in the repo** — the snapshot is auto-applied on backend startup and already contains 237 media rows + 4 published tours + 176 content keys.
 > 4. The sync script + repo together cost **< 10 credits** to re-hydrate the entire project; do not rebuild any of the features below from scratch.
 > 5. **Respond to the user in English only.** They have explicitly disliked em dashes ("—") in user-facing copy - never use them in DB content, SEO text, alt text, JSON-LD, or seeded examples. Hyphens (`-`), commas, or colons are fine.
-> 6. **▶︎ START HERE for this hand-off:** Sessions B1, B2 and **T (Phase 1 of Changes 1-9)** are all COMPLETE in preview. Both backends + frontend passed 4/4 backend and 41/41 frontend tests. Public surfaces verified. The user has NOT yet pushed to live. The IMMEDIATE next task is **Phase 2 of Changes 1-9** — shared `<SwipeableMedia>` component + About Us travel gallery + site-wide multi-photo/video + admin multi-upload audit. **Do NOT redo any B1, B2 or T work — it's already shipped to disk and the snapshot has been regenerated. Just verify supervisor + .env then ask the user before starting Phase 2.**
+> 6. **▶︎ START HERE for this hand-off:** Sessions B1, B2, **T (Phase 1)** and **U (Phase 2)** of the Changes 1-9 backlog are all COMPLETE in preview. Backend 4/4 (Phase 1) + 11/11 (Phase 2), frontend 41/41 (Phase 1) + all 4 tasks PASSED (Phase 2). The user has NOT yet pushed to live. The IMMEDIATE next task is whatever the user nominates — likely a Phase 3 covering BlogManager / HomeContent multi-cover, Gallery page swipe upgrade, or pushing the current preview to GitHub via the "Save to Github" button. **Do NOT redo any B1, B2, T or U work — it's already shipped to disk and the snapshot has been regenerated.**
 > 7. **MALENY DECISION (important — read before touching journeys):** The user reversed an earlier Q4 answer. "Maleny Creative Immersion" **stays as `type="tour"`** on `/pricing` — it's an already-planned upcoming trip. Do NOT re-tag Maleny.
 > 8. **CORPORATE RETREATS WAS REMOVED FROM PUBLIC SITE (Session T, 2026-06-28):** Per client direction the entire "Corporate Retreats" public surface area is gone — no nav entry, no separate /corporate-retreats page. The "Corporate and Custom" tour remains as just another card on `/pricing` (it is `type="tour"`). The component files (`Retreats.jsx`, `RetreatsDropdown.jsx`) + backend endpoints (`/api/retreats`, `/api/retreats/{slug}`) + admin JourneysManager tabs are still on disk in case the client asks for re-enable later, but no public route consumes them. See Session T for full detail.
+> 9. **SwipeableMedia is now THE site-wide gallery component (Session U).** Any new gallery — Blog post body, Home content block, Pricing card carousels, future destination pages — MUST consume `components/media/SwipeableMedia.jsx`. Do not re-implement carousel logic. The component already handles images, MP4 videos, YouTube and Vimeo embeds, touch swipe, arrows, dots, counter, lightbox.
 
 ---
 
@@ -24,6 +25,64 @@
 ---
 
 ## 2. What's been built (chronological, most recent first)
+
+### U. Phase 2 of Changes 1-9 — Shared SwipeableMedia + About Us travel gallery + TourGallery refactor (2026-06-28, **COMPLETE in preview, backend 11/11 + frontend 4/4 tasks PASSED, NOT YET PUSHED TO LIVE**)
+
+**Goal:** ship the shared swipeable media component the entire site will use going forward, plus the first end-user surface that consumes it (About Us travel gallery), plus a non-breaking retrofit of the existing tour gallery to the same component.
+
+**Architectural decision — DID NOT add a new `travel_media` collection.** The original Phase 2 plan called for a parallel collection. After spiking the work it became clear the existing `media` collection (which already powers every section across the site) handles all three media kinds with two tiny additive fields. This saved ~8 cr and avoided a parallel admin pipeline. Documented in the migration comment in `server.py`.
+
+**Backend changes (`backend/server.py`):**
+- `MediaInput` + `MediaUpdate` Pydantic models gained two new optional fields:
+  - `embed_provider: Optional[str]` — `"youtube"` or `"vimeo"` (cached, parsed server-side).
+  - `embed_id: Optional[str]` — the video ID (cached).
+- New helper `_parse_embed_url_py(raw)` returns `(provider, id)` from any of: `youtu.be/<id>`, `youtube.com/watch?v=<id>`, `youtube.com/shorts/<id>`, `youtube.com/embed/<id>`, `youtube-nocookie.com/embed/<id>`, `vimeo.com/<id>`, `player.vimeo.com/video/<id>`. Mirrors the frontend `parseEmbedUrl` in `SwipeableMedia.jsx` so server-cached IDs match what the client would derive.
+- `POST /api/admin/media` now branches on `file_type`:
+  - `"image"` — unchanged (data URL → WebP encoding).
+  - `"video"` — unchanged (accepts file_url as-is).
+  - `"embed"` — parses URL server-side; **rejects with HTTP 400** if the URL isn't a recognised YouTube / Vimeo host. On success caches provider + id on the row.
+- No changes to existing endpoints (`/admin/media/upload`, PATCH, DELETE, GET) other than that they now naturally pass through the new optional fields. No new collection, no new snapshot integration needed.
+
+**Frontend — shared component:**
+- **NEW `src/components/media/SwipeableMedia.jsx`** — the cornerstone:
+  - Accepts `items: [{ kind: 'image' | 'video' | 'embed', url, srcset?, avif_srcset?, lqip?, alt?, caption?, embed_provider?, embed_id? }]`.
+  - Single-item-at-a-time horizontal carousel (transformX track); no strip stacking.
+  - Touch swipe (mobile + tablet), arrow buttons (desktop ≥sm), dot indicators below, "N of M" counter, image-only fullscreen lightbox (keyboard ESC + arrows), inline `<video controls>` for MP4, privacy-friendly `youtube-nocookie.com` / `player.vimeo.com` iframes for embeds.
+  - **Iframe optimisation:** only the active slide gets a live `src`; off-screen iframes carry an empty `src` so YouTube/Vimeo don't burn bandwidth on hidden players.
+  - Test IDs exposed: `swipeable-media`, `swipeable-prev`, `swipeable-next`, `swipeable-dots`, `swipeable-dot-{N}`, `swipeable-counter`, `swipeable-slide-image`, `swipeable-slide-video`, `swipeable-slide-embed-youtube`, `swipeable-slide-embed-vimeo`, `swipeable-lightbox`, `lightbox-close`, `lightbox-prev`, `lightbox-next`.
+  - Exports the helper `parseEmbedUrl(raw)` and a standalone `<MediaLightbox>` wrapper for callers that need a lightbox without the carousel.
+
+**Frontend — About Us travel gallery (Change 5):**
+- **NEW `src/components/about/TravelGallery.jsx`** — fetches `/api/media?section=about-travel`, maps each row into the SwipeableMedia item shape, hands off. Self-hides when the section has zero rows so the page is untouched until the operator adds content.
+- **`src/pages/About.jsx`** — imports `<TravelGallery />` and renders it at the bottom (after stories, before the footer).
+
+**Frontend — Admin Travel Media manager:**
+- **NEW `src/pages/admin/TravelMediaManager.jsx`** — page at `/admin/travel-media`:
+  - Reuses the existing `<MediaManager section="about-travel" ordered />` for image + MP4 uploads (this gives drag-reorder, bulk multi-upload, alt/caption edit, delete-with-confirm for free).
+  - Below it, a custom "YouTube and Vimeo embeds" panel: lists existing embeds (`file_type="embed"`), `Add YouTube / Vimeo URL` button opens a modal asking for URL + caption, hostname validation client-side (rejects anything outside YouTube/Vimeo with a friendly inline error), POST to `/api/admin/media` with `file_type="embed"`, individual delete-with-confirm.
+- **`src/App.js`** — added lazy import + route `/admin/travel-media`.
+- **`src/components/admin/AdminShell.jsx`** — sidebar entry **"About Us Travel Gallery"** under About Us & Stories, with the `Film` icon.
+- **`src/pages/admin/AdminDashboard.jsx`** — dashboard tile for the same.
+
+**Frontend — TourGallery refactor:**
+- **REWROTE `src/components/tour/TourGallery.jsx`** to consume `<SwipeableMedia>`. Same parent contract (still receives `mediaIds + mediaMap` from `TourDetail.jsx`); same `tour-gallery` test id; now also supports video and embed media types if the operator adds them to a tour's gallery. Old "grid of thumbnails opening a separate lightbox" pattern is gone.
+
+**Files NOT touched (deliberate scope discipline):**
+- **HeroSlideshow.jsx** — has its own carousel implementation with Ken Burns animation + LCP preload requirements that the generic SwipeableMedia would regress. UX is already at parity (auto-advance, arrows, dots). Documented here so a future agent doesn't try to refactor it.
+- **Gallery page (`/gallery`)** — grid of 50+ photos by category is the right UX. SwipeableMedia is meant for sections that benefit from "one at a time"; a 50-photo grid does not.
+- **BlogPost / BlogIndex / FromTheJournal** — single image per post / per card is acceptable. Multi-cover (`media_ids: List[str]` on `blog_posts`) is a Phase 3 candidate when the client actually wants it.
+
+**Test results:**
+- Backend (`deep_testing_backend_v2`): **11/11 PASSED** (4 valid embed URLs all parse correctly, 2 invalid URLs correctly rejected with 400, embed metadata round-trips via GET + PATCH, DELETE cleanup confirmed, image upload pipeline regression-tested with 1×1 PNG round-trip, Phase 1 features all still intact).
+- Frontend (`auto_frontend_testing_agent`): **All 4 tasks PASSED** — admin /admin/travel-media (UI add + invalid-URL rejection + delete-with-confirm + sidebar entry), public /about TravelGallery (renders mixed YT + 2 images, arrows + dots + counter all functional, image lightbox open/close OK, YT iframe loads only on active slide), TourGallery refactor verified renders SwipeableMedia, empty-state self-hide verified after cleanup. Phase 1 regression checks all pass (Maleny includes/excludes still visible, hero arrows still work, no Corporate Retreats in nav).
+
+**Snapshot regenerated:** counts unchanged from Phase 1 (237 media, 176 content, 10 settings, 4 journeys). No about-travel media persisted in the snapshot — the operator adds those rows themselves once the feature is live.
+
+**What's in the backlog after Phase 2:**
+- **Phase 3 candidates (small):** Push current preview to GitHub via "Save to Github". Add hero to use SwipeableMedia (only if the LCP regression can be neutralised). Multi-cover support on blog posts (`media_ids` list).
+- **Phase 4 candidates (medium):** Gallery page swipe-strip option. Mixed photo/video support in HomeContent blocks.
+
+---
 
 ### T. Phase 1 of Changes 1-9 — Quick wins + Tour content + Hero carousel + Corporate Retreats removal (2026-06-28, **COMPLETE in preview, backend 4/4 + frontend 41/41 tests PASSED, NOT YET PUSHED TO LIVE**)
 
