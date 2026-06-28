@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils";
 import { NAV_LINKS } from "@/data/content";
 import { useContent, useText } from "@/context/ContentContext";
 import { ToursDropdown } from "@/components/layout/ToursDropdown";
-import { RetreatsDropdown } from "@/components/layout/RetreatsDropdown";
 
 export function Navbar() {
   const location = useLocation();
@@ -97,17 +96,6 @@ export function Navbar() {
               if (l.to === "/pricing") {
                 return (
                   <ToursDropdown
-                    key={l.to}
-                    solid={solid}
-                    currentPath={location.pathname}
-                    parentLabel={l.label}
-                    parentTo={l.to}
-                  />
-                );
-              }
-              if (l.to === "/corporate-retreats") {
-                return (
-                  <RetreatsDropdown
                     key={l.to}
                     solid={solid}
                     currentPath={location.pathname}

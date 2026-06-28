@@ -2448,8 +2448,6 @@ DEFAULT_CONTENT = [
     _c("nav", "nav.3.to", "/about", "Nav 4 link"),
     _c("nav", "nav.4.label", "Blog", "Nav 5 label"),
     _c("nav", "nav.4.to", "/blog", "Nav 5 link"),
-    _c("nav", "nav.5.label", "Corporate Retreats", "Nav 6 label"),
-    _c("nav", "nav.5.to", "/corporate-retreats", "Nav 6 link"),
     _c("nav", "nav.cta", "Get In Touch", "Header CTA label"),
 
     # Home — hero buttons

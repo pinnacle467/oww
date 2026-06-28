@@ -5706,22 +5706,6 @@
     {
       "key": "contact.errors.message",
       "value": "A few more words please, at least 20 characters."
-    },
-    {
-      "key": "nav.5.label",
-      "created_at": "2026-06-27T12:05:58.067199+00:00",
-      "group": "nav",
-      "label": "Nav 6 label",
-      "type": "text",
-      "value": "Corporate Retreats"
-    },
-    {
-      "key": "nav.5.to",
-      "created_at": "2026-06-27T12:05:58.067505+00:00",
-      "group": "nav",
-      "label": "Nav 6 link",
-      "type": "text",
-      "value": "/corporate-retreats"
     }
   ],
   "site_settings": [

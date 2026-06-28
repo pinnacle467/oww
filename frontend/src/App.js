@@ -16,7 +16,6 @@ import Home from "@/pages/Home";
 const Gallery = lazy(() => import("@/pages/Gallery"));
 const Pricing = lazy(() => import("@/pages/Pricing"));
 const TourDetail = lazy(() => import("@/pages/TourDetail"));
-const Retreats = lazy(() => import("@/pages/Retreats"));
 const Contact = lazy(() => import("@/pages/Contact"));
 const About = lazy(() => import("@/pages/About"));
 const Blog = lazy(() => import("@/pages/Blog"));
@@ -84,8 +83,6 @@ function App() {
                     <Route path="/gallery" element={<Public><Suspense fallback={<RouteFallback />}><Gallery /></Suspense></Public>} />
                     <Route path="/pricing" element={<Public><Suspense fallback={<RouteFallback />}><Pricing /></Suspense></Public>} />
                     <Route path="/tours/:slug" element={<Public><Suspense fallback={<RouteFallback />}><TourDetail /></Suspense></Public>} />
-                    <Route path="/corporate-retreats" element={<Public><Suspense fallback={<RouteFallback />}><Retreats /></Suspense></Public>} />
-                    <Route path="/corporate-retreats/:slug" element={<Public><Suspense fallback={<RouteFallback />}><TourDetail /></Suspense></Public>} />
                     <Route path="/contact" element={<Public><Suspense fallback={<RouteFallback />}><Contact /></Suspense></Public>} />
                     <Route path="/about" element={<Public><Suspense fallback={<RouteFallback />}><About /></Suspense></Public>} />
                     <Route path="/blog" element={<Public><Suspense fallback={<RouteFallback />}><Blog /></Suspense></Public>} />
