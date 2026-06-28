@@ -1,5 +1,6 @@
 import { useEffect, useCallback } from "react";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { useSwipeNav } from "@/hooks/useSwipeNav";
 
 export function Lightbox({ items, index, onClose, onPrev, onNext }) {
   const handleKey = useCallback((e) => {
@@ -18,12 +19,27 @@ export function Lightbox({ items, index, onClose, onPrev, onNext }) {
     };
   }, [handleKey, index]);
 
+  // Phase 4: touch swipe on mobile devices (left/right to navigate between
+  // gallery items). Vertical drags still bubble through (touchAction:
+  // pan-y) so the page scrolls normally on the lightbox backdrop. Video
+  // scrubbing is excluded so playback controls keep working.
+  const hasMultiple = Array.isArray(items) && items.length > 1;
+  const swipe = useSwipeNav({
+    onNext: hasMultiple ? onNext : undefined,
+    onPrev: hasMultiple ? onPrev : undefined,
+  });
+
   if (index == null) return null;
   const item = items[index];
   const isVideo = item.file_type === "video" || /\.(mp4|webm|mov)$/i.test(item.src || "");
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-nature-deep/90 backdrop-blur-md p-4 sm:p-8" data-testid="lightbox" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[150] flex items-center justify-center bg-nature-deep/90 backdrop-blur-md p-4 sm:p-8"
+      data-testid="lightbox"
+      onClick={onClose}
+      {...swipe}
+    >
       <button onClick={onClose} className="absolute top-5 right-5 glass-dark rounded-full p-3 text-cream hover:text-gold transition-colors z-10" aria-label="Close" data-testid="lightbox-close">
         <X className="h-5 w-5" />
       </button>

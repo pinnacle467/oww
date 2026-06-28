@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { ChevronLeft, ChevronRight, X, Play } from "lucide-react";
+import { useSwipeNav } from "@/hooks/useSwipeNav";
 
 // Shared, site-wide swipeable media component (Phase 2 of Changes 1-9).
 //
@@ -186,6 +187,13 @@ function Lightbox({ items, index, onClose, onPrev, onNext }) {
     };
   }, [onClose, onPrev, onNext]);
 
+  // Phase 4: touch swipe on mobile devices. Vertical drags still pass
+  // through (touchAction: pan-y) and video controls are unaffected.
+  const swipe = useSwipeNav({
+    onNext: items.length > 1 ? onNext : undefined,
+    onPrev: items.length > 1 ? onPrev : undefined,
+  });
+
   const it = items[index];
   if (!it) return null;
   const webpSrcSet = srcsetToString(it.srcset);
@@ -198,6 +206,7 @@ function Lightbox({ items, index, onClose, onPrev, onNext }) {
       data-testid="swipeable-lightbox"
       role="dialog"
       aria-modal="true"
+      {...swipe}
     >
       <button
         type="button"
