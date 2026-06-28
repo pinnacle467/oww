@@ -1,4 +1,4 @@
-# Once Were Wild Travel - Detailed Handover (v2026-06-28, Sessions B1 + B2 + T + U COMPLETE in preview, NOT YET PUSHED TO LIVE)
+# Once Were Wild Travel - Detailed Handover (v2026-06-28, Sessions B1 + B2 + T + U + **V (Phase 3)** COMPLETE in preview, NOT YET PUSHED TO LIVE)
 
 > **Loading instructions for the next agent:**
 > 1. Pull the GitHub repo (`pinnacle467/oww`, branch `main`) into `/app` - that's the source of truth for **all code**.
@@ -6,10 +6,12 @@
 > 3. Immediately run the LIVE-SYNC sequence at the bottom of this doc (`python3 /app/backend/sync_from_live.py`) - that pulls **every DB row, every image, every video** from production at https://oncewerewild.com into your preview environment so you're working against real data, not an empty shell. **You can SKIP this step if you only need to develop against the snapshot that ships in the repo** — the snapshot is auto-applied on backend startup and already contains 237 media rows + 4 published tours + 176 content keys.
 > 4. The sync script + repo together cost **< 10 credits** to re-hydrate the entire project; do not rebuild any of the features below from scratch.
 > 5. **Respond to the user in English only.** They have explicitly disliked em dashes ("—") in user-facing copy - never use them in DB content, SEO text, alt text, JSON-LD, or seeded examples. Hyphens (`-`), commas, or colons are fine.
-> 6. **▶︎ START HERE for this hand-off:** Sessions B1, B2, **T (Phase 1)** and **U (Phase 2)** of the Changes 1-9 backlog are all COMPLETE in preview. Backend 4/4 (Phase 1) + 11/11 (Phase 2), frontend 41/41 (Phase 1) + all 4 tasks PASSED (Phase 2). The user has NOT yet pushed to live. The IMMEDIATE next task is whatever the user nominates — likely a Phase 3 covering BlogManager / HomeContent multi-cover, Gallery page swipe upgrade, or pushing the current preview to GitHub via the "Save to Github" button. **Do NOT redo any B1, B2, T or U work — it's already shipped to disk and the snapshot has been regenerated.**
+> 6. **▶︎ START HERE for this hand-off:** Sessions B1, B2, **T (Phase 1)**, **U (Phase 2)** and **V (Phase 3)** of the Changes 1-9 backlog are all COMPLETE in preview. Backend 4/4 (Phase 1) + 11/11 (Phase 2) + **24/24 (Phase 3)**; frontend 41/41 (Phase 1) + 4/4 (Phase 2) + **5/5 (Phase 3)** PASSED. The user has NOT yet pushed to live. The IMMEDIATE next task is **Phase 4: Gallery page swipe-strip option** (HomeContent multi-cover with video/embed was folded into Phase 3 and is already shipped). **Do NOT redo any B1, B2, T, U or V work — it's already on disk and the snapshot has been regenerated.**
 > 7. **MALENY DECISION (important — read before touching journeys):** The user reversed an earlier Q4 answer. "Maleny Creative Immersion" **stays as `type="tour"`** on `/pricing` — it's an already-planned upcoming trip. Do NOT re-tag Maleny.
 > 8. **CORPORATE RETREATS WAS REMOVED FROM PUBLIC SITE (Session T, 2026-06-28):** Per client direction the entire "Corporate Retreats" public surface area is gone — no nav entry, no separate /corporate-retreats page. The "Corporate and Custom" tour remains as just another card on `/pricing` (it is `type="tour"`). The component files (`Retreats.jsx`, `RetreatsDropdown.jsx`) + backend endpoints (`/api/retreats`, `/api/retreats/{slug}`) + admin JourneysManager tabs are still on disk in case the client asks for re-enable later, but no public route consumes them. See Session T for full detail.
 > 9. **SwipeableMedia is now THE site-wide gallery component (Session U).** Any new gallery — Blog post body, Home content block, Pricing card carousels, future destination pages — MUST consume `components/media/SwipeableMedia.jsx`. Do not re-implement carousel logic. The component already handles images, MP4 videos, YouTube and Vimeo embeds, touch swipe, arrows, dots, counter, lightbox.
+> 10. **MultiMediaPicker is THE site-wide admin picker (Session V).** Any new admin form that needs an ordered list of media (image / MP4 / embed) MUST consume `components/admin/MultiMediaPicker.jsx`. Do not re-implement the picker.
+> 11. **The frontend runs a PRODUCTION build (`frontend/start.sh` → `react-scripts build` → `node server.js`)**, NOT a dev server. After ANY frontend code edit you must run `cd /app/frontend && yarn build` (or `sudo supervisorctl restart frontend` which re-runs start.sh). Don't rely on hot reload.
 
 ---
 
@@ -25,6 +27,44 @@
 ---
 
 ## 2. What's been built (chronological, most recent first)
+
+### V. Phase 3 of Changes 1-9 — Blog + HomeContent multi-cover via `media_ids` + shared MultiMediaPicker (2026-06-28, **COMPLETE in preview, backend 24/24 + frontend 5/5 PASSED, NOT YET PUSHED TO LIVE**)
+
+**Backend (`backend/server.py`):**
+1. Added optional `media_ids: List[str]` field to `BlogPostInput`, `BlogPostUpdate`, `HomeSectionInput`, `HomeSectionUpdate`. Create endpoints persist it (default `[]`). PATCH preserves order.
+2. Idempotent migration in `seed()` defaults `media_ids=[]` on any pre-existing blog_post / home_section row missing the field. Logged 4 home_section rows migrated on first boot, 0 blog_post rows (none existed).
+3. Snapshot integration unchanged (both collections were already covered). Snapshot regenerated to bake the new defaults into the repo.
+
+**Frontend — new shared admin component:**
+- `frontend/src/components/admin/MultiMediaPicker.jsx` (NEW, ~190 lines). Generalised version of the old inline `GalleryPicker`. Props: `{ value, onChange(ids), allMedia, rowId, label, description, allowVideos, allowEmbeds }`. Renders:
+  - "In this gallery" selected grid with HTML5 drag-to-reorder + remove-on-X.
+  - "Available media" filterable pool (text filter by section/alt/caption).
+  - Image rows show thumbnail; video/embed rows show a labelled tile with provider hint.
+- Test-ids: `multi-media-picker-{rowId}`, `mmp-available-{mediaId}`, `mmp-selected-{mediaId}`, `mmp-remove-{mediaId}`, `mmp-filter-{rowId}`, `mmp-empty-{rowId}`.
+
+**Frontend — admin consumers:**
+- `frontend/src/pages/admin/JourneysManager.jsx` — refactored to consume `MultiMediaPicker` (zero behaviour change). The inline `GalleryPicker` function (≈135 lines) was deleted. Tours stay images-only (`allowVideos={false}`, `allowEmbeds={false}`).
+- `frontend/src/pages/admin/BlogManager.jsx` — drawer fetches `/api/media` on load and renders the picker between the featured image and the excerpt. `media_ids` flows in every POST/PATCH. Single-cover legacy upload still works.
+- `frontend/src/pages/admin/HomeContentManager.jsx` — drawer renders the picker below the body. `media_ids` flows in every POST/PATCH via the existing payload pass-through.
+
+**Frontend — public consumers (with single-image fallback per user direction):**
+- `frontend/src/pages/BlogPost.jsx` (`/blog/:slug`):
+  - `media_ids.length >= 2` → `<SwipeableMedia>` carousel (test-id `blog-post-multicover` + `blog-post-swiper`).
+  - `media_ids.length === 1` AND image → plain `<FadeImg>` (test-id `blog-post-multicover-single`).
+  - `media_ids.length === 1` AND video/embed → `<SwipeableMedia>` (only sensible render).
+  - `media_ids.length === 0` → legacy single `featured_url` via `<FadeImg>` (test-id `blog-post-featured-image`).
+- `frontend/src/components/home/HomeContent.jsx`:
+  - Per section, prepend a gallery above the body. Same rules as above (single image plain, 2+ swipeable). Section render test-id `home-section-gallery-{index}`.
+
+**User-facing rules confirmed at the start of Phase 3:**
+- Single-image multi-cover renders as a PLAIN hero (no dots/counter). Keeps the page chrome clean when only one image is selected.
+- Two-or-more items always use `SwipeableMedia` so swipe/arrows/lightbox/dots/counter stay consistent with the rest of the site.
+
+**Files touched (no deletions):** `backend/server.py`, `frontend/src/components/admin/MultiMediaPicker.jsx` (new), `frontend/src/components/home/HomeContent.jsx`, `frontend/src/pages/BlogPost.jsx`, `frontend/src/pages/admin/JourneysManager.jsx`, `frontend/src/pages/admin/BlogManager.jsx`, `frontend/src/pages/admin/HomeContentManager.jsx`, `backend/seed_data/site_snapshot.json` (regenerated).
+
+**Phase 4 candidates (medium, still open):**
+- **Gallery page swipe-strip option** — give `/gallery` an alternate "Stories" view that pages through media as a swipeable strip (per-category). The current Masonry view stays as the default; the toggle becomes a mode switch on the page hero.
+- **Optional:** push current preview to GitHub via "Save to Github" button (user action, not agent).
 
 ### U. Phase 2 of Changes 1-9 — Shared SwipeableMedia + About Us travel gallery + TourGallery refactor (2026-06-28, **COMPLETE in preview, backend 11/11 + frontend 4/4 tasks PASSED, NOT YET PUSHED TO LIVE**)
 
