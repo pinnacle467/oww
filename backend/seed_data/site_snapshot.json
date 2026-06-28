@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-06-28T06:53:18.547043+00:00",
+  "generated_at": "2026-06-28T10:01:57.184845+00:00",
   "media": [
     {
       "file_url": "/api/uploads/contact-bg/c6213da9b39140b19135fb900221e491.webp",
@@ -5706,6 +5706,14 @@
     {
       "key": "contact.errors.message",
       "value": "A few more words please, at least 20 characters."
+    },
+    {
+      "key": "home.hero.tagline",
+      "created_at": "2026-06-28T09:53:54.059278+00:00",
+      "group": "home",
+      "label": "Optional hero overlay text (leave blank for pure photo carousel)",
+      "type": "text",
+      "value": ""
     }
   ],
   "site_settings": [
@@ -5789,7 +5797,15 @@
       "description_html": "",
       "itinerary_html": "",
       "practical_html": "",
-      "preview_token": ""
+      "preview_token": "",
+      "excludes": [
+        "International and domestic airfares",
+        "Travel insurance",
+        "Visa fees (if applicable)",
+        "Personal expenses",
+        "Optional activities not listed in the itinerary"
+      ],
+      "more_details_html": ""
     },
     {
       "id": "ae57de03-978b-4ca3-a562-1735675ee464",
@@ -5824,7 +5840,15 @@
       "description_html": "",
       "itinerary_html": "",
       "practical_html": "",
-      "preview_token": ""
+      "preview_token": "",
+      "excludes": [
+        "International and domestic airfares",
+        "Travel insurance",
+        "Visa fees (if applicable)",
+        "Personal expenses",
+        "Optional activities not listed in the itinerary"
+      ],
+      "more_details_html": ""
     },
     {
       "id": "37ed2680-f641-4dcc-b85e-07140d0636e0",
@@ -5859,7 +5883,15 @@
       "description_html": "",
       "itinerary_html": "",
       "practical_html": "",
-      "preview_token": ""
+      "preview_token": "",
+      "excludes": [
+        "International and domestic airfares",
+        "Travel insurance",
+        "Visa fees (if applicable)",
+        "Personal expenses",
+        "Optional activities not listed in the itinerary"
+      ],
+      "more_details_html": ""
     },
     {
       "id": "ee61cc18-76bf-4da8-806e-37145034b467",
@@ -5894,7 +5926,15 @@
       "description_html": "",
       "itinerary_html": "",
       "practical_html": "",
-      "preview_token": ""
+      "preview_token": "",
+      "excludes": [
+        "International and domestic airfares",
+        "Travel insurance",
+        "Visa fees (if applicable)",
+        "Personal expenses",
+        "Optional activities not listed in the itinerary"
+      ],
+      "more_details_html": ""
     }
   ],
   "about_blocks": [

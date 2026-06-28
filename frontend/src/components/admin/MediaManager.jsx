@@ -15,7 +15,7 @@ function fileToDataUrl(file) {
   });
 }
 
-export function MediaManager({ section, title, subtitle, categories, ordered, filterable }) {
+export function MediaManager({ section, title, subtitle, categories, ordered, filterable, minItems }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
@@ -498,9 +498,19 @@ export function MediaManager({ section, title, subtitle, categories, ordered, fi
       <AlertDialog open={!!toRemove} onOpenChange={(o) => !o && setToRemove(null)}>
         <AlertDialogContent data-testid="remove-confirm">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-xl">Remove this item?</AlertDialogTitle>
+            <AlertDialogTitle className="text-xl">
+              {minItems && items.length <= minItems
+                ? "Remove the last image?"
+                : "Remove this item?"}
+            </AlertDialogTitle>
             <AlertDialogDescription className="text-base">
-              Are you sure you want to remove this image? This cannot be undone.
+              {minItems && items.length <= minItems ? (
+                <>
+                  This is the <strong>last image</strong> in this section. Removing it will leave the public hero with no photos to display. We recommend adding a replacement first. Are you sure you want to delete it anyway?
+                </>
+              ) : (
+                <>Are you sure you want to remove this image? This cannot be undone.</>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

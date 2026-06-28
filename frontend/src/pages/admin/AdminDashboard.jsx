@@ -17,7 +17,7 @@ export default function AdminDashboard() {
   const tiles = [
     { to: "/admin/website-text", label: "Website Text", desc: "Edit headlines, paragraphs and labels across the site", icon: Type, color: "#4A7C6F" },
     { to: "/admin/website-media", label: "Website Images & Videos", desc: "Replace every photo and video on your website", icon: FileImage, color: "#2E6DA4" },
-    { to: "/admin/hero", label: "Hero Slideshow", desc: "The big rotating photos on your home page", icon: Images, color: "#2E6DA4" },
+    { to: "/admin/hero", label: "Hero Carousel", desc: "The big rotating photos on your home page", icon: Images, color: "#2E6DA4" },
     { to: "/admin/gallery", label: "Gallery Photos & Videos", desc: "Manage your photo and video gallery", icon: Image, color: "#4A7C6F" },
     { to: "/admin/journeys", label: "Trips & Journeys", desc: "Add, edit and price the trip cards on /pricing — upload itinerary PDFs", icon: Map, color: "#B8923D" },
     { to: "/admin/home-content", label: "Home Content", desc: "Long-form rich-text sections in the lower half of the home page", icon: FileText, color: "#2E6DA4" },

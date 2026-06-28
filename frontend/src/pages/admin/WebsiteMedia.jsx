@@ -17,6 +17,7 @@ const SINGLE_SLOTS = [
   { section: "maleny",    title: "Home — Maleny feature image",  subtitle: "Portrait image in the Maleny retreat section", fallback: "/assets/images/pillar-retreat.webp" },
   { section: "pricing-hero", title: "Journeys page header image", subtitle: "Top of the Journeys & Pricing page",      fallback: "/assets/images/hero/hero-02.webp" },
   { section: "gallery-hero", title: "Gallery page header image", subtitle: "Top of the Gallery page",                   fallback: "/assets/images/gallery/gallery-04.webp" },
+  { section: "blog-hero",    title: "Blog page header image",    subtitle: "Top of the /blog index page",                fallback: "/assets/images/hero/hero-03.webp" },
   { section: "contact-hero", title: "Contact page header image", subtitle: "Top of the Contact page",                   fallback: "/assets/images/hero/hero-04.webp" },
   { section: "contact-bg",   title: "Contact page form backdrop", subtitle: "Ambient image behind the contact form",    fallback: "/assets/images/pillar-retreat.webp" },
   { section: "about-hero",   title: "About page header image",    subtitle: "Top of the About Us page",                  fallback: "/assets/images/hero/hero-03.webp" },

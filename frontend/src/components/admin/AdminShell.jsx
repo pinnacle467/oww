@@ -6,7 +6,7 @@ const LINKS = [
   { to: "/admin/dashboard", label: "Home", icon: LayoutDashboard },
   { to: "/admin/website-text", label: "Website Text", icon: Type },
   { to: "/admin/website-media", label: "Website Images & Videos", icon: FileImage },
-  { to: "/admin/hero", label: "Hero Slideshow", icon: Images },
+  { to: "/admin/hero", label: "Hero Carousel", icon: Images },
   { to: "/admin/gallery", label: "Gallery Photos & Videos", icon: Image },
   { to: "/admin/journeys", label: "Trips & Journeys", icon: Map },
   { to: "/admin/home-content", label: "Home Content", icon: FileText },

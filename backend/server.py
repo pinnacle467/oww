@@ -1031,6 +1031,7 @@ class JourneyInput(BaseModel):
     popular: bool = False
     summary: str = ""
     includes: List[str] = Field(default_factory=list)
+    excludes: List[str] = Field(default_factory=list)  # C4 — What's Not Included
     cta: str = "Enquire"
     is_active: bool = True
     # B1 additions - drive the new /tours/<slug> sub-pages and the nav dropdown.
@@ -1047,6 +1048,11 @@ class JourneyInput(BaseModel):
     itinerary_html: str = ""       # optional itinerary section, rendered below description with an H3 divider
     practical_html: str = ""       # optional practical info section, rendered below itinerary with an H3 divider
     preview_token: str = ""        # short random string; when set, allows preview of drafts via ?preview=<token>
+    # C5 — "More Details" rich-text content block on the tour sub-page.
+    # Sits above the price + CTA so a media-rich destination description
+    # surfaces before the visitor is asked to act. TipTap-authored HTML,
+    # supports inline images via the existing /api/admin/blog/image pipe.
+    more_details_html: str = ""
 
 
 class JourneyUpdate(BaseModel):
@@ -1061,6 +1067,7 @@ class JourneyUpdate(BaseModel):
     popular: Optional[bool] = None
     summary: Optional[str] = None
     includes: Optional[List[str]] = None
+    excludes: Optional[List[str]] = None  # C4 — What's Not Included
     cta: Optional[str] = None
     is_active: Optional[bool] = None
     slug: Optional[str] = None
@@ -1076,6 +1083,8 @@ class JourneyUpdate(BaseModel):
     itinerary_html: Optional[str] = None
     practical_html: Optional[str] = None
     preview_token: Optional[str] = None
+    # C5 additions
+    more_details_html: Optional[str] = None
 
 
 class JourneyReorder(BaseModel):
@@ -2453,6 +2462,10 @@ DEFAULT_CONTENT = [
     # Home — hero buttons
     _c("home", "home.hero.cta_primary", "Explore Experiences", "Hero primary button"),
     _c("home", "home.hero.cta_secondary", "Join a Retreat", "Hero secondary button"),
+    # C7 — optional overlay tagline for the hero photo carousel. Blank by
+    # default so the carousel is pure photo. Client can add a short
+    # brand-wide line via /admin/website-text → Home group.
+    _c("home", "home.hero.tagline", "", "Optional hero overlay text (leave blank for pure photo carousel)"),
 
     # Home — Manifesto
     _c("home", "home.manifesto.eyebrow", "Our Belief", "Manifesto eyebrow"),
@@ -3280,6 +3293,31 @@ async def seed():
     # SEPARATE empty category for future bookings. Leaving this comment in
     # place so the rationale is clear and we don't accidentally reintroduce
     # the migration on a future pass.
+
+    # C4 migration - default `excludes` ("What's Not Included") on every row.
+    # Idempotent: only $set when the field is missing. Standard exclusions
+    # list per client brief; operator can edit per-tour in admin.
+    DEFAULT_EXCLUDES = [
+        "International and domestic airfares",
+        "Travel insurance",
+        "Visa fees (if applicable)",
+        "Personal expenses",
+        "Optional activities not listed in the itinerary",
+    ]
+    res_excl = await db.journeys.update_many(
+        {"excludes": {"$exists": False}},
+        {"$set": {"excludes": DEFAULT_EXCLUDES}},
+    )
+    if res_excl.modified_count:
+        logger.info("C4: defaulted excludes on %d journey rows", res_excl.modified_count)
+
+    # C5 migration - default `more_details_html` empty string on every row.
+    res_md = await db.journeys.update_many(
+        {"more_details_html": {"$exists": False}},
+        {"$set": {"more_details_html": ""}},
+    )
+    if res_md.modified_count:
+        logger.info("C5: defaulted more_details_html on %d journey rows", res_md.modified_count)
 
     # Seed default home FAQs ("Questions Gently Answered"). Idempotent — only
     # inserts if the collection is empty so the client's edits are never lost.

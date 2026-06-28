@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, Link, useLocation } from "react-router-dom";
 import axios from "axios";
-import { Download, ArrowRight, MapPin, Calendar, Clock } from "lucide-react";
+import { Download, ArrowRight, MapPin, Calendar, Clock, Check, X } from "lucide-react";
 import { PageHero } from "@/components/layout/PageHero";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { CTAButton } from "@/components/ui/CTAButton";
@@ -98,8 +98,13 @@ export default function TourDetail() {
   const descriptionHtml = tour.description_html || tour.body_html || "";
   const itineraryHtml = tour.itinerary_html || "";
   const practicalHtml = tour.practical_html || "";
-  const hasBody = !!(descriptionHtml || itineraryHtml || practicalHtml);
+  // C5 - additional "More Details" rich-text block (separate from About this journey)
+  const moreDetailsHtml = tour.more_details_html || "";
+  const hasBody = !!(descriptionHtml || itineraryHtml || practicalHtml || moreDetailsHtml);
   const galleryIds = Array.isArray(tour.gallery_media_ids) ? tour.gallery_media_ids : [];
+  // C4 - includes / excludes lists
+  const includes = Array.isArray(tour.includes) ? tour.includes.filter(Boolean) : [];
+  const excludes = Array.isArray(tour.excludes) ? tour.excludes.filter(Boolean) : [];
 
   return (
     <article data-testid="tour-detail-page" data-kind={kind}>
@@ -194,6 +199,17 @@ export default function TourDetail() {
                   </div>
                 </ScrollReveal>
               )}
+              {moreDetailsHtml && (
+                <ScrollReveal delay={170}>
+                  <div data-testid="tour-section-more-details" className="pt-12 border-t border-nature-deep/10">
+                    <h3 className="font-display font-light text-ink text-2xl sm:text-3xl mb-5">More Details</h3>
+                    <div
+                      className="prose prose-neutral max-w-none text-ink-soft text-base sm:text-lg editorial"
+                      dangerouslySetInnerHTML={{ __html: moreDetailsHtml }}
+                    />
+                  </div>
+                </ScrollReveal>
+              )}
             </div>
           ) : (
             tour.summary && (
@@ -203,6 +219,57 @@ export default function TourDetail() {
                 </p>
               </ScrollReveal>
             )
+          )}
+        </div>
+      </section>
+
+      {/* Gallery moved ABOVE the price + CTA block (C5) so a media-rich
+          experience surfaces before the visitor is asked to act. */}
+      {galleryIds.length > 0 && (
+        <TourGallery
+          mediaIds={galleryIds}
+          mediaMap={media}
+          eyebrow="Journey gallery"
+          heading="Moments along the way"
+        />
+      )}
+
+      <section className="bg-white pb-4 pt-6 sm:pt-10">
+        <div className="mx-auto max-w-3xl px-5 sm:px-8">
+
+          {/* What's Included / What's Not Included (C4) — two-column on desktop,
+              stacked on mobile. Mirrors the bullet styling of the pricing cards. */}
+          {(includes.length > 0 || excludes.length > 0) && (
+            <ScrollReveal delay={175}>
+              <div className="grid gap-10 sm:grid-cols-2 pt-4 pb-2" data-testid="tour-includes-excludes">
+                {includes.length > 0 && (
+                  <div data-testid="tour-section-includes">
+                    <h3 className="font-display font-light text-ink text-2xl mb-5">What&apos;s Included</h3>
+                    <ul className="space-y-3">
+                      {includes.map((inc) => (
+                        <li key={inc} className="flex items-start gap-3 text-ink/85">
+                          <Check className="h-4 w-4 mt-1 text-nature-mid shrink-0" />
+                          <span className="text-sm sm:text-base">{inc}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {excludes.length > 0 && (
+                  <div data-testid="tour-section-excludes">
+                    <h3 className="font-display font-light text-ink text-2xl mb-5">What&apos;s Not Included</h3>
+                    <ul className="space-y-3">
+                      {excludes.map((exc) => (
+                        <li key={exc} className="flex items-start gap-3 text-ink/85">
+                          <X className="h-4 w-4 mt-1 text-ink-soft/60 shrink-0" />
+                          <span className="text-sm sm:text-base">{exc}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </ScrollReveal>
           )}
 
           {tour.priceFrom && (
@@ -238,16 +305,6 @@ export default function TourDetail() {
           </ScrollReveal>
         </div>
       </section>
-
-      {/* Gallery (only renders when there are media ids set) */}
-      {galleryIds.length > 0 && (
-        <TourGallery
-          mediaIds={galleryIds}
-          mediaMap={media}
-          eyebrow="Journey gallery"
-          heading="Moments along the way"
-        />
-      )}
 
       <section className="bg-white pb-20">
         <div className="mx-auto max-w-3xl px-5 sm:px-8">

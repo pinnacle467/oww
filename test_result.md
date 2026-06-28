@@ -1997,3 +1997,180 @@ agent_communication:
       ✓ No regression in existing endpoints (media count stable at 237, B1 features working)
       
       B2 backend is production-ready. No action items for main agent - all requirements met.
+
+
+##====================================================================================================
+## PHASE 1 BACKEND CHANGES (2026-06-28) — Quick wins + Tour content + Hero carousel
+##====================================================================================================
+
+user_problem_statement: "Phase 1 of Changes 1-9 client backlog. Test the following NEW backend changes only:
+
+  1) [C4 — Tour 'What is Not Included' field] - Journey model gained `excludes: List[str]` field.
+     - Idempotent migration ran on startup defaulting `excludes` to 5 standard items on every existing row:
+       ['International and domestic airfares', 'Travel insurance', 'Visa fees (if applicable)',
+        'Personal expenses', 'Optional activities not listed in the itinerary'].
+     - POST /api/admin/journeys must accept `excludes` in payload (list of strings).
+     - PATCH /api/admin/journeys/{id} must accept `excludes` updates.
+     - GET /api/journeys and GET /api/tours/{slug} must return `excludes` field on every row.
+     - Confirm all 4 existing tours have excludes populated with the default 5 items.
+
+  2) [C5 — Tour 'More Details' rich-text block] - Journey model gained `more_details_html: str` field.
+     - Idempotent migration ran on startup defaulting `more_details_html` to empty string on every row.
+     - POST and PATCH must accept `more_details_html` in payload (HTML string).
+     - GET endpoints must return `more_details_html`.
+
+  3) [C7 — Hero overlay tagline content key] - DEFAULT_CONTENT now includes `home.hero.tagline`
+     with empty default value. Confirm GET /api/content returns `home.hero.tagline` with value ''.
+
+  4) [Corporate Retreats nav removal] - DEFAULT_CONTENT no longer includes `nav.5.label` or `nav.5.to`.
+     Confirm GET /api/content does NOT return any `nav.5.*` keys.
+
+  Auth: POST /api/auth/login {\"email\":\"info@oncewerewild.com\",\"password\":\"ChangeMe-OWW-2026!\"}
+  Backend at http://localhost:8001. Clean up ALL test rows created (delete any journey created during the test).
+  Do NOT modify the 4 existing seeded journeys."
+
+backend:
+  - task: "C4 — Tour excludes field (What is Not Included)"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Added `excludes: List[str]` to JourneyInput and Optional[List[str]] to JourneyUpdate. Idempotent migration in seed() defaults excludes to the 5 standard items when missing. Public TourDetail.jsx renders the bullet list next to What is Included. Admin JourneysManager.jsx exposes a 5-row textarea (newline-separated). New rows pre-populate with the 5 defaults."
+      - working: true
+        agent: "testing"
+        comment: |
+          VERIFIED: All C4 excludes field tests passed (6/6 steps).
+          ✅ Step 1: All 4 existing journeys have excludes field with 5 standard items:
+             - Maleny Creative Immersion ✓
+             - Tasmanian Slow and Soulful Journeys ✓
+             - Western Australian Slow and Soulful Journeys ✓
+             - Corporate and Custom ✓
+          ✅ Step 2: POST /api/admin/journeys with custom excludes ["Custom item 1", "Custom item 2"] successful
+          ✅ Step 3: Round-trip through GET /api/journeys verified - excludes persisted correctly
+          ✅ Step 4: PATCH /api/admin/journeys/{id} with updated excludes ["Updated item A", "Updated item B", "Updated item C"] successful
+          ✅ Step 5: PATCH persistence verified - excludes updated correctly
+          ✅ Step 6: excludes field present on GET /api/tours/maleny-creative-immersion with correct 5 standard items
+          ✅ Cleanup: Test journey deleted successfully
+          C4 excludes field is production-ready.
+
+  - task: "C5 — Tour more_details_html field"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Added `more_details_html: str` to JourneyInput and Optional[str] to JourneyUpdate. Idempotent migration in seed() defaults to empty string when missing. Public TourDetail.jsx renders it as a new H3 More Details block alongside existing description/itinerary/practical sections. Admin JourneysManager.jsx adds a 4th TipTap rich-text editor labelled More Details / Destination Description."
+      - working: true
+        agent: "testing"
+        comment: |
+          VERIFIED: All C5 more_details_html field tests passed (5/5 steps).
+          ✅ Step 1: All 4 existing journeys have more_details_html field (default empty string):
+             - Maleny Creative Immersion: '' ✓
+             - Tasmanian Slow and Soulful Journeys: '' ✓
+             - Western Australian Slow and Soulful Journeys: '' ✓
+             - Corporate and Custom: '' ✓
+          ✅ Step 2: POST /api/admin/journeys with more_details_html "<p>Hello <strong>world</strong></p>" successful
+          ✅ Step 3: Round-trip through GET /api/journeys verified - more_details_html persisted correctly
+          ✅ Step 4: PATCH /api/admin/journeys/{id} with updated more_details_html successful
+          ✅ Step 5: PATCH persistence verified - more_details_html updated correctly
+          ✅ Cleanup: Test journey deleted successfully
+          C5 more_details_html field is production-ready.
+
+  - task: "C7 — home.hero.tagline content key"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Added `home.hero.tagline` to DEFAULT_CONTENT with empty default. HeroSlideshow.jsx reads this key; when empty (default), the hero is a pure photo carousel with no overlay text — only the CTAs and dot indicators remain. When set, a glass panel with the tagline appears."
+      - working: true
+        agent: "testing"
+        comment: |
+          VERIFIED: C7 home.hero.tagline content key test passed.
+          ✅ GET /api/content returns home.hero.tagline key with value '' (empty string)
+          C7 home.hero.tagline content key is production-ready.
+
+  - task: "Corporate Retreats nav removal"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Removed nav.5.label and nav.5.to from DEFAULT_CONTENT and from backend/seed_data/site_snapshot.json. Deleted both rows from MongoDB. Frontend NAV_LINKS, Navbar.jsx RetreatsDropdown branch, and App.js /corporate-retreats routes all removed. Files Retreats.jsx and RetreatsDropdown.jsx remain on disk for future re-enable."
+      - working: true
+        agent: "testing"
+        comment: |
+          VERIFIED: Corporate Retreats nav removal test passed.
+          ✅ GET /api/content does NOT return any nav.5.* keys (correct - nav.5 removed)
+          ✅ All expected nav prefixes (nav.0 through nav.4) exist
+          ✅ nav.cta exists
+          Corporate Retreats nav removal is production-ready.
+
+agent_communication:
+  - agent: "main"
+    message: |
+      Phase 1 of the Changes 1-9 backlog has shipped backend changes for items C4, C5, C7 and the Corporate Retreats nav removal. Please test the four items in the user_problem_statement above. Do not test the Hero Carousel admin UI (that uses the existing /api/admin/media endpoints with section='hero', already covered by prior test runs). Frontend visual smoke-tests will be requested SEPARATELY after user permission per the testing protocol.
+  - agent: "testing"
+    message: |
+      ✅ PHASE 1 BACKEND TESTING COMPLETE - ALL 5 TESTS PASSED
+      
+      Comprehensive testing of Phase 1 backend changes completed successfully. All test scenarios passed:
+      
+      1. ✅ C4 — Tour excludes field (What is Not Included): PASSED (6/6 steps)
+         - All 4 existing journeys have excludes field with 5 standard items
+         - POST with custom excludes works
+         - Round-trip through GET verified
+         - PATCH with updated excludes works
+         - PATCH persistence verified
+         - excludes field appears on GET /api/tours/{slug}
+      
+      2. ✅ C5 — Tour more_details_html field: PASSED (5/5 steps)
+         - All 4 existing journeys have more_details_html field (default empty string)
+         - POST with more_details_html works
+         - Round-trip through GET verified
+         - PATCH with updated more_details_html works
+         - PATCH persistence verified
+      
+      3. ✅ C7 — home.hero.tagline content key: PASSED
+         - GET /api/content returns home.hero.tagline with value '' (empty string)
+      
+      4. ✅ Corporate Retreats nav removal: PASSED
+         - GET /api/content does NOT return any nav.5.* keys
+         - nav.0 through nav.4 and nav.cta exist as expected
+      
+      5. ✅ Regression test: PASSED
+         - GET /api/journeys returns exactly 4 rows
+         - GET /api/media returns exactly 237 rows
+      
+      ALL PHASE 1 BACKEND FEATURES VERIFIED AND WORKING:
+      ✓ C4 excludes field with idempotent migration to 5 standard items
+      ✓ C5 more_details_html field with idempotent migration to empty string
+      ✓ C7 home.hero.tagline content key with empty default
+      ✓ Corporate Retreats nav removal (nav.5.* keys removed)
+      ✓ No regression in existing endpoints (journey count: 4, media count: 237)
+      
+      All test data cleaned up. Phase 1 backend is production-ready.
+      
+      ACTION ITEMS FOR MAIN AGENT:
+      - All Phase 1 backend changes verified and working correctly
+      - Please summarize and finish
+      
+      YOU MUST ASK USER BEFORE DOING FRONTEND TESTING
+

@@ -24,6 +24,7 @@ const EMPTY_DRAFT = {
   priceNote: "",
   summary: "",
   includes: "",   // newline-joined string in the form, split on save
+  excludes: "International and domestic airfares\nTravel insurance\nVisa fees (if applicable)\nPersonal expenses\nOptional activities not listed in the itinerary",   // C4 — newline-joined string in the form, split on save
   cta: "Enquire",
   popular: false,
   is_active: true,
@@ -39,6 +40,8 @@ const EMPTY_DRAFT = {
   itinerary_html: "",
   practical_html: "",
   gallery_media_ids: [],   // array of media.id values, ordered
+  // C5 — "More Details" rich-text block
+  more_details_html: "",
 };
 
 function includesToArray(text) {
@@ -72,6 +75,7 @@ export default function JourneysManager() {
       setItems(data.map((d) => ({
         ...d,
         _includesText: includesToText(d.includes),
+        _excludesText: includesToText(d.excludes),
         gallery_media_ids: Array.isArray(d.gallery_media_ids) ? d.gallery_media_ids : [],
       })));
       setAllMedia(Array.isArray(mediaData) ? mediaData : []);
@@ -109,6 +113,7 @@ export default function JourneysManager() {
         priceNote: j.priceNote,
         summary: j.summary,
         includes: includesToArray(j._includesText),
+        excludes: includesToArray(j._excludesText),
         cta: j.cta,
         popular: !!j.popular,
         is_active: !!j.is_active,
@@ -124,6 +129,8 @@ export default function JourneysManager() {
         itinerary_html: j.itinerary_html || "",
         practical_html: j.practical_html || "",
         gallery_media_ids: Array.isArray(j.gallery_media_ids) ? j.gallery_media_ids : [],
+        // C5 — More Details rich text
+        more_details_html: j.more_details_html || "",
       });
       await load();
     } catch (e) {
@@ -205,7 +212,11 @@ export default function JourneysManager() {
       return;
     }
     try {
-      const payload = { ...draft, includes: includesToArray(draft.includes) };
+      const payload = {
+        ...draft,
+        includes: includesToArray(draft.includes),
+        excludes: includesToArray(draft.excludes),
+      };
       await api.post("/admin/journeys", payload);
       setDraft({ ...EMPTY_DRAFT, type: activeTab });
       setCreating(false);
@@ -394,7 +405,9 @@ export default function JourneysManager() {
                     name: j.name || "", region: j.region || "", nights: j.nights || "",
                     dates: j.dates || "", priceFrom: j.priceFrom || "", priceUnit: j.priceUnit || "",
                     priceNote: j.priceNote || "", summary: j.summary || "",
-                    includes: j._includesText || "", cta: j.cta || "Enquire",
+                    includes: j._includesText || "",
+                    excludes: j._excludesText || "",
+                    cta: j.cta || "Enquire",
                     popular: !!j.popular, is_active: !!j.is_active,
                     slug: j.slug || "", hero_media_id: j.hero_media_id || "",
                     seo_title: j.seo_title || "", seo_description: j.seo_description || "",
@@ -403,9 +416,14 @@ export default function JourneysManager() {
                     description_html: j.description_html || "",
                     itinerary_html: j.itinerary_html || "",
                     practical_html: j.practical_html || "",
+                    more_details_html: j.more_details_html || "",
                     gallery_media_ids: Array.isArray(j.gallery_media_ids) ? j.gallery_media_ids : [],
                   }}
-                  onChange={(p) => updateLocal(j.id, p.includes !== undefined ? { _includesText: p.includes } : p)}
+                  onChange={(p) => {
+                    if (p.includes !== undefined) return updateLocal(j.id, { _includesText: p.includes });
+                    if (p.excludes !== undefined) return updateLocal(j.id, { _excludesText: p.excludes });
+                    return updateLocal(j.id, p);
+                  }}
                   rowId={j.id}
                   allMedia={allMedia}
                 />
@@ -656,6 +674,18 @@ function DraftFields({ value, onChange, rowId, allMedia }) {
           placeholder={"Premium, peaceful accommodation\nBespoke dining by an accomplished chef\nAustralian wines paired with dinner"}
         />
       </label>
+      <label className="sm:col-span-2 block">
+        <span className="block text-sm font-medium text-gray-600 mb-1">{"What\u2019s not included (one item per line)"}</span>
+        <textarea
+          rows={5}
+          className="w-full px-3 py-2 border border-gray-300 rounded focus:border-[#2D4A3E] focus:outline-none focus:ring-1 focus:ring-[#2D4A3E]/40 font-mono text-sm"
+          value={value.excludes || ""}
+          onChange={(e) => onChange({ excludes: e.target.value })}
+          placeholder={"International and domestic airfares\nTravel insurance\nVisa fees (if applicable)\nPersonal expenses\nOptional activities not listed in the itinerary"}
+          data-testid={`journey-excludes-${rowId || "new"}`}
+        />
+        <span className="block text-xs text-gray-500 mt-1">Defaults are pre-populated. Edit, add or remove items per tour.</span>
+      </label>
       <label className="sm:col-span-2 flex items-center gap-3 mt-1">
         <input
           type="checkbox"
@@ -740,6 +770,16 @@ function DraftFields({ value, onChange, rowId, allMedia }) {
                 placeholder="What to bring, fitness level, dietary notes, anything practical."
                 testIdPrefix={`journey-practical-${rowId || "new"}`}
               />
+            </div>
+            <div>
+              <span className="block text-sm font-medium text-gray-600 mb-1">More Details / Destination Description (optional)</span>
+              <RichTextEditor
+                value={value.more_details_html || ""}
+                onChange={(html) => onChange({ more_details_html: html })}
+                placeholder="Rich destination story, more photos, what makes this special. Supports bold, italic, headings, bullets, links and inline images."
+                testIdPrefix={`journey-more-details-${rowId || "new"}`}
+              />
+              <span className="block text-xs text-gray-500 mt-1">Renders above the Enquire button on the tour detail page.</span>
             </div>
           </div>
         </div>
