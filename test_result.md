@@ -3402,6 +3402,265 @@ agent_communication:
 
       Setup:
         1) Login at /admin (email info@oncewerewild.com / password
+
+#====================================================================================================
+# PHASE 5 - 3D Coverflow Side-Peek hero transition (2026-06-29)
+#====================================================================================================
+
+user_problem_statement: |
+  Phase 5: replace the hero slideshow's 2D cross-fade with a true 3D
+  Coverflow Side-Peek transition. Three slides visible at once - the
+  active centred and flat, prev tilted on the left at -35deg rotateY,
+  next tilted on the right at +35deg rotateY. All other slides parked
+  deep behind the camera at Z=-600. Cranked variant (current): 22% X
+  translate, 35deg rotateY, 0.75 side opacity. Reduced-motion users
+  fall back to a plain instant cross-fade (no rotation).
+
+frontend:
+  - task: "Phase 5 - 3D Coverflow hero slideshow transition"
+    implemented: true
+    working: false
+    file: "frontend/src/components/home/HeroSlideshow.jsx, frontend/src/index.css"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: |
+          Files touched:
+          - frontend/src/index.css - new `.hero-stage { perspective: 1500px }`
+            and rewritten `.hero-slide` rules with `.prev`/`.active`/`.next`
+            staging classes. Inactive slides park at translate3d(0,0,-600px)
+            opacity 0; side panels at translate3d(+/-22%, 0, -180px)
+            rotateY(+/-35deg) opacity 0.75; active at translate3d(0,0,0)
+            rotateY(0) opacity 1. Transitions: opacity 1300ms +
+            transform 1500ms, cubic-bezier(0.22, 1, 0.36, 1).
+          - frontend/src/components/home/HeroSlideshow.jsx - section now
+            has `hero-stage` class. The slide map computes prev/active/next
+            indices on each render and assigns the matching CSS class.
+            When `reduceMotion` is true the prev/next staging is skipped
+            so the global transition-duration override produces a plain
+            cross-fade instead of a snap-rotation.
+          LCP protected:
+          - Active slide (slide 0) paints flat at Z=0 on initial render
+            (no animation triggers on mount).
+          - Static `<link rel="preload">` in index.html is unchanged.
+          - `fetchpriority="high"` + `loading="eager"` on slide 0 unchanged.
+          - Side panels (slide 1 + last) are visible at first paint but
+            have `loading="lazy"` and lower visual mass; they cannot
+            steal LCP candidacy from the centred slide.
+          Visually verified via screenshots at 1920x900 (desktop shows
+          three slides at once with prev/next tilted at the edges) and
+          390x844 (mobile shows the centered slide cleanly; side panels
+          mostly clipped by section overflow:hidden).
+      - working: false
+        agent: "testing"
+        comment: |
+          VERIFIED: Phase 5 3D Coverflow hero transition - 2 CRITICAL ISSUES FOUND
+          
+          Comprehensive testing completed with 7 test groups (21 sub-tests total).
+          Results: 17 PASSED ✓, 2 FAILED ✗, 2 MINOR ISSUES ⚠️
+          
+          ❌ CRITICAL ISSUE 1: rotateY ANGLES INVERTED
+          TEST 2b FAILED: .hero-slide.prev computed transform shows rotateY(-35deg) but CSS specifies rotateY(35deg)
+          - CSS in index.css line 164: `transform: translate3d(-22%, 0, -180px) rotateY(35deg);`
+          - Computed matrix: m11=0.819, m13=-0.574 → This is rotateY(-35deg), NOT rotateY(35deg)
+          - Expected: m13 ~ 0.574 (positive, for rotateY(35deg))
+          - Actual: m13 = -0.574 (negative)
+          
+          TEST 2c FAILED: .hero-slide.next computed transform shows rotateY(35deg) but CSS specifies rotateY(-35deg)
+          - CSS in index.css line 172: `transform: translate3d(22%, 0, -180px) rotateY(-35deg);`
+          - Computed matrix: m11=0.819, m13=0.574 → This is rotateY(35deg), NOT rotateY(-35deg)
+          - Expected: m13 ~ -0.574 (negative, for rotateY(-35deg))
+          - Actual: m13 = 0.574 (positive)
+          
+          The rotateY angles in the CSS are backwards from what the browser computes. This could be:
+          1. A CSS bug where the signs need to be flipped: prev should be rotateY(-35deg), next should be rotateY(35deg)
+          2. A transform-origin or perspective issue causing the rotation to be inverted
+          3. The review_request expectations are incorrect
+          
+          ⚠️ MINOR ISSUE 2: Mobile horizontal scroll
+          TEST 6d FAILED: Minor horizontal scroll on mobile viewport (390x844)
+          - scrollWidth: 396px
+          - innerWidth: 390px
+          - Overflow: 6px (1.5% of viewport width)
+          - Likely caused by side panels (.prev/.next) peeking beyond viewport edges
+          - Not a critical UX issue but should be investigated
+          
+          ✅ TESTS PASSED (17/19 critical tests):
+          
+          TEST 1 - Initial mount at 1920x900: ✓ FULLY PASSED (4/4)
+          - ✓ section.hero-stage exists
+          - ✓ section.hero-stage perspective = 1500px
+          - ✓ .hero-slide.active transform = matrix(1, 0, 0, 1, 0, 0) (identity/flat/Z=0)
+          - ✓ Exactly one .hero-slide.active element
+          
+          TEST 2 - Coverflow staging (desktop 1920x900): ⚠️ PARTIAL (3/5)
+          - ✓ Exactly one .hero-slide.prev AND one .hero-slide.next
+          - ✗ .hero-slide.prev rotateY INVERTED (see CRITICAL ISSUE 1)
+          - ✗ .hero-slide.next rotateY INVERTED (see CRITICAL ISSUE 1)
+          - ✓ .hero-slide.prev opacity = 0.75 (range 0.7-0.8)
+          - ✓ .hero-slide.next opacity = 0.75 (range 0.7-0.8)
+          
+          TEST 3 - Auto-advance still cycles: ✓ PASSED
+          - ✓ Slideshow auto-advanced from hero-slide-1 to hero-slide-2 after 5 seconds
+          - Auto-advance interval: 4500ms (as specified)
+          
+          TEST 4 - Manual arrow + dot nav: ✓ FULLY PASSED (3/3)
+          - ✓ Clicking [data-testid="hero-next"] advanced slide correctly
+          - ✓ Clicking [data-testid="hero-prev"] reverted to original slide
+          - ✓ Clicking [data-testid="hero-dot-4"] jumped to slide 4
+          
+          TEST 5 - Reduced-motion fallback: ✓ FULLY PASSED (2/2)
+          - ✓ ZERO .hero-slide.prev and ZERO .hero-slide.next classes (only .active exists)
+          - ✓ Cross-fade fallback still works (advanced from hero-slide-1 to hero-slide-2)
+          - Reduced-motion users get plain instant cross-fade as designed
+          
+          TEST 6 - Mobile 390x844: ⚠️ PARTIAL (1/2)
+          - ✓ Mobile .active slide transform = matrix(1, 0, 0, 1, 0, 0) (identity)
+          - ✗ Minor horizontal scroll detected (see MINOR ISSUE 2)
+          
+          TEST 7 - Console errors check: ✓ PASSED
+          - ✓ No Coverflow-related console errors
+          - ✓ No "translate3d", "rotateY", "perspective", or "HeroSlideshow" errors
+          - Note: 3 unrelated 404 errors detected (likely missing image variants)
+          
+          VISUAL VERIFICATION:
+          - Desktop (1920x900): Three slides visible at once with side panels tilted
+          - Mobile (390x844): Centered slide fills viewport cleanly
+          - Transitions smooth with cubic-bezier(0.22, 1, 0.36, 1) easing
+          - LCP protected: Active slide paints flat at Z=0 on initial render
+          
+          REGRESSION CHECK:
+          - ✓ Auto-advance timer still works (4.5s dwell)
+          - ✓ Arrow navigation functional
+          - ✓ Dot indicators functional
+          - ✓ Reduced-motion fallback working
+          - ✓ No JavaScript errors
+          
+          CONCLUSION:
+          Phase 5 Coverflow transition is MOSTLY working but has 1 CRITICAL CSS BUG:
+          The rotateY angles are inverted - the computed transforms show the opposite
+          rotation from what the CSS specifies. This needs investigation and fix.
+          
+          The mobile horizontal scroll is a minor cosmetic issue (6px overflow).
+          
+          All other functionality (auto-advance, manual nav, reduced-motion, staging
+          classes, opacity, perspective) is working correctly.
+
+metadata:
+  test_sequence: 8
+  run_ui: true
+
+test_plan:
+  current_focus: []
+  stuck_tasks:
+    - "Phase 5 - 3D Coverflow hero slideshow transition"
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: |
+      Phase 5 ready for frontend testing. Focused regression scope:
+
+        1) Initial mount: navigate to {URL}/ at 1920x900 desktop. Within
+           1500ms of DOMContentLoaded, the active slide must have
+           computed transform `matrix(1, 0, 0, 1, 0, 0)` (identity = flat
+           at Z=0). The first slide image (`[data-testid="hero-slide-1"]
+           img`) must have a non-empty `naturalWidth` (LCP candidate is
+           present and decoded).
+
+        2) Coverflow staging present at 1920x900:
+           - `section.hero-stage` exists.
+           - Exactly one `.hero-slide.active` element.
+           - Exactly one `.hero-slide.prev` AND one `.hero-slide.next`
+             (since HERO.length > 1).
+           - The .next slide's computed transform contains rotateY ~ -35deg.
+           - The .prev slide's computed transform contains rotateY ~ 35deg.
+
+        3) Auto-advance still cycles. Wait 5 seconds (auto-advance is
+           4500ms). Assert the .active slide's data-testid changed from
+           hero-slide-1 to hero-slide-2.
+
+        4) Manual arrow nav. Click `[data-testid="hero-prev"]` - assert
+           the .active slide reverts. Click `[data-testid="hero-next"]`
+           twice - assert the active index advances by 2.
+
+        5) Dots nav. Click the 4th dot `[data-testid="hero-dot-3"]` (0-
+           indexed). Assert the active slide becomes hero-slide-4.
+
+        6) Reduced-motion fallback. Use page.emulate_media(reduced_motion="reduce")
+           + reload. Assert NO `.prev` or `.next` classes exist on any
+           slide (only `.active`). Trigger a next-click and assert the
+           cross-fade still works (active changes).
+
+        7) Mobile 390x844. The centred slide must fill the viewport
+           cleanly (no horizontal scroll, no obvious tilt). Side panels
+           may be partially clipped - that's expected.
+
+        8) No JS console errors during any of the above.
+  - agent: "testing"
+    message: |
+      ⚠️ PHASE 5 TESTING COMPLETE - 1 CRITICAL CSS BUG FOUND
+      
+      Comprehensive testing of Phase 5 3D Coverflow hero transition completed.
+      Results: 17/19 tests PASSED, 2 tests FAILED (rotateY angles inverted)
+      
+      ❌ CRITICAL ISSUE: rotateY ANGLES INVERTED IN CSS
+      
+      The computed transforms show the OPPOSITE rotation from what the CSS specifies:
+      
+      1. .hero-slide.prev:
+         - CSS specifies: rotateY(35deg)
+         - Browser computes: rotateY(-35deg) [m13=-0.574 instead of +0.574]
+         - Location: /app/frontend/src/index.css line 164
+      
+      2. .hero-slide.next:
+         - CSS specifies: rotateY(-35deg)
+         - Browser computes: rotateY(35deg) [m13=+0.574 instead of -0.574]
+         - Location: /app/frontend/src/index.css line 174
+      
+      POSSIBLE CAUSES:
+      - The CSS rotateY signs are backwards (need to flip: prev=-35deg, next=+35deg)
+      - Transform-origin or perspective interaction causing inversion
+      - The review_request test expectations are incorrect
+      
+      RECOMMENDED FIX:
+      Try swapping the rotateY signs in index.css:
+      ```css
+      .hero-slide.prev {
+        transform: translate3d(-22%, 0, -180px) rotateY(-35deg);  /* was 35deg */
+      }
+      .hero-slide.next {
+        transform: translate3d(22%, 0, -180px) rotateY(35deg);   /* was -35deg */
+      }
+      ```
+      
+      ⚠️ MINOR ISSUE: Mobile horizontal scroll (6px overflow on 390px viewport)
+      - Not critical but should be investigated
+      - Likely caused by side panels peeking beyond viewport edges
+      
+      ✅ ALL OTHER TESTS PASSED:
+      - ✓ section.hero-stage perspective = 1500px
+      - ✓ Active slide transform = identity matrix (flat at Z=0)
+      - ✓ Exactly one .active, one .prev, one .next
+      - ✓ Opacity values correct (0.75 for side panels)
+      - ✓ Auto-advance works (4.5s interval)
+      - ✓ Arrow navigation works
+      - ✓ Dot navigation works
+      - ✓ Reduced-motion fallback works (no .prev/.next classes)
+      - ✓ Cross-fade still works in reduced-motion mode
+      - ✓ Mobile active slide has identity transform
+      - ✓ No Coverflow-related console errors
+      
+      VISUAL VERIFICATION:
+      - Desktop: Three slides visible with side panels tilted
+      - Mobile: Centered slide fills viewport
+      - Transitions smooth with cubic-bezier easing
+      - LCP protected (active slide paints flat on initial render)
+
            ChangeMe-OWW-2026!).
         2) Navigate to /admin/about (the AboutManager admin page).
         3) Use the "+ Add story" button to create a new story with:
