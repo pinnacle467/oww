@@ -1,4 +1,4 @@
-# Once Were Wild Travel - Detailed Handover (v2026-06-29, Sessions B1 + B2 + T + U + V + W + X + Y + **Z (Tours-page redesign + lightbox portal fix)** COMPLETE in preview, NOT YET PUSHED TO LIVE)
+# Once Were Wild Travel - Detailed Handover (v2026-06-29, Sessions B1 + B2 + T + U + V + W + X + Y + Z + **AA (Admin media UX unified + Pricing thumbnail fallback + hero CTA pruned)** COMPLETE in preview, NOT YET PUSHED TO LIVE)
 
 > **Loading instructions for the next agent:**
 > 1. Pull the GitHub repo (`pinnacle467/oww`, branch `main`) into `/app` - that's the source of truth for **all code**.
@@ -6,11 +6,11 @@
 > 3. Immediately run the LIVE-SYNC sequence at the bottom of this doc (`python3 /app/backend/sync_from_live.py`) - that pulls **every DB row, every image, every video** from production at https://oncewerewild.com into your preview environment so you're working against real data, not an empty shell. **You can SKIP this step if you only need to develop against the snapshot that ships in the repo** — the snapshot is auto-applied on backend startup and already contains 237 media rows + 4 published tours + 176 content keys.
 > 4. The sync script + repo together cost **< 10 credits** to re-hydrate the entire project; do not rebuild any of the features below from scratch.
 > 5. **Respond to the user in English only.** They have explicitly disliked em dashes ("—") in user-facing copy - never use them in DB content, SEO text, alt text, JSON-LD, or seeded examples. Hyphens (`-`), commas, or colons are fine.
-> 6. **▶︎ START HERE for this hand-off:** Sessions B1, B2, **T (Phase 1)**, **U (Phase 2)**, **V (Phase 3)**, **W (Phase 4)**, **X (About-Us spacing bug)**, **Y (Phase 5 — 3D Coverflow hero)** and **Z (Tours-page redesign — image-card grid on /pricing + 2-col tour-detail layout with Tabs + sidebar + SwipeableMedia lightbox portal fix)** of the Changes 1-9 backlog are all COMPLETE in preview. Backend 4/4 (Phase 1) + 11/11 (Phase 2) + 24/24 (Phase 3) + **7/7 (Z1 highlights field)** + frontend 41/41 (Phase 1) + 4/4 (Phase 2) + 5/5 (Phase 3) + 5/5 (Phase 4) + 2/2 (X bug fix) + 4/5 (Phase 5) + **8/8 (Z5 lightbox portal fix incl. mobile)** PASSED. **The user has NOT yet pushed to live; deploy steps below (point 12).** Likely next candidates: real hero/gallery media uploads per tour by the client (so the new image-card grid + Gallery tab populate with actual photos), blog post body inline images opening in a SwipeableMedia lightbox, or any new client-nominated change. **Do NOT redo any B1, B2, T, U, V, W, X, Y or Z work — it's already on disk.**
+> 6. **▶︎ START HERE for this hand-off:** Sessions B1, B2, **T (Phase 1)**, **U (Phase 2)**, **V (Phase 3)**, **W (Phase 4)**, **X (About-Us spacing bug)**, **Y (Phase 5 — 3D Coverflow hero)**, **Z (Tours-page redesign — image-card grid on /pricing + 2-col tour-detail layout with Tabs + sidebar + SwipeableMedia lightbox portal fix)** and **AA (Admin media UX unified: Add / Replace / Delete everywhere there is media; Pricing card thumbnail falls back to first gallery image; "Join a Retreat" hero CTA removed)** of the Changes 1-9 backlog are all COMPLETE in preview. Backend 4/4 (Phase 1) + 11/11 (Phase 2) + 24/24 (Phase 3) + **7/7 (Z1 highlights field)** + frontend 41/41 (Phase 1) + 4/4 (Phase 2) + 5/5 (Phase 3) + 5/5 (Phase 4) + 2/2 (X bug fix) + 4/5 (Phase 5) + **8/8 (Z5 lightbox portal fix incl. mobile)** PASSED. Session AA has not been put through the testing agents yet (manual smoke-test only — the picker upgrade is opt-in via new props, the 2 new backend endpoints follow the existing cover-upload pattern). **The user has NOT yet pushed to live; deploy steps below (point 12).** Likely next candidates: real hero/gallery media uploads per tour by the client (so the new image-card grid + Gallery tab populate with actual photos), blog post body inline images opening in a SwipeableMedia lightbox, or any new client-nominated change. **Do NOT redo any B1, B2, T, U, V, W, X, Y, Z or AA work — it's already on disk.**
 > 7. **MALENY DECISION (important — read before touching journeys):** The user reversed an earlier Q4 answer. "Maleny Creative Immersion" **stays as `type="tour"`** on `/pricing` — it's an already-planned upcoming trip. Do NOT re-tag Maleny.
 > 8. **CORPORATE RETREATS WAS REMOVED FROM PUBLIC SITE (Session T, 2026-06-28):** Per client direction the entire "Corporate Retreats" public surface area is gone — no nav entry, no separate /corporate-retreats page. The "Corporate and Custom" tour remains as just another card on `/pricing` (it is `type="tour"`). The component files (`Retreats.jsx`, `RetreatsDropdown.jsx`) + backend endpoints (`/api/retreats`, `/api/retreats/{slug}`) + admin JourneysManager tabs are still on disk in case the client asks for re-enable later, but no public route consumes them. See Session T for full detail.
 > 9. **SwipeableMedia is now THE site-wide gallery component (Session U).** Any new gallery — Blog post body, Home content block, Pricing card carousels, future destination pages — MUST consume `components/media/SwipeableMedia.jsx`. Do not re-implement carousel logic. The component already handles images, MP4 videos, YouTube and Vimeo embeds, touch swipe, arrows, dots, counter, lightbox.
-> 10. **MultiMediaPicker is THE site-wide admin picker (Session V).** Any new admin form that needs an ordered list of media (image / MP4 / embed) MUST consume `components/admin/MultiMediaPicker.jsx`. Do not re-implement the picker.
+> 10. **MultiMediaPicker is THE site-wide admin picker (Session V; major upgrade in Session AA).** Any new admin form that needs an ordered list of media (image / MP4 / embed) MUST consume `components/admin/MultiMediaPicker.jsx`. Do not re-implement the picker. As of Session AA the picker also handles direct multi-file uploads, per-tile binary replace, and per-tile permanent delete (with confirm dialog), all gated behind opt-in props (`allowUpload`, `allowDelete`, `uploadSection`, `reloadMedia`) so existing callers that only need pick-from-pool keep working unchanged.
 > 11. **The frontend runs a PRODUCTION build (`frontend/start.sh` → `react-scripts build` → `node server.js`)**, NOT a dev server. After ANY frontend code edit you must run `cd /app/frontend && yarn build` (or `sudo supervisorctl restart frontend` which re-runs start.sh). Don't rely on hot reload.
 >
 > 12. **How to deploy this preview to live (run on the Bluehost SSH terminal):**
@@ -18,7 +18,7 @@
 > Two-step process — push from preview to GitHub first, then pull on Bluehost.
 >
 > **Step 12a — push preview to GitHub** (in the Emergent chat, NOT terminal):
->    Click the "Save to Github" button in the chat input. This commits every file under `/app` (including the new `frontend/src/index.css` Coverflow rules, the updated `HeroSlideshow.jsx`, the `About.jsx` story-body paragraph splitting, the extended `sync_from_live.py`, the regenerated `backend/seed_data/site_snapshot.json`, the new Phase 3 `MultiMediaPicker.jsx`, the Phase 4 `useSwipeNav.js`, the new **Z Pricing.jsx + TourDetail.jsx redesign**, the **Z highlights field + admin textarea**, and the **Z5 SwipeableMedia.jsx portal fix**) and pushes to `pinnacle467/oww@main`. Wait for the push confirmation toast.
+>    Click the "Save to Github" button in the chat input. This commits every file under `/app` (including the new `frontend/src/index.css` Coverflow rules, the updated `HeroSlideshow.jsx`, the `About.jsx` story-body paragraph splitting, the extended `sync_from_live.py`, the regenerated `backend/seed_data/site_snapshot.json`, the new Phase 3 `MultiMediaPicker.jsx`, the Phase 4 `useSwipeNav.js`, the new **Z Pricing.jsx + TourDetail.jsx redesign**, the **Z highlights field + admin textarea**, the **Z5 SwipeableMedia.jsx portal fix**, and the new **AA MultiMediaPicker.jsx upgrade + AboutManager / BlogManager remove-cover buttons + 2 new backend DELETE endpoints + Pricing.jsx hero fallback + HeroSlideshow.jsx CTA removal**) and pushes to `pinnacle467/oww@main`. Wait for the push confirmation toast.
 >
 > **Step 12b — pull on Bluehost terminal** (SSH into the Bluehost server, then):
 > ```bash
@@ -47,7 +47,14 @@
 > ```
 >
 > **What to expect after deploy:**
-> - **NEW (Session Z):** `/pricing` (Tours index) now shows a clean 3-col image-card grid with gold name-banner + chevron — every card is one clickable tile → `/tours/<slug>`. The "Most Popular" badge is preserved on Maleny. Until the operator uploads `hero_media_id` on each tour, cards show monogram-letter placeholders.
+> - **NEW (Session AA):** Every admin surface that handles media now offers consistent **Add / Replace / Delete** affordances:
+>   - Tours gallery (`/admin/journeys` → expand a tour → Gallery tab), Blog cover gallery (`/admin/blog` → editor → Cover gallery), Home Content section gallery (`/admin/home-content` → editor → Section gallery) all gain an "Add photos or videos" button (multi-select + progress queue, streams to `/admin/media/upload`, auto-adds to the selection in upload order), per-tile Replace (binary swap via `PATCH /admin/media/{id}` — keeps the same id so ordering is preserved), and per-tile permanent Delete (with confirm dialog → `DELETE /admin/media/{id}`).
+>   - Tours gallery now also accepts **videos** (`allowVideos=true`), matching Blog and Home which were already video-enabled.
+>   - AboutManager Stories (single `cover_url`) and BlogManager featured image (single `featured_url`) gain explicit "Remove cover" / "Remove image" buttons backed by 2 NEW backend endpoints `DELETE /api/admin/stories/{sid}/cover` + `DELETE /api/admin/blog/{pid}/cover` (clear DB fields + best-effort unlink of files from disk).
+>   - All other admin surfaces (Hero Carousel, Gallery Photos & Videos, Website Images & Videos, About Us Travel Gallery, Charity) already used `MediaManager` which already has bulk-add + replace + delete-with-confirm — they are unchanged.
+> - **NEW (Session AA):** `/pricing` Tours-index cards fall back to the **first image of the tour's `gallery_media_ids`** when no `hero_media_id` is set. Maleny's "Most Popular" card now shows its Glasshouse Mountains hinterland photo instead of the "M" monogram. The 3 tours with empty galleries (Tasmania / Western Australia / Corporate and Custom) keep their monograms until the operator uploads photos — no admin re-work needed, the moment a photo is added to a tour's gallery the card thumbnail auto-populates on the next public render.
+> - **NEW (Session AA):** Home hero secondary CTA "Join a Retreat" is **removed**. Only the primary "Explore Experiences" button remains. The content key `home.hero.cta_secondary` is no longer read by the JSX (the key still exists in DB for now, can be deleted in a future cleanup if desired — no public site code consumes it).
+> - **NEW (Session Z):** `/pricing` (Tours index) now shows a clean 3-col image-card grid with gold name-banner + chevron — every card is one clickable tile → `/tours/<slug>`. The "Most Popular" badge is preserved on Maleny. With Session AA the cards now also show real photos once a tour has any gallery image.
 > - **NEW (Session Z):** `/tours/<slug>` (Tour Detail) now uses a 2-column layout: title + duration subtitle, hero SwipeableMedia carousel, italic gold-bordered description quote, tab strip (Details / Gallery / What's Included / Prices & Dates) with auto-hidden empty tabs; right sticky sidebar shows Tour highlights checkmark list + Small group tours blurb + Testimonials card. **Itinerary OUTLINE on-page + Full PDF stays in the Download button** (per client direction). Tabs that have no content auto-hide so empty rows look clean.
 > - **NEW (Session Z5):** Clicking any image in a SwipeableMedia carousel anywhere on the site (TourDetail hero, Gallery tab, About travel gallery, Blog post gallery, etc.) now opens a true fullscreen lightbox via React portal to `document.body`. Previously the lightbox was trapped inside the `.reveal` ScrollReveal ancestor's transform-induced containing block, letting the sticky sidebar and tabs leak through.
 > - Home page hero shows 3D Coverflow on desktop (prev / next slides peek in from sides at 35° tilt). Mobile keeps the existing centred-slide look.
@@ -73,6 +80,84 @@
 ---
 
 ## 2. What's been built (chronological, most recent first)
+
+### AA. Admin media UX unified + Pricing card thumbnail fallback + Home hero CTA pruned (2026-06-29, **COMPLETE in preview, NOT YET PUSHED TO LIVE**)
+
+**Client direction (verbatim):**
+> "Within the tours section in the admin panel, there needs to be an option to add/replace/remove multiple media directly in the gallery tab in addition to choosing from existing media."
+>
+> "The add/replace/delete option should be on every section of the website wherever there is a provision for media to be displayed not just limited pages."
+>
+> "This page should have an image in the thumbnail. It can be any image from the gallery section of that respective tour" (about `/pricing` cards showing monogram letters when no `hero_media_id` is set).
+>
+> "We don't need this button on hero slideshow" (the "JOIN A RETREAT →" CTA).
+
+**AA1 — MultiMediaPicker upgraded with opt-in Add / Replace / Delete (`frontend/src/components/admin/MultiMediaPicker.jsx`):**
+Four new optional props (all default to backwards-compatible no-op so any future caller that only wants pick-from-pool continues to work unchanged):
+- `allowUpload: boolean` — when true, renders an "Add photos or videos" button at the top-right of the picker.
+- `uploadSection: string` — the media `section` tag applied to newly uploaded rows. Required when `allowUpload` is true. Each consumer passes its own (`tour-gallery`, `blog-gallery`, `home-gallery`) so uploads are discoverable later in `/admin/website-media`.
+- `allowDelete: boolean` — when true, each selected tile gets a small red trash icon that opens a confirm dialog ("This will remove the file from Website Media as well as from every page that references it") and on confirm calls `DELETE /api/admin/media/{id}` plus removes the id from the gallery selection.
+- `reloadMedia: () => Promise<void>` — callback the picker invokes after every upload / replace / delete so the parent's available-media pool refreshes. Each consumer wires this to a media-only reload helper (`loadMedia`) instead of the full page reload to avoid blowing away in-progress edits on the rest of the form.
+
+Behaviour added:
+- **Bulk upload:** multi-file file-picker (`accept="image/*"` or `"image/*,video/*"` depending on `allowVideos`). Each file streams to `POST /api/admin/media/upload` one at a time with a per-file status badge (pending → uploading with spinner → done with check / error with alert icon). A green banner flashes the success count. Newly uploaded media are **auto-added to the current gallery selection in upload order** so the operator doesn't have to scroll the available pool to find them.
+- **Replace:** small refresh icon appears top-right on hover over each selected tile. Opens a single-file picker, encodes the file to a data URL via FileReader (same pattern the legacy `MediaManager.replaceImage` already uses) and `PATCH /api/admin/media/{id}` with `{ file_url, file_type }`. Crucially the media row's `id` is preserved, so gallery order and any references from other content (blog posts, home sections) remain valid.
+- **Soft remove vs permanent delete:** the existing `X` button still does the lightweight "remove from this gallery, keep the file in Website Media". A second red trash button does the permanent action. The two are visually distinct and `allowDelete` only enables the trash one — callers that don't want destructive ops in their picker can keep just the X.
+- **Toast banner** below the heading flashes status messages ("Uploaded 5 items.", "File replaced.", "Deleted permanently.") via a 2.8s setTimeout.
+- **Video thumbnails in the picker:** selected and available tiles now show the ffmpeg-extracted `thumb_url` for video rows (when present) plus a small "VIDEO" footer label. Previously video tiles just showed an "MP4" text placeholder.
+
+Test-ids added: `mmp-upload-btn-{ns}`, `mmp-upload-input-{ns}`, `mmp-replace-input-{ns}`, `mmp-queue-{ns}`, `mmp-banner-{ns}`, `mmp-replace-{id}`, `mmp-delete-{id}`, `mmp-delete-dialog-{ns}`, `mmp-delete-cancel-{ns}`, `mmp-delete-confirm-{ns}`. Existing test-ids (`mmp-available-{id}`, `mmp-selected-{id}`, `mmp-remove-{id}`, `mmp-filter-{ns}`, `mmp-empty-{ns}`, `multi-media-picker-{ns}`) are preserved.
+
+**AA2 — Backend (2 NEW endpoints in `backend/server.py`):**
+- `DELETE /api/admin/stories/{sid}/cover` (Bearer auth) — clears `cover_url`, `cover_srcset`, `cover_avif_srcset`, `cover_lqip` on the story row and best-effort `unlink(missing_ok=True)` the underlying files from `backend/uploads/stories/`. Returns `{ "message": "Cover removed" }`. Triggers `schedule_snapshot`.
+- `DELETE /api/admin/blog/{pid}/cover` (Bearer auth) — same shape for `blog_posts` rows (`featured_url`, `featured_srcset`, `featured_avif_srcset`, `featured_lqip` cleared, disk files unlinked under `backend/uploads/blog/`).
+- No new Pydantic models, no migrations needed — both endpoints just write `$set` updates over existing fields.
+
+**AA3 — Consumers wired up:**
+- `frontend/src/pages/admin/JourneysManager.jsx`:
+  - Top-level `loadMedia` helper added (media-only reload via `api.get('/media')`).
+  - `DraftFields` now takes an `onReloadMedia` prop; both call sites (new-row form + per-row drawer) thread `loadMedia` through.
+  - MultiMediaPicker call: `allowUpload={true}`, `allowDelete={true}`, `uploadSection="tour-gallery"`, `reloadMedia={onReloadMedia}`, `allowVideos={true}` (was `false`).
+- `frontend/src/pages/admin/BlogManager.jsx`:
+  - Top-level `loadMedia` helper added.
+  - `PostEditorDrawer` takes a new `onReloadMedia` prop, MultiMediaPicker gets `allowUpload={true}`, `allowDelete={true}`, `uploadSection="blog-gallery"`, `reloadMedia={onReloadMedia}`.
+  - New "Remove image" button next to the existing "Replace image" on the **single** featured-image field (separate from the multi-cover MultiMediaPicker). When `mode === "edit"` it hits `DELETE /admin/blog/{id}/cover`; in create mode it just drops the client-side `URL.createObjectURL` preview. `window.confirm("Remove the featured image? The file will be deleted from the server.")` gates the destructive call.
+- `frontend/src/pages/admin/HomeContentManager.jsx`:
+  - Top-level `loadMedia` helper added.
+  - `Drawer` sub-component takes a new `onReloadMedia` prop, MultiMediaPicker gets `allowUpload={true}`, `allowDelete={true}`, `uploadSection="home-gallery"`, `reloadMedia={onReloadMedia}`.
+- `frontend/src/pages/admin/AboutManager.jsx`:
+  - New `removeCover(s)` function calls `DELETE /admin/stories/{s.id}/cover` after `window.confirm`. Renders a "Remove cover" button under the existing "Replace cover" / "Upload cover" button on each story card. Button hidden when `s.cover_url` is empty. Test-id `remove-cover-{s.id}`.
+
+**AA4 — Pricing card thumbnail fallback (`frontend/src/pages/Pricing.jsx`):**
+Hero resolution order changed from `hero_media_id → legacy j.image → blank monogram` to **`hero_media_id → first image in gallery_media_ids → legacy j.image → blank monogram`**. Implementation reads `j.gallery_media_ids`, looks each id up in `mediaMap`, returns the first row whose `file_type === "image"`. Reuses the same `abs`/`absMap`/`lqip` plumbing so srcset / AVIF / LQIP all still work; the card hover transform, image zoom and gold name-banner are unchanged. The 4 tours currently in the DB:
+- Maleny Creative Immersion: `hero_media_id` empty, gallery has 12 images → card now shows the first gallery image (Glasshouse Mountains hinterland view).
+- Tasmanian / Western Australian / Corporate and Custom: empty galleries → fall through to monogram placeholders. The moment the operator uploads any image to a tour's gallery (via the upgraded AA1 picker), the public card auto-populates on next render.
+
+**AA5 — Home hero CTA pruned (`frontend/src/components/home/HeroSlideshow.jsx`):**
+- The secondary `<CTAButton>` (testid `hero-cta-retreat`) is removed from both branches of the bottom-overlay (with-tagline overlay AND CTAs-only fallback). Only the primary "Explore Experiences" button (`hero-cta-experiences`) remains.
+- The `const cta2 = useText("home.hero.cta_secondary", "Join a Retreat")` declaration is also removed because nothing reads it any more. The content-key row itself stays in DB for now (harmless if `/admin/website-text` still lists it; the public JSX simply no longer consumes it). If the client ever wants the button back, restoring it is a 3-line revert.
+
+**Files touched:**
+- Backend: `backend/server.py` (2 new endpoints after the existing story-cover and blog-cover POSTs).
+- Frontend: `components/admin/MultiMediaPicker.jsx` (major upgrade, full rewrite with backwards-compat defaults), `components/home/HeroSlideshow.jsx`, `pages/Pricing.jsx`, `pages/admin/JourneysManager.jsx`, `pages/admin/BlogManager.jsx`, `pages/admin/HomeContentManager.jsx`, `pages/admin/AboutManager.jsx`.
+- No backend migrations, no snapshot regeneration needed (no schema changes to seeded collections — the 2 new endpoints just clear existing fields).
+
+**Verification status:**
+- Backend health: `curl /api/journeys` returns 200, 4 tours. New `DELETE` endpoints registered (FastAPI loaded without errors after restart).
+- Frontend production build: `yarn build` succeeded, supervisor restart returned 200 from `:3000`.
+- Visual smoke screenshots taken: Maleny `/pricing` card now shows the gallery photo; admin Tours editor → Gallery tab shows the new "Add photos or videos" button with Replace + Delete icons revealing on hover.
+- **NOT auto-tested:** the `auto_frontend_testing_agent` was not run on this session per user direction (they prefer to push and verify on live themselves). The picker upgrade is opt-in via new props so callers that don't pass them keep working; the 2 new backend DELETE endpoints follow the same pattern as the existing POST cover-upload endpoints.
+
+**Why no snapshot regen this session:**
+The snapshot is collection-row-level data. None of the AA changes added or removed rows from any collection — they only added (a) UI affordances that compose existing endpoints, (b) two new endpoints that mutate existing fields, (c) one component prop change. Running `python3 backend/sync_from_live.py` before the next deploy will pick up any client edits made on live in the meantime; that's the only time a snapshot regen is needed before pushing AA.
+
+**Out of scope (intentionally — these were not in the client's AA brief):**
+- Per-tour testimonials on `/tours/<slug>` sidebar (still uses site-wide `testimonials.N.*` content keys — same as Session Z shipped).
+- Blog post **body** inline images opening in a SwipeableMedia lightbox (still out of scope; see Session W).
+- Pause/Play affordance on hero slideshow (P3 in PRD backlog).
+- Per-section delete log/audit trail for admin Trash actions (the confirm dialog is the only safety net right now; if the client wants undo, that's a future enhancement).
+
+---
 
 ### Z. Tours-page redesign per client (Adele WhatsApp) reference + SwipeableMedia lightbox portal fix (2026-06-29, **COMPLETE in preview, backend 7/7 + frontend 8/8 PASSED, NOT YET PUSHED TO LIVE**)
 
