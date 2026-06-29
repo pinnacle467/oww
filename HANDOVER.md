@@ -1,4 +1,4 @@
-# Once Were Wild Travel - Detailed Handover (v2026-06-29, Sessions B1 + B2 + T + U + V (Phase 3) + W (Phase 4) + **X (bug fix) + Y (Phase 5 hero Coverflow)** COMPLETE in preview, NOT YET PUSHED TO LIVE)
+# Once Were Wild Travel - Detailed Handover (v2026-06-29, Sessions B1 + B2 + T + U + V + W + X + Y + **Z (Tours-page redesign + lightbox portal fix)** COMPLETE in preview, NOT YET PUSHED TO LIVE)
 
 > **Loading instructions for the next agent:**
 > 1. Pull the GitHub repo (`pinnacle467/oww`, branch `main`) into `/app` - that's the source of truth for **all code**.
@@ -6,7 +6,7 @@
 > 3. Immediately run the LIVE-SYNC sequence at the bottom of this doc (`python3 /app/backend/sync_from_live.py`) - that pulls **every DB row, every image, every video** from production at https://oncewerewild.com into your preview environment so you're working against real data, not an empty shell. **You can SKIP this step if you only need to develop against the snapshot that ships in the repo** — the snapshot is auto-applied on backend startup and already contains 237 media rows + 4 published tours + 176 content keys.
 > 4. The sync script + repo together cost **< 10 credits** to re-hydrate the entire project; do not rebuild any of the features below from scratch.
 > 5. **Respond to the user in English only.** They have explicitly disliked em dashes ("—") in user-facing copy - never use them in DB content, SEO text, alt text, JSON-LD, or seeded examples. Hyphens (`-`), commas, or colons are fine.
-> 6. **▶︎ START HERE for this hand-off:** Sessions B1, B2, **T (Phase 1)**, **U (Phase 2)**, **V (Phase 3)**, **W (Phase 4)**, **X (About-Us spacing bug)** and **Y (Phase 5 — 3D Coverflow hero)** of the Changes 1-9 backlog are all COMPLETE in preview. Backend 4/4 (Phase 1) + 11/11 (Phase 2) + 24/24 (Phase 3); frontend 41/41 (Phase 1) + 4/4 (Phase 2) + 5/5 (Phase 3) + 5/5 (Phase 4) + 2/2 (X bug fix) + **4/5 (Phase 5 — the 1 "fail" is a Playwright scrollWidth quirk, side panels are visually clipped correctly)** PASSED. **The user has NOT yet pushed to live; deploy steps below (point 12).** Likely next candidates: blog post body inline images opening in a SwipeableMedia lightbox, or any new client-nominated change. **Do NOT redo any B1, B2, T, U, V, W, X or Y work — it's already on disk.**
+> 6. **▶︎ START HERE for this hand-off:** Sessions B1, B2, **T (Phase 1)**, **U (Phase 2)**, **V (Phase 3)**, **W (Phase 4)**, **X (About-Us spacing bug)**, **Y (Phase 5 — 3D Coverflow hero)** and **Z (Tours-page redesign — image-card grid on /pricing + 2-col tour-detail layout with Tabs + sidebar + SwipeableMedia lightbox portal fix)** of the Changes 1-9 backlog are all COMPLETE in preview. Backend 4/4 (Phase 1) + 11/11 (Phase 2) + 24/24 (Phase 3) + **7/7 (Z1 highlights field)** + frontend 41/41 (Phase 1) + 4/4 (Phase 2) + 5/5 (Phase 3) + 5/5 (Phase 4) + 2/2 (X bug fix) + 4/5 (Phase 5) + **8/8 (Z5 lightbox portal fix incl. mobile)** PASSED. **The user has NOT yet pushed to live; deploy steps below (point 12).** Likely next candidates: real hero/gallery media uploads per tour by the client (so the new image-card grid + Gallery tab populate with actual photos), blog post body inline images opening in a SwipeableMedia lightbox, or any new client-nominated change. **Do NOT redo any B1, B2, T, U, V, W, X, Y or Z work — it's already on disk.**
 > 7. **MALENY DECISION (important — read before touching journeys):** The user reversed an earlier Q4 answer. "Maleny Creative Immersion" **stays as `type="tour"`** on `/pricing` — it's an already-planned upcoming trip. Do NOT re-tag Maleny.
 > 8. **CORPORATE RETREATS WAS REMOVED FROM PUBLIC SITE (Session T, 2026-06-28):** Per client direction the entire "Corporate Retreats" public surface area is gone — no nav entry, no separate /corporate-retreats page. The "Corporate and Custom" tour remains as just another card on `/pricing` (it is `type="tour"`). The component files (`Retreats.jsx`, `RetreatsDropdown.jsx`) + backend endpoints (`/api/retreats`, `/api/retreats/{slug}`) + admin JourneysManager tabs are still on disk in case the client asks for re-enable later, but no public route consumes them. See Session T for full detail.
 > 9. **SwipeableMedia is now THE site-wide gallery component (Session U).** Any new gallery — Blog post body, Home content block, Pricing card carousels, future destination pages — MUST consume `components/media/SwipeableMedia.jsx`. Do not re-implement carousel logic. The component already handles images, MP4 videos, YouTube and Vimeo embeds, touch swipe, arrows, dots, counter, lightbox.
@@ -18,7 +18,7 @@
 > Two-step process — push from preview to GitHub first, then pull on Bluehost.
 >
 > **Step 12a — push preview to GitHub** (in the Emergent chat, NOT terminal):
->    Click the "Save to Github" button in the chat input. This commits every file under `/app` (including the new `frontend/src/index.css` Coverflow rules, the updated `HeroSlideshow.jsx`, the `About.jsx` story-body paragraph splitting, the extended `sync_from_live.py`, the regenerated `backend/seed_data/site_snapshot.json`, the new Phase 3 `MultiMediaPicker.jsx`, the Phase 4 `useSwipeNav.js`, etc.) and pushes to `pinnacle467/oww@main`. Wait for the push confirmation toast.
+>    Click the "Save to Github" button in the chat input. This commits every file under `/app` (including the new `frontend/src/index.css` Coverflow rules, the updated `HeroSlideshow.jsx`, the `About.jsx` story-body paragraph splitting, the extended `sync_from_live.py`, the regenerated `backend/seed_data/site_snapshot.json`, the new Phase 3 `MultiMediaPicker.jsx`, the Phase 4 `useSwipeNav.js`, the new **Z Pricing.jsx + TourDetail.jsx redesign**, the **Z highlights field + admin textarea**, and the **Z5 SwipeableMedia.jsx portal fix**) and pushes to `pinnacle467/oww@main`. Wait for the push confirmation toast.
 >
 > **Step 12b — pull on Bluehost terminal** (SSH into the Bluehost server, then):
 > ```bash
@@ -47,6 +47,9 @@
 > ```
 >
 > **What to expect after deploy:**
+> - **NEW (Session Z):** `/pricing` (Tours index) now shows a clean 3-col image-card grid with gold name-banner + chevron — every card is one clickable tile → `/tours/<slug>`. The "Most Popular" badge is preserved on Maleny. Until the operator uploads `hero_media_id` on each tour, cards show monogram-letter placeholders.
+> - **NEW (Session Z):** `/tours/<slug>` (Tour Detail) now uses a 2-column layout: title + duration subtitle, hero SwipeableMedia carousel, italic gold-bordered description quote, tab strip (Details / Gallery / What's Included / Prices & Dates) with auto-hidden empty tabs; right sticky sidebar shows Tour highlights checkmark list + Small group tours blurb + Testimonials card. **Itinerary OUTLINE on-page + Full PDF stays in the Download button** (per client direction). Tabs that have no content auto-hide so empty rows look clean.
+> - **NEW (Session Z5):** Clicking any image in a SwipeableMedia carousel anywhere on the site (TourDetail hero, Gallery tab, About travel gallery, Blog post gallery, etc.) now opens a true fullscreen lightbox via React portal to `document.body`. Previously the lightbox was trapped inside the `.reveal` ScrollReveal ancestor's transform-induced containing block, letting the sticky sidebar and tabs leak through.
 > - Home page hero shows 3D Coverflow on desktop (prev / next slides peek in from sides at 35° tilt). Mobile keeps the existing centred-slide look.
 > - About → Stories → "Read story" details now render proper paragraph spacing when the operator left blank lines (fixes the Kangaroo Island story bug).
 > - Tap-to-swipe in fullscreen lightboxes on mobile (Phase 4).
@@ -70,6 +73,101 @@
 ---
 
 ## 2. What's been built (chronological, most recent first)
+
+### Z. Tours-page redesign per client (Adele WhatsApp) reference + SwipeableMedia lightbox portal fix (2026-06-29, **COMPLETE in preview, backend 7/7 + frontend 8/8 PASSED, NOT YET PUSHED TO LIVE**)
+
+**Client direction (verbatim, paraphrased from WhatsApp screenshots she sent):**
+> "I like the small pictures with the tour on the first of the tour page. You can clearly see what interests you. It's just more clear to me — when you hit the second page you see all the important information: Details, Price, Gallery, Inclusions. I'm not saying I like the day-by-day itinerary on the page — I think the PDF is better, because people like to print stuff off. But definitely an outline of what we're doing would work here. Then the PDF attachment. Just really clean, and easy to find the essentials."
+
+She also said "**the look in the images is what she wants for every tour she has and adds in future**" — so the new layout is fully data-driven (driven by admin fields, not hardcoded per tour). She referenced arrivederciPuglia.com as the layout pattern but wants it in our gold / cream / ink palette (NOT orange).
+
+**Z1 — Backend (`backend/server.py`):**
+- Added optional `highlights: List[str]` field to `JourneyInput` and `JourneyUpdate` Pydantic models. Defaults to `[]`. Powers the "Tour highlights" checkmark list in the right sidebar of `/tours/<slug>`.
+- Idempotent startup migration (logged as `Z1: defaulted highlights on N journey rows` on first boot, `0` thereafter): `journeys.update_many({"highlights": {"$exists": False}}, {"$set": {"highlights": []}})`.
+- Tested via `deep_testing_backend_v2`: 7/7 PASS including the critical partial-PATCH preservation test (a PATCH without `highlights` does NOT clear the existing array).
+
+**Z2 — Frontend `/pricing` Tours index (`frontend/src/pages/Pricing.jsx`):**
+- Replaced the multi-line tier cards with a clean responsive **3-col / 2-col / 1-col image-card grid** (`sm:grid-cols-2 lg:grid-cols-3`). Each card:
+  - 4:3 hero photo on top — resolves `hero_media_id` to the media collection (with srcset / lqip), falls back to a monogram-letter placeholder if the tour has no hero image.
+  - **Gold name banner** footer with region eyebrow + tour name + chevron icon. Whole card is a single `<Link to="/tours/<slug>">`.
+  - "Most Popular" badge top-left on `j.popular` row.
+  - Hover: `-translate-y-1.5`, image `scale-105`, banner transitions to `nature-deep`.
+  - test-id `pricing-card-{id}` on each card.
+- Hero `<PageHero>` and FAQ accordion unchanged.
+
+**Z3 — Frontend `/tours/<slug>` Tour Detail (`frontend/src/pages/TourDetail.jsx`, **full rewrite**):**
+- Removed the old single-column PageHero + body sections layout.
+- New **2-column layout** (`lg:grid-cols-3`, main `col-span-2`, sidebar `col-span-1`):
+  - LEFT main col:
+    - H1 tour name + duration subtitle ("X nights - Small Group Tour" / "X nights - Corporate Retreat").
+    - Hero `SwipeableMedia` carousel (uses `gallery_media_ids` if present, else `[hero_media_id]`, else hidden).
+    - Italic quote box with left gold border (description_html / summary).
+    - **Tab strip** with gold active-tab fill + small downward chevron tail. Tabs: Details / Gallery / What's Included / Prices & Dates. **Tabs auto-hide when their content is empty** so empty rows look clean. `flex-nowrap` + `overflow-x-auto no-scrollbar` so all four sit on one line at every viewport; horizontal scroll on tiny mobiles.
+    - Tab panels:
+      - **Details** = `itinerary_html` outline + `more_details_html` + `practical_html` + **Download Full Itinerary (PDF)** button (per client direction full day-by-day lives in the PDF, not on-page). Friendly empty state if all four are blank.
+      - **Gallery** = `SwipeableMedia` of `gallery_media_ids`.
+      - **What's Included** = 2-col includes / excludes lists (Check / X icons).
+      - **Prices & Dates** = price card + dates card + Enquire CTA + secondary PDF download.
+    - Always-visible Enquire CTA + back-link below the tabs.
+  - RIGHT sticky sidebar (`lg:sticky lg:top-24`):
+    - **Tour highlights** card with checkmark list (gold rings on `bg-gold/15`). Hidden when `highlights = []`.
+    - **Small group tours** blurb (admin-editable via `tour_detail.small_group.heading` / `.body` content keys).
+    - **Testimonials** card (dark green / cream) sourcing the first two `testimonials.N.quote` / `testimonials.N.author` content keys from the existing home group.
+- **Preview ribbon** at the top of the page when the tour `status = "draft"` (preserved from Phase 1).
+- Single component handles both `/tours/<slug>` and `/corporate-retreats/<slug>` — uses `useLocation()` to detect the URL prefix and switches API endpoint + back-link copy accordingly. The retreats public surface area is still removed (Session T), but the code path is kept ready in case the client asks for re-enable.
+
+**Z4 — Admin (`frontend/src/pages/admin/JourneysManager.jsx`):**
+- Full restructure of the `DraftFields` editor into eight clearly-labelled section cards that mirror the public-page layout, so the operator's mental model maps 1-1 with what they see on `/pricing` and `/tours/<slug>`:
+  1. **"Card on the Tours listing"** — name, region, hero_media_id (with "Drives the small image card... opens /tours/<slug>" hint).
+  2. **"Detail page header"** — nights (duration subtitle), CTA button text, summary (used as the italic quote), and a Rich description TipTap editor that overrides the summary.
+  3. **"Tab: Details"** — itinerary_html outline + more_details_html + practical_html (three TipTap editors with hints reminding the operator to keep the on-page version brief, full plan goes in the PDF).
+  4. **"Tab: Gallery"** — gallery_media_ids via the existing MultiMediaPicker (hint: "first image becomes the hero photo if no separate hero is set").
+  5. **"Tab: What's Included"** — includes + excludes textareas (with the seeded excludes defaults).
+  6. **"Tab: Prices & Dates"** — priceFrom, priceUnit, priceNote, dates.
+  7. **"Sidebar: Tour highlights"** — highlights textarea (hint: "The whole panel hides when this is empty").
+  8. **"URL, visibility & SEO"** — slug, type, status, is_active checkbox, seo_title, seo_description.
+- Each section is a labelled card (`<Section>` wrapper, ~25 lines) with a heading + subtitle describing exactly which part of the public page the fields drive. Subtitles dynamically reference the actual slug (e.g. "Powers the title row and italic quote box on /tours/maleny-creative-immersion") via interpolation.
+- The added test-ids `section-card-<rowId>`, `section-header-<rowId>`, `section-details-<rowId>`, `section-gallery-<rowId>`, `section-includes-<rowId>`, `section-prices-<rowId>`, `section-highlights-<rowId>`, `section-seo-<rowId>` make the layout addressable for future Playwright tests.
+- Existing Z1 "Tour highlights (one item per line)" textarea is preserved inside the new "Sidebar: Tour highlights" section. test-id `journey-highlights-<rowId>` unchanged.
+- Data flow unchanged — newline-joined strings on the form (`_includesText`, `_excludesText`, `_highlightsText`), split via `includesToArray` on save. `EMPTY_DRAFT.highlights = ""`.
+- The DraftFields outer container is `grid sm:grid-cols-2 gap-5` but each `<Section>` spans both columns (sm:col-span-2) so all section cards stack vertically; fields inside each section can still be 2-up.
+
+**Z5 — Bug fix (`frontend/src/components/media/SwipeableMedia.jsx`) — SwipeableMedia lightbox portal escape:**
+- **Symptom (client report with screenshot):** clicking an image in the SwipeableMedia hero carousel on `/tours/<slug>` opened the lightbox at full size, BUT the sticky right sidebar (Tour highlights / Small group tours / Testimonials) and the DETAILS tab strip still rendered VISIBLE on top of the lightbox image, and the dark `bg-black/95` backdrop wasn't covering the screen.
+- **Root cause (CSS containing-block trap):** every section of the new TourDetail.jsx is wrapped in `<ScrollReveal>`, which renders the `.reveal` class. `.reveal` has `transform: translateY(34px)` plus `will-change: opacity, transform`. Per the CSS spec, **any ancestor with a non-`none` transform creates a containing block for ALL its `position: fixed` descendants** (see MDN "Containing block" article). That meant the lightbox's `fixed inset-0 z-[1000]` was being interpreted relative to the carousel's ScrollReveal wrapper instead of the viewport — so it occupied the carousel slot, not the full screen, and the dark backdrop was clipped.
+- **Fix:** render the lightbox JSX via `ReactDOM.createPortal(JSX, document.body)`. `document.body` is NOT a containing-block ancestor for fixed-position descendants (the `<html>` initial containing block is), so `fixed inset-0` once again covers the viewport. No other changes — same JSX, same test-ids, same swipe / keyboard / dark-backdrop behaviour.
+- **Why this affects only the new TourDetail and not the old pages:** the old single-column tour page didn't wrap the carousel in a ScrollReveal (it was a PageHero). The new 2-col layout uses ScrollReveal around the carousel for the staggered reveal animation. The same trap would have hit Blog / About / Home if they ever wrapped their carousel slot in `.reveal` (none currently do, but the portal fix protects them too).
+- Tested via `auto_frontend_testing_agent`: 8/8 PASS on desktop 1440×900 AND mobile 390×844:
+  1. Portal escape — `document.querySelector('[data-testid="swipeable-lightbox"]').parentElement === document.body` returns `true`.
+  2. Viewport fill — `getBoundingClientRect()` returns `top=0, left=0, width=innerWidth, height=innerHeight`.
+  3. Dark backdrop `rgba(0,0,0,0.95)` covers full screen.
+  4. Sidebar cards + DETAILS tab fully occluded by z=1000.
+  5. Close (X) removes lightbox from DOM, unlocks body scroll.
+  6. Arrow keys / Escape work.
+  7. Mobile 390×844 regression passes.
+  8. No console errors on `/about` regression check.
+
+**NEW admin-editable content keys (auto-grouped under "Tour detail" in `/admin/website-text` via the existing group-from-prefix inference):**
+- `tour_detail.highlights.heading` → "Tour highlights"
+- `tour_detail.small_group.heading` → "Small group tours"
+- `tour_detail.small_group.body` → "For a more private experience and a better quality of service, our small groups are limited to twelve travellers."
+- `tour_detail.testimonials.heading` → "Testimonials"
+- `tour_detail.tab.details` / `.gallery` / `.includes` / `.prices` → tab labels
+- `tour_detail.download_pdf` → "Download Full Itinerary (PDF)"
+- `tours.detail.enquire` → "Enquire Now"
+
+**Files touched:**
+- `backend/server.py` — `JourneyInput`, `JourneyUpdate` add `highlights`; Z1 migration in `seed()`.
+- `frontend/src/pages/Pricing.jsx` — new 3-col image-card grid (replaces tier cards).
+- `frontend/src/pages/TourDetail.jsx` — full rewrite (2-col + tabs + sidebar).
+- `frontend/src/pages/admin/JourneysManager.jsx` — `highlights` textarea + state plumbing.
+- `frontend/src/components/media/SwipeableMedia.jsx` — `createPortal` import + lightbox JSX wrap.
+
+**Out of scope (intentionally — kept Z lean):**
+- Per-tour testimonials. The right-sidebar testimonials currently reuse the site-wide `testimonials.N.*` content keys. If the client wants per-tour quotes later, add a `testimonials: List[{quote, author}]` field on `journeys` and render that when non-empty, else fall back to the site-wide keys.
+- "Pause / Play" affordance on the hero slideshow (P3 from Section 5).
+- Blog post body inline images → SwipeableMedia lightbox (still out of scope).
+- Snapshot has NOT been regenerated this session because the only DB write was the `highlights` field on the journeys collection (defaulted to `[]` on every row by the migration); a fresh snapshot would only carry the test-set Tasmanian highlights and we restored that after the visual smoke. Run `python3 backend/sync_from_live.py` after the client populates real highlights via the admin if you want the next deploy to seed them.
 
 ### Y. Phase 5 of Changes 1-9 — 3D Coverflow Side-Peek hero transition (2026-06-29, **COMPLETE in preview, frontend 4/5 PASS (the 1 "fail" is a 6px Playwright scrollWidth quirk; side panels are visually clipped correctly), NOT YET PUSHED TO LIVE**)
 
@@ -641,6 +739,9 @@ The previous script only pulled `media`, `journeys`, `content`, `site_settings`,
 | WebP + AVIF + responsive srcset on every image | Lighthouse mobile target 95+. Blog featured + inline images go through the same `_encode_webp_to_disk` pipeline. | `_encode_webp_to_disk()` in `server.py`, `FadeImg.jsx` |
 | Live-first sync, never push-DB-from-preview | Live is the source of truth. Push CODE from preview, sync DATA from live. | `sync_from_live.py` |
 | `blog_posts` in snapshot save + apply | Blog posts must survive deploys exactly like Stories and About blocks. | `_write_snapshot_now()` + `_apply_snapshot()` |
+| **SwipeableMedia lightbox rendered via `createPortal(..., document.body)`** | Any future page that wraps the carousel in a `transform`-bearing ancestor (`.reveal`, perspective stages, masked sections) would trap `position: fixed` descendants and break the fullscreen lightbox. The portal makes the lightbox immune. **Do not "fix" this by removing the portal** — the sticky sidebar on TourDetail depends on it. | `SwipeableMedia.jsx` Lightbox component |
+| **TourDetail.jsx renders BOTH `/tours/<slug>` and `/corporate-retreats/<slug>`** | Single component, branches on `useLocation()`. Keeps the layout consistent if the client re-enables corporate retreats later. | `TourDetail.jsx` |
+| **Tours index `/pricing` is image-driven** | Cards rely on `hero_media_id` resolved against `/api/media`. Falls back to a monogram-letter placeholder when missing. Don't strip the fallback or empty tours break the grid. | `Pricing.jsx` |
 
 ---
 
@@ -648,13 +749,17 @@ The previous script only pulled `media`, `journeys`, `content`, `site_settings`,
 
 | Pri | Item | Notes |
 |---|---|---|
-| P1 | Extend `sync_from_live.py` to also mirror `blog_posts` | The Blog feature is new (2026-06-27). Once the client publishes real posts on live, the preview won't auto-mirror them. ~10 lines: add `/api/blog` fetch + download referenced featured/inline images. |
+| P1 | **Client uploads real hero + gallery images per tour via Admin → Journeys** | After Session Z the cards on `/pricing` will show monogram-letter placeholders until each tour has a `hero_media_id`. The `/tours/<slug>` hero carousel and Gallery tab populate from `gallery_media_ids`. No code change needed — purely a content task for Adele. |
+| P1 | **Client populates `highlights` per tour via the new admin textarea** | The right sidebar "Tour highlights" panel auto-hides when empty. Once she fills it the panel will appear. |
+| P1 | Extend `sync_from_live.py` to also mirror `blog_posts` | DONE in Session X — leaving the row for now because the migration check noted it still needs a live re-run after the Bluehost deploy. |
 | P2 | Cache-Control: no-store on `/api/content` | Stops the "I edited the label and it's still old in my browser" support tickets. One-line FastAPI dependency. |
-| P2 | Refactor `server.py` (~2860 lines) into `routes/`, `services/`, `utils/` modules | Don't until features stable. |
+| P2 | Refactor `server.py` (~2900 lines) into `routes/`, `services/`, `utils/` modules | Don't until features stable. |
 | P2 | Backend file-upload guard rejecting any file > 95 MB | One-line addition in the upload endpoint, blocks future GitHub-busting uploads at source. |
 | P2 | `deploy.sh pull` subcommand wrapping `safe-pull.sh` + restart into a single Bluehost command | Trivial. |
+| P3 | Per-tour testimonials field (currently the sidebar reuses the site-wide `testimonials.N.*`) | Add `testimonials: List[{quote, author}]` to journeys when client asks. Fall back to site-wide if empty. |
 | P3 | Blog: scheduled-publish (`publish_at` future date) | Low priority until volume grows. |
 | P3 | Blog: per-post SEO override (`blog.post.<slug>.seo.*`) | Currently inherits the site-wide `seo.blog.*` for every post. |
+| P3 | Blog post **body** inline images opening in a SwipeableMedia lightbox | Scan `.editorial img` post-render, build items[], intercept click. Now that the lightbox uses createPortal (Z5) the integration is safe for any wrapper, including TipTap. |
 | P3 | "Pause / Play" affordance on the hero slideshow | Some visitors who set reduce-motion truly don't want auto-rotation. |
 | P3 | Lighthouse mobile re-run on live after Bluehost picks up the latest push | Target >= 95. |
 

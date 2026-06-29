@@ -497,9 +497,9 @@ export default function JourneysManager() {
   );
 }
 
-function Field({ label, k, value, onChange, ...rest }) {
+function Field({ label, k, value, onChange, hint, colSpan, ...rest }) {
   return (
-    <label className="block">
+    <label className={`block ${colSpan === 2 ? "sm:col-span-2" : ""}`}>
       <span className="block text-sm font-medium text-gray-600 mb-1">{label}</span>
       <input
         type="text"
@@ -508,176 +508,251 @@ function Field({ label, k, value, onChange, ...rest }) {
         onChange={(e) => onChange({ [k]: e.target.value })}
         {...rest}
       />
+      {hint && <span className="block text-xs text-gray-500 mt-1">{hint}</span>}
     </label>
   );
 }
 
-function DraftFields({ value, onChange, rowId, allMedia }) {
+// Section wrapper used by DraftFields so each block of fields is clearly
+// labelled with "where it shows up" copy. Matches the new Z layout on the
+// public site so the operator's mental model maps 1-1 with what they see
+// on /pricing and /tours/<slug>.
+function Section({ title, subtitle, children, testid }) {
   return (
-    <div className="grid sm:grid-cols-2 gap-4">
-      <Field label="Trip name *" k="name" value={value.name} onChange={onChange} />
-      <Field label="Region (eyebrow)" k="region" value={value.region} onChange={onChange} placeholder="e.g. Sunshine Coast Hinterland" />
-      <Field label="Nights label" k="nights" value={value.nights} onChange={onChange} placeholder="e.g. 6 nights" />
-      <Field label="Dates" k="dates" value={value.dates} onChange={onChange} placeholder="e.g. 22 to 28 November 2026" />
-      <Field label="Price headline" k="priceFrom" value={value.priceFrom} onChange={onChange} placeholder="From $4,200" />
-      <Field label="Price unit (small)" k="priceUnit" value={value.priceUnit} onChange={onChange} placeholder="per person, twin share" />
-      <Field label="Price note (smallest)" k="priceNote" value={value.priceNote} onChange={onChange} placeholder="Single from $4,750 per person" />
-      <Field label="CTA button text" k="cta" value={value.cta} onChange={onChange} placeholder="Enquire about Maleny" />
-      <label className="sm:col-span-2 block">
-        <span className="block text-sm font-medium text-gray-600 mb-1">Summary (1-2 sentences, shown on the trip card)</span>
-        <textarea
-          rows={2}
-          className="w-full px-3 py-2 border border-gray-300 rounded focus:border-[#2D4A3E] focus:outline-none focus:ring-1 focus:ring-[#2D4A3E]/40"
-          value={value.summary || ""}
-          onChange={(e) => onChange({ summary: e.target.value })}
-        />
-      </label>
-      <label className="sm:col-span-2 block">
-        <span className="block text-sm font-medium text-gray-600 mb-1">{"What\u2019s included (one item per line)"}</span>
-        <textarea
-          rows={6}
-          className="w-full px-3 py-2 border border-gray-300 rounded focus:border-[#2D4A3E] focus:outline-none focus:ring-1 focus:ring-[#2D4A3E]/40 font-mono text-sm"
-          value={value.includes || ""}
-          onChange={(e) => onChange({ includes: e.target.value })}
-          placeholder={"Premium, peaceful accommodation\nBespoke dining by an accomplished chef\nAustralian wines paired with dinner"}
-        />
-      </label>
-      <label className="sm:col-span-2 block">
-        <span className="block text-sm font-medium text-gray-600 mb-1">{"What\u2019s not included (one item per line)"}</span>
-        <textarea
-          rows={5}
-          className="w-full px-3 py-2 border border-gray-300 rounded focus:border-[#2D4A3E] focus:outline-none focus:ring-1 focus:ring-[#2D4A3E]/40 font-mono text-sm"
-          value={value.excludes || ""}
-          onChange={(e) => onChange({ excludes: e.target.value })}
-          placeholder={"International and domestic airfares\nTravel insurance\nVisa fees (if applicable)\nPersonal expenses\nOptional activities not listed in the itinerary"}
-          data-testid={`journey-excludes-${rowId || "new"}`}
-        />
-        <span className="block text-xs text-gray-500 mt-1">Defaults are pre-populated. Edit, add or remove items per tour.</span>
-      </label>
-      <label className="sm:col-span-2 block">
-        <span className="block text-sm font-medium text-gray-600 mb-1">Tour highlights (one item per line)</span>
-        <textarea
-          rows={6}
-          className="w-full px-3 py-2 border border-gray-300 rounded focus:border-[#2D4A3E] focus:outline-none focus:ring-1 focus:ring-[#2D4A3E]/40 font-mono text-sm"
-          value={value.highlights || ""}
-          onChange={(e) => onChange({ highlights: e.target.value })}
-          placeholder={"7 days / 6 nights with breakfast included\n4 wine tastings at local wineries\n9 guided sightseeing experiences\nEnglish speaking guide\nPrivate driver and car\nExperienced Travel Director at your arrangement"}
-          data-testid={`journey-highlights-${rowId || "new"}`}
-        />
-        <span className="block text-xs text-gray-500 mt-1">Shown as a checkmark list in the sidebar on the tour sub-page.</span>
-      </label>
-      <label className="sm:col-span-2 flex items-center gap-3 mt-1">
-        <input
-          type="checkbox"
-          className="h-4 w-4"
-          checked={!!value.is_active}
-          onChange={(e) => onChange({ is_active: e.target.checked })}
-        />
-        <span className="text-sm text-gray-700">Visible on the public listing</span>
-      </label>
+    <div className="sm:col-span-2 rounded-lg border border-gray-200 bg-[#FAFAF7] p-5" data-testid={testid}>
+      <div className="mb-4 pb-3 border-b border-gray-200">
+        <h3 className="text-base font-semibold text-[#1C1C1C]">{title}</h3>
+        {subtitle && <p className="text-xs text-gray-500 mt-1 leading-relaxed">{subtitle}</p>}
+      </div>
+      <div className="grid sm:grid-cols-2 gap-4">{children}</div>
+    </div>
+  );
+}
 
-      {/* ---- B1/B2: Sub-page content ---------------------- */}
-      <div className="sm:col-span-2 mt-4 pt-5 border-t border-gray-200">
-        <h3 className="text-base font-semibold text-[#1C1C1C] mb-1">Sub-page (the standalone page for this trip)</h3>
-        <p className="text-sm text-gray-500 mb-4">
-          {(value.type || "tour") === "retreat"
-            ? <>The standalone page at <span className="font-mono text-xs">/corporate-retreats/{value.slug || "..."}</span>.</>
-            : <>The standalone page at <span className="font-mono text-xs">/tours/{value.slug || "..."}</span>.</>
-          }
-        </p>
-        <div className="grid sm:grid-cols-2 gap-4">
-          <Field label="URL slug (auto if blank)" k="slug" value={value.slug} onChange={onChange} placeholder="e.g. tasmanian-tour" />
-          <label className="block">
-            <span className="block text-sm font-medium text-gray-600 mb-1">Type</span>
-            <select
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:border-[#2D4A3E] focus:outline-none focus:ring-1 focus:ring-[#2D4A3E]/40 bg-white"
-              value={value.type || "tour"}
-              onChange={(e) => onChange({ type: e.target.value })}
-            >
-              <option value="tour">Tour (appears on /pricing)</option>
-              <option value="retreat">Corporate Retreat (appears on /corporate-retreats)</option>
-            </select>
-          </label>
-          <label className="block">
-            <span className="block text-sm font-medium text-gray-600 mb-1">Status</span>
-            <select
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:border-[#2D4A3E] focus:outline-none focus:ring-1 focus:ring-[#2D4A3E]/40 bg-white"
-              value={value.status || "published"}
-              onChange={(e) => onChange({ status: e.target.value })}
-            >
-              <option value="published">Published (visible)</option>
-              <option value="draft">Draft (hidden, preview only)</option>
-            </select>
-          </label>
-          <Field label="Hero image media ID (optional)" k="hero_media_id" value={value.hero_media_id} onChange={onChange} placeholder="Copy a media id from /admin/website-media" />
-          <Field label="SEO title (browser tab)" k="seo_title" value={value.seo_title} onChange={onChange} placeholder="Falls back to trip name" />
-          <label className="sm:col-span-2 block">
-            <span className="block text-sm font-medium text-gray-600 mb-1">SEO meta description</span>
-            <textarea
-              rows={2}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:border-[#2D4A3E] focus:outline-none focus:ring-1 focus:ring-[#2D4A3E]/40"
-              value={value.seo_description || ""}
-              onChange={(e) => onChange({ seo_description: e.target.value })}
-              placeholder="Falls back to the summary above. Aim for 140 to 160 characters."
-            />
-          </label>
+function DraftFields({ value, onChange, rowId, allMedia }) {
+  const isRetreat = (value.type || "tour") === "retreat";
+  const detailPath = isRetreat ? `/corporate-retreats/${value.slug || "..."}` : `/tours/${value.slug || "..."}`;
+  return (
+    <div className="grid sm:grid-cols-2 gap-5">
 
-          {/* B2 - three TipTap editors with H3 dividers between them */}
-          <div className="sm:col-span-2 space-y-6 mt-2">
-            <div>
-              <span className="block text-sm font-medium text-gray-600 mb-1">About this journey (description)</span>
-              <RichTextEditor
-                value={value.description_html || ""}
-                onChange={(html) => onChange({ description_html: html })}
-                placeholder="Tell the story of this trip. Use headings, lists and inline images."
-                testIdPrefix={`journey-description-${rowId || "new"}`}
-              />
-            </div>
-            <div>
-              <span className="block text-sm font-medium text-gray-600 mb-1">Itinerary (optional)</span>
-              <RichTextEditor
-                value={value.itinerary_html || ""}
-                onChange={(html) => onChange({ itinerary_html: html })}
-                placeholder="Day-by-day breakdown of the journey. Leave empty if a PDF itinerary covers this."
-                testIdPrefix={`journey-itinerary-${rowId || "new"}`}
-              />
-            </div>
-            <div>
-              <span className="block text-sm font-medium text-gray-600 mb-1">Practical information (optional)</span>
-              <RichTextEditor
-                value={value.practical_html || ""}
-                onChange={(html) => onChange({ practical_html: html })}
-                placeholder="What to bring, fitness level, dietary notes, anything practical."
-                testIdPrefix={`journey-practical-${rowId || "new"}`}
-              />
-            </div>
-            <div>
-              <span className="block text-sm font-medium text-gray-600 mb-1">More Details / Destination Description (optional)</span>
-              <RichTextEditor
-                value={value.more_details_html || ""}
-                onChange={(html) => onChange({ more_details_html: html })}
-                placeholder="Rich destination story, more photos, what makes this special. Supports bold, italic, headings, bullets, links and inline images."
-                testIdPrefix={`journey-more-details-${rowId || "new"}`}
-              />
-              <span className="block text-xs text-gray-500 mt-1">Renders above the Enquire button on the tour detail page.</span>
-            </div>
-          </div>
+      {/* ── 1. Card on /pricing ────────────────────────────────────────── */}
+      <Section
+        title="Card on the Tours listing"
+        subtitle={`Drives the small image card with the gold name banner on ${isRetreat ? "/corporate-retreats" : "/pricing"}. The whole card is clickable and opens ${detailPath}.`}
+        testid={`section-card-${rowId || "new"}`}
+      >
+        <Field label="Trip name *" k="name" value={value.name} onChange={onChange} hint="Shown as the big heading on the card and the H1 on the detail page." />
+        <Field label="Region (small eyebrow above name)" k="region" value={value.region} onChange={onChange} placeholder="e.g. Sunshine Coast Hinterland" hint="Small uppercase label inside the gold banner." />
+        <Field
+          label="Hero image media ID"
+          k="hero_media_id"
+          value={value.hero_media_id}
+          onChange={onChange}
+          placeholder="Copy a media id from /admin/website-media"
+          colSpan={2}
+          hint="The photo at the top of the card. Until set, the card shows a monogram placeholder. The same image also opens the hero carousel on the detail page when no gallery is uploaded."
+        />
+      </Section>
+
+      {/* ── 2. Tour Detail header (title subtitle + italic quote) ──────── */}
+      <Section
+        title="Detail page header"
+        subtitle={`Powers the title row and the italic quote box sitting between the hero photo and the tab strip on ${detailPath}.`}
+        testid={`section-header-${rowId || "new"}`}
+      >
+        <Field label="Duration / subtitle" k="nights" value={value.nights} onChange={onChange} placeholder="e.g. 7 nights" hint='Shows under the H1, joined with "Small Group Tour" or "Corporate Retreat".' />
+        <Field label="Card / CTA button text" k="cta" value={value.cta} onChange={onChange} placeholder="Enquire" hint="Used as the Enquire button label on the detail page." />
+        <label className="sm:col-span-2 block">
+          <span className="block text-sm font-medium text-gray-600 mb-1">Short summary (1-2 sentences)</span>
+          <textarea
+            rows={2}
+            className="w-full px-3 py-2 border border-gray-300 rounded focus:border-[#2D4A3E] focus:outline-none focus:ring-1 focus:ring-[#2D4A3E]/40"
+            value={value.summary || ""}
+            onChange={(e) => onChange({ summary: e.target.value })}
+            placeholder="Intimate small group odysseys across Australia's most breathtaking states."
+          />
+          <span className="block text-xs text-gray-500 mt-1">Used as the italic quote on the detail page (fallback when no rich description is set) and for the SEO meta description by default.</span>
+        </label>
+        <div className="sm:col-span-2">
+          <span className="block text-sm font-medium text-gray-600 mb-1">Rich description (replaces the summary in the italic quote when set)</span>
+          <RichTextEditor
+            value={value.description_html || ""}
+            onChange={(html) => onChange({ description_html: html })}
+            placeholder="Tell the story of this trip in 2-4 sentences."
+            testIdPrefix={`journey-description-${rowId || "new"}`}
+          />
         </div>
-      </div>
+      </Section>
 
-      {/* B2 - gallery picker (uses shared MultiMediaPicker from Phase 3) */}
-      <div className="sm:col-span-2 mt-4 pt-5 border-t border-gray-200">
-        <MultiMediaPicker
-          value={value.gallery_media_ids}
-          onChange={(ids) => onChange({ gallery_media_ids: ids })}
-          allMedia={allMedia || []}
-          rowId={rowId}
-          label="Photo gallery"
-          description="Pick images from your Website Media library. Drag the thumbnails to reorder. Up to 30 images recommended."
-          allowVideos={false}
-          allowEmbeds={false}
-        />
-      </div>
+      {/* ── 3. Tab: Details (itinerary outline + more details + PDF) ──── */}
+      <Section
+        title='Tab: "Details"'
+        subtitle="Renders inside the Details tab on the detail page. Per client direction, keep the on-page content as an OUTLINE; the full day-by-day belongs in the PDF (upload below the form)."
+        testid={`section-details-${rowId || "new"}`}
+      >
+        <div className="sm:col-span-2">
+          <span className="block text-sm font-medium text-gray-600 mb-1">Itinerary outline</span>
+          <RichTextEditor
+            value={value.itinerary_html || ""}
+            onChange={(html) => onChange({ itinerary_html: html })}
+            placeholder="Bullet list or a short day-by-day overview. The full day-by-day stays in the PDF."
+            testIdPrefix={`journey-itinerary-${rowId || "new"}`}
+          />
+          <span className="block text-xs text-gray-500 mt-1">Keep this short. Visitors who want the full plan click the PDF download button.</span>
+        </div>
+        <div className="sm:col-span-2">
+          <span className="block text-sm font-medium text-gray-600 mb-1">More Details / Destination story (optional)</span>
+          <RichTextEditor
+            value={value.more_details_html || ""}
+            onChange={(html) => onChange({ more_details_html: html })}
+            placeholder="Rich destination context: history, food culture, what makes this special. Supports bold, italic, headings, lists and inline images."
+            testIdPrefix={`journey-more-details-${rowId || "new"}`}
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <span className="block text-sm font-medium text-gray-600 mb-1">Practical information (optional)</span>
+          <RichTextEditor
+            value={value.practical_html || ""}
+            onChange={(html) => onChange({ practical_html: html })}
+            placeholder="What to bring, fitness level, dietary notes, anything practical."
+            testIdPrefix={`journey-practical-${rowId || "new"}`}
+          />
+        </div>
+      </Section>
+
+      {/* ── 4. Tab: Gallery ───────────────────────────────────────────── */}
+      <Section
+        title='Tab: "Gallery"'
+        subtitle="The photos shown in the hero carousel at the top of the detail page AND inside the Gallery tab. Tab auto-hides when this is empty."
+        testid={`section-gallery-${rowId || "new"}`}
+      >
+        <div className="sm:col-span-2">
+          <MultiMediaPicker
+            value={value.gallery_media_ids}
+            onChange={(ids) => onChange({ gallery_media_ids: ids })}
+            allMedia={allMedia || []}
+            rowId={rowId}
+            label="Photo gallery"
+            description="Drag thumbnails to reorder. Up to 30 images recommended. The first image becomes the hero photo if no separate hero is set."
+            allowVideos={false}
+            allowEmbeds={false}
+          />
+        </div>
+      </Section>
+
+      {/* ── 5. Tab: What's Included ───────────────────────────────────── */}
+      <Section
+        title={'Tab: "What\u2019s Included"'}
+        subtitle="Two-column list inside the What's Included tab. Tab auto-hides when both lists are empty."
+        testid={`section-includes-${rowId || "new"}`}
+      >
+        <label className="sm:col-span-2 block">
+          <span className="block text-sm font-medium text-gray-600 mb-1">{"What\u2019s included (one item per line)"}</span>
+          <textarea
+            rows={6}
+            className="w-full px-3 py-2 border border-gray-300 rounded focus:border-[#2D4A3E] focus:outline-none focus:ring-1 focus:ring-[#2D4A3E]/40 font-mono text-sm"
+            value={value.includes || ""}
+            onChange={(e) => onChange({ includes: e.target.value })}
+            placeholder={"Premium, peaceful accommodation\nBespoke dining by an accomplished chef\nAustralian wines paired with dinner"}
+            data-testid={`journey-includes-${rowId || "new"}`}
+          />
+        </label>
+        <label className="sm:col-span-2 block">
+          <span className="block text-sm font-medium text-gray-600 mb-1">{"What\u2019s not included (one item per line)"}</span>
+          <textarea
+            rows={5}
+            className="w-full px-3 py-2 border border-gray-300 rounded focus:border-[#2D4A3E] focus:outline-none focus:ring-1 focus:ring-[#2D4A3E]/40 font-mono text-sm"
+            value={value.excludes || ""}
+            onChange={(e) => onChange({ excludes: e.target.value })}
+            placeholder={"International and domestic airfares\nTravel insurance\nVisa fees (if applicable)\nPersonal expenses\nOptional activities not listed in the itinerary"}
+            data-testid={`journey-excludes-${rowId || "new"}`}
+          />
+          <span className="block text-xs text-gray-500 mt-1">Defaults are pre-populated. Edit, add or remove items per tour.</span>
+        </label>
+      </Section>
+
+      {/* ── 6. Tab: Prices & Dates ────────────────────────────────────── */}
+      <Section
+        title={'Tab: "Prices & Dates"'}
+        subtitle="Pricing and date cards inside the Prices & Dates tab. Tab auto-hides when both Price headline and Dates are blank."
+        testid={`section-prices-${rowId || "new"}`}
+      >
+        <Field label="Price headline" k="priceFrom" value={value.priceFrom} onChange={onChange} placeholder="From $4,200" hint="The big number shown in the price card." />
+        <Field label="Price unit (small)" k="priceUnit" value={value.priceUnit} onChange={onChange} placeholder="per person, twin share" />
+        <Field label="Price note (smallest)" k="priceNote" value={value.priceNote} onChange={onChange} placeholder="Single from $4,750 per person" colSpan={2} />
+        <Field label="Dates" k="dates" value={value.dates} onChange={onChange} placeholder="e.g. 22 to 28 November 2026" colSpan={2} hint="Shown in the date card alongside the duration." />
+      </Section>
+
+      {/* ── 7. Sidebar: Tour highlights ───────────────────────────────── */}
+      <Section
+        title="Sidebar: Tour highlights"
+        subtitle="Checkmark list shown in the right-hand sidebar on the detail page. The whole panel hides when this is empty."
+        testid={`section-highlights-${rowId || "new"}`}
+      >
+        <label className="sm:col-span-2 block">
+          <span className="block text-sm font-medium text-gray-600 mb-1">Highlights (one item per line)</span>
+          <textarea
+            rows={6}
+            className="w-full px-3 py-2 border border-gray-300 rounded focus:border-[#2D4A3E] focus:outline-none focus:ring-1 focus:ring-[#2D4A3E]/40 font-mono text-sm"
+            value={value.highlights || ""}
+            onChange={(e) => onChange({ highlights: e.target.value })}
+            placeholder={"7 days / 6 nights with breakfast included\n4 wine tastings at local wineries\n9 guided sightseeing experiences\nEnglish speaking guide\nPrivate driver and car\nExperienced Travel Director at your arrangement"}
+            data-testid={`journey-highlights-${rowId || "new"}`}
+          />
+          <span className="block text-xs text-gray-500 mt-1">Keep each item to a short line. They are rendered with a gold check mark.</span>
+        </label>
+      </Section>
+
+      {/* ── 8. URL + visibility + SEO ─────────────────────────────────── */}
+      <Section
+        title="URL, visibility & SEO"
+        subtitle="The address of the detail page, whether the public can see it, and what shows up in search results / browser tabs."
+        testid={`section-seo-${rowId || "new"}`}
+      >
+        <Field label="URL slug (auto if blank)" k="slug" value={value.slug} onChange={onChange} placeholder="e.g. tasmanian-tour" hint={`Detail page will live at ${detailPath}.`} />
+        <label className="block">
+          <span className="block text-sm font-medium text-gray-600 mb-1">Type</span>
+          <select
+            className="w-full px-3 py-2 border border-gray-300 rounded focus:border-[#2D4A3E] focus:outline-none focus:ring-1 focus:ring-[#2D4A3E]/40 bg-white"
+            value={value.type || "tour"}
+            onChange={(e) => onChange({ type: e.target.value })}
+          >
+            <option value="tour">Tour (appears on /pricing)</option>
+            <option value="retreat">Corporate Retreat (appears on /corporate-retreats)</option>
+          </select>
+        </label>
+        <label className="block">
+          <span className="block text-sm font-medium text-gray-600 mb-1">Status</span>
+          <select
+            className="w-full px-3 py-2 border border-gray-300 rounded focus:border-[#2D4A3E] focus:outline-none focus:ring-1 focus:ring-[#2D4A3E]/40 bg-white"
+            value={value.status || "published"}
+            onChange={(e) => onChange({ status: e.target.value })}
+          >
+            <option value="published">Published (visible)</option>
+            <option value="draft">Draft (hidden, preview only)</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-3 mt-1">
+          <input
+            type="checkbox"
+            className="h-4 w-4"
+            checked={!!value.is_active}
+            onChange={(e) => onChange({ is_active: e.target.checked })}
+          />
+          <span className="text-sm text-gray-700">Show on the public listing</span>
+        </label>
+        <Field label="SEO title (browser tab)" k="seo_title" value={value.seo_title} onChange={onChange} placeholder="Falls back to trip name" colSpan={2} />
+        <label className="sm:col-span-2 block">
+          <span className="block text-sm font-medium text-gray-600 mb-1">SEO meta description</span>
+          <textarea
+            rows={2}
+            className="w-full px-3 py-2 border border-gray-300 rounded focus:border-[#2D4A3E] focus:outline-none focus:ring-1 focus:ring-[#2D4A3E]/40"
+            value={value.seo_description || ""}
+            onChange={(e) => onChange({ seo_description: e.target.value })}
+            placeholder="Falls back to the summary above. Aim for 140 to 160 characters."
+          />
+        </label>
+      </Section>
     </div>
   );
 }
