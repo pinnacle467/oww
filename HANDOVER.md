@@ -1,4 +1,4 @@
-# Once Were Wild Travel - Detailed Handover (v2026-06-29, Sessions B1 + B2 + T + U + V + W + X + Y + Z + **AA (Admin media UX unified + Pricing thumbnail fallback + hero CTA pruned)** COMPLETE in preview, NOT YET PUSHED TO LIVE)
+# Once Were Wild Travel - Detailed Handover (v2026-06-29, Sessions B1 + B2 + T + U + V + W + X + Y + Z + AA + **AB (Client-feedback fixes: upload→library not gallery, single hero shot, per-tour small_group_text) + live re-sync** COMPLETE in preview, NOT YET PUSHED TO LIVE)
 
 > **Loading instructions for the next agent:**
 > 1. Pull the GitHub repo (`pinnacle467/oww`, branch `main`) into `/app` - that's the source of truth for **all code**.
@@ -81,7 +81,91 @@
 
 ## 2. What's been built (chronological, most recent first)
 
-### AA. Admin media UX unified + Pricing card thumbnail fallback + Home hero CTA pruned (2026-06-29, **COMPLETE in preview, NOT YET PUSHED TO LIVE**)
+### AB. Client-feedback fixes on AA + Z + live re-sync (2026-06-29, **COMPLETE in preview, backend 5/5 + frontend 3/3 PASSED, NOT YET PUSHED TO LIVE**)
+
+**Client direction (verbatim, from the chat):**
+> "I tried to add media to the Creative workshop retreat. It adds to the photo gallery, but not the available media. It should be the other way around, so if I delete a photo, it only deletes from the photo gallery, not the available media."
+>
+> "Also the hero shot and the photo gallery comprise the same photos (link). I would rather a hero shot (one only) at the top, and then a photo gallery below."
+>
+> "Also on the right hand side of the tours page, there is a tab saying small group tours and some info. Where do I change that? Currently saying our small groups are limited to twelve travellers, but we only take 10 for the retreats, and 6-8 for the tours."
+
+**AB1 — Per-tour `small_group_text` field on Journey model (`backend/server.py` + `frontend/src/pages/admin/JourneysManager.jsx` + `frontend/src/pages/TourDetail.jsx`):**
+
+Backend:
+- Added `small_group_text: str = ""` to `JourneyInput` Pydantic model and `small_group_text: Optional[str] = None` to `JourneyUpdate`.
+- Added an idempotent startup migration `db.journeys.update_many({"small_group_text": {"$exists": False}}, {"$set": {"small_group_text": ""}})` in `startup_event()` next to the existing Z1 highlights migration. Logs `"AB1: defaulted small_group_text on N journey rows"` when it fires. Backend boot is unchanged when the field already exists everywhere.
+- No new endpoints — the existing `POST /api/admin/journeys`, `PATCH /api/admin/journeys/{id}` and `GET /api/journeys` automatically read/write the new field via the Pydantic model. Bearer-auth gating unchanged.
+
+Admin (`JourneysManager.jsx`):
+- New `small_group_text: ""` key in the empty-draft template (line ~30).
+- Save path: spread-merged into the PATCH and POST payloads (no special handling needed since it's a plain string — same pattern as `summary`, `cta`, etc).
+- Load path: `j.small_group_text || ""` populated into the draft when opening an existing row.
+- NEW section block "Sidebar: Small group tours" inserted after the "Sidebar: Tour highlights" Section (title `Sidebar: Small group tours`, subtitle `"Useful for stating group-size limits, e.g. retreats take 10, tours take 6-8. Leave blank to fall back to the site-wide default in Website Text > tour_detail.small_group.body."`, 3-row textarea, testid `journey-small-group-<rowId>`, placeholder showing an example sentence).
+
+Public (`TourDetail.jsx`):
+- The sidebar "Small group tours" card body now reads `{(tour.small_group_text || "").trim() || smallGroupBody}` where `smallGroupBody` is the existing content-key fallback (`tour_detail.small_group.body`). So per-tour copy wins when non-empty, site-wide default kicks in otherwise.
+
+**AB2 — TourDetail hero is a single shot, not a carousel (`frontend/src/pages/TourDetail.jsx`):**
+
+Was (Session W4 enhancement): the top of `/tours/<slug>` rendered a `<SwipeableMedia>` carousel showing every image in `gallery_media_ids` (or fell back to the single `hero_media_id` if the gallery was empty). The Gallery TAB below also rendered the same gallery, so the same photos appeared twice and confused the client.
+
+Now: the top renders a single static `<img>` element (testid `tour-hero-shot`) resolved in this priority:
+1. `tour.hero_media_id` → the media row identified by that id
+2. The FIRST image (`file_type === "image"`) in `tour.gallery_media_ids`
+3. `null` → the hero JSX is skipped entirely (same as before — Title + duration + description quote still render)
+
+Implementation:
+- The `heroItems` memoised array was replaced with a `heroMedia` memo (single media row).
+- The JSX `<ScrollReveal><div><SwipeableMedia items={heroItems}/></div></ScrollReveal>` block became `<ScrollReveal><div className="...aspect-[16/9]"><img src={heroMedia.file_url} srcSet={...} sizes={...} alt={...} loading="eager" /></div></ScrollReveal>`.
+- Test-id renamed `tour-hero-carousel` → `tour-hero-shot`.
+- The Gallery tab below (still using `<SwipeableMedia items={galleryItems}/>` of the full `gallery_media_ids`) is untouched, so the full gallery is reachable via the tab strip exactly as before.
+
+**AB3 — Upload no longer auto-adds to gallery + permanent-delete hidden on compositional pickers (`frontend/src/components/admin/MultiMediaPicker.jsx`, plus consumer files):**
+
+Was (Session AA1): when the operator clicked "Add photos or videos" and selected files, the picker uploaded each file to `/admin/media/upload` AND auto-pushed its new id into the `value` array via `onChange([...ids, ...newlyUploadedIds])`. Side-effects the client did not expect:
+- The newly uploaded file VISIBLY appeared in the gallery (correct from the dev mental model, surprising from the client's).
+- The same file was hidden from the "Available media" pool below because the pool filters `!ids.includes(m.id)`. So the client thought "uploads only go to the gallery, not to available media".
+- A red Trash button on each selected tile permanently deleted the file from the library when used, which scared the client because they wanted "delete from this gallery only".
+
+Now:
+- `runUpload()` in `MultiMediaPicker.jsx` no longer calls `onChange([...ids, ...newlyUploadedIds])`. Uploads land in the library only; the available pool refreshes via `reloadMedia()` and the new tiles appear there. Banner copy updated to "Uploaded N items to Available media. Click any tile below to add it to this gallery."
+- `allowDelete` defaulted to `false` on **all three** compositional consumers — `JourneysManager.jsx`, `BlogManager.jsx`, `HomeContentManager.jsx`. So the red Trash button is now hidden everywhere it could confuse the operator. The only destructive icon visible on a selected tile is the soft X (`mmp-remove-<id>`), which the existing logic already handles correctly: remove the id from the gallery's selection, leave the file in the library.
+- Permanent deletion still works exactly as before in `/admin/website-media` (MediaManager) and `/admin/hero` / `/admin/gallery` / `/admin/travel-media` / `/admin/charity`. Those surfaces show the library directly so the destructive action is conceptually clearer there.
+- The `allowDelete` prop itself is still supported by `MultiMediaPicker` for any future caller that wants the trash button — only the defaults flipped.
+
+**AB4 — Live re-sync (`backend/sync_from_live.py`):**
+
+Ran after the fixes to pick up any client edits made on live during this session. Sync ran for ~3 minutes in background (the parallel AVIF probe is the slow part — 617 candidates, all 404 because live doesn't pre-generate AVIF — that's expected and the script tolerates the misses). The Mongo replacement + snapshot regen ran AFTER the AVIF probe completed, so doing it under the 120s foreground timeout would have left the local DB stale. **Important pattern for the next agent: always `nohup ... &` this script (or wrap in `timeout 300`) — the 110s foreground budget is not enough.**
+
+Diff vs the snapshot we started this turn with:
+- Maleny renamed to **"Maleny Creative Immersion Retreat"** on live.
+- Maleny gallery grew 12 → **33 photos** (the client clearly used the new upload UX on live).
+- Maleny `highlights` filled in (now 5 items, was 0).
+- Total media: 244 → **256 files** (+12).
+- All `small_group_text` values empty (operator will fill them via the new textarea when they next edit each tour).
+- Snapshot file: `backend/seed_data/site_snapshot.json` regenerated to **311,780 bytes** (was 291,471). This is the file that re-seeds the live Bluehost DB on boot — so when AB ships, the live DB will be in lockstep with what's currently in preview.
+
+**Files touched:**
+- Backend: `backend/server.py` (new field on 2 Pydantic models + new startup migration block).
+- Frontend: `components/admin/MultiMediaPicker.jsx` (removed auto-add, banner copy), `pages/admin/JourneysManager.jsx` (new draft key + new Section + flipped `allowDelete`), `pages/admin/BlogManager.jsx` (flipped `allowDelete`), `pages/admin/HomeContentManager.jsx` (flipped `allowDelete`), `pages/TourDetail.jsx` (single-hero refactor + small_group_text consumer).
+- Data: `backend/seed_data/site_snapshot.json` regenerated by `sync_from_live.py`.
+
+**Testing verdict:**
+- `deep_testing_backend_v2` ran 5/5 against the AB1 backend changes including the critical PATCH-preservation regression test: PATCH-ing only `{"small_group_text": "..."}` against the Maleny journey left 27 OTHER fields BIT-FOR-BIT identical to the snapshot. Idempotent migration verified — non-empty values survived a `supervisorctl restart backend`.
+- `auto_frontend_testing_agent` ran 3/3 against the live preview URL:
+  - AB3: upload to Maleny's picker — "In this gallery" count stayed unchanged after the upload (33 → 33, the file landed in Available media instead). No red trash buttons rendered on any selected tile. X correctly removes from gallery + keeps file in pool.
+  - AB2: `/tours/maleny-creative-immersion-retreat` showed exactly one `<img data-testid="tour-hero-shot">` and no `tour-hero-carousel` element existed. Gallery tab still renders the full SwipeableMedia.
+  - AB1: typing per-tour text in the new textarea → saving → public site shows the per-tour text. Clearing the textarea → public site reverts to the site-wide fallback. Two different tours (Maleny + Tasmanian) tested independently for clean per-tour isolation.
+
+**Out of scope (intentionally):**
+- No backend migration was run on live yet — the AB1 startup migration will fire automatically when the new backend code boots on Bluehost (one-time, idempotent).
+- No content-key cleanup of `home.hero.cta_secondary` (still present in DB from Session AA, still harmless because the public JSX no longer reads it).
+- The DRAG pill in MediaManager (Session AA6) was not re-tested in AB — no AA6 code was touched.
+
+---
+
+### AA. Admin media UX unified + Pricing card thumbnail fallback + Home hero CTA pruned (2026-06-29, **COMPLETE in preview, partially superseded by AB**)
 
 **Client direction (verbatim):**
 > "Within the tours section in the admin panel, there needs to be an option to add/replace/remove multiple media directly in the gallery tab in addition to choosing from existing media."
