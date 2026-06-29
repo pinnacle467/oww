@@ -3304,3 +3304,179 @@ agent_communication:
       
       Phase 3 frontend is production-ready.
 
+
+#====================================================================================================
+# BUG FIX - About Us story body: blank lines collapsed on the public page (2026-06-29)
+#====================================================================================================
+
+user_problem_statement: |
+  Client report: "On the About Us stories, I added a story on a trip we did
+  to Kangaroo Island. At the bottom of the story, I left a space, but the
+  space doesn't appear on the live site." Final lines of the story are:
+    "...We'd love to travel with you."
+    <blank line>
+    "TRAVEL LIVED ... IS A LIFE TRULY LOVED"
+  The blank line between the closing paragraph and the stinger is missing
+  on the live site.
+
+frontend:
+  - task: "Bug fix - About Us story body preserves blank-line paragraph spacing"
+    implemented: true
+    working: true
+    file: "frontend/src/pages/About.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: |
+          ROOT CAUSE:
+          - Backend preserves the operator's newlines exactly. Verified via
+            curl round-trip on /api/admin/stories with body
+            "Para one.\n\nTRAVEL LIVED..." -> /api/stories returns the same
+            bytes (10, 10 = \n\n) intact.
+          - The OLD live bundle (/static/js/main.21a6b2ab.js, 444 KB) has
+            ZERO occurrences of "whitespace-pre-wrap" or "Read story", so the
+            currently-deployed About page was rendering {s.body} inside a
+            plain block whose HTML-level whitespace collapsing erased all
+            consecutive newlines. Newer preview code had "whitespace-pre-wrap"
+            but the user has not yet pushed to live.
+          - Even with "whitespace-pre-wrap" the spacing produced by a
+            literal blank line is only one line-height of empty space,
+            which is too subtle to feel like an editorial "stinger"
+            paragraph break.
+
+          FIX (frontend/src/pages/About.jsx, line ~117-138):
+          The Stories details panel now splits the body string on one or
+          more blank lines (regex /\n\s*\n+/) and renders each resulting
+          chunk as its own <p> wrapped in a `space-y-4` container. Single
+          newlines inside a paragraph are preserved via
+          `whitespace-pre-line`. Empty paragraphs are filtered out so a
+          stray trailing newline doesn't render as a phantom <p>.
+          \r\n line endings (Windows clipboard paste) are normalised to
+          \n first.
+
+          NO backend changes (storage was already correct). NO change to
+          how about_blocks render — that uses a separate `kind`/`text`
+          structure and was not affected by the bug.
+      - working: true
+        agent: "testing"
+        comment: |
+          VERIFIED: Bug fix working correctly on preview URL.
+          
+          TEST 2 (Multi-paragraph spacing): ✅ PASSED
+          - Created test story with blank line: "Para 1\n\nPara 2"
+          - Public page renders 2 <p> elements with 16px spacing
+          - First <p>: "Join us to rediscover...We'd love to travel with you."
+          - Second <p>: "TRAVEL LIVED ... IS A LIFE TRULY LOVED"
+          - space-y-4 container working correctly
+          
+          TEST 3 (Regression): ✅ PASSED
+          - "Sunrise on Cradle Mountain" renders with exactly 1 <p>
+          - No spurious empty paragraphs
+          - No visual regression
+          
+          CLEANUP: ✅ COMPLETE
+          - Deleted all 3 test stories
+          - Database clean (only original "Sunrise" story remains)
+          
+          Bug fix is production-ready. Client's reported issue fully resolved.
+
+metadata:
+  test_sequence: 7
+  run_ui: true
+
+test_plan:
+  current_focus:
+    - "Bug fix - About Us story body preserves blank-line paragraph spacing"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: |
+      Bug-fix verification needed. Please run on the preview URL from
+      /app/frontend/.env (REACT_APP_BACKEND_URL).
+
+      Setup:
+        1) Login at /admin (email info@oncewerewild.com / password
+           ChangeMe-OWW-2026!).
+        2) Navigate to /admin/about (the AboutManager admin page).
+        3) Use the "+ Add story" button to create a new story with:
+           title="Spacing Bug Repro"
+           body=
+             "Join us to rediscover your wild side—to walk a little further, laugh a little louder, and build lasting memories with new friends. We'd love to travel with you.
+
+             TRAVEL LIVED ... IS A LIFE TRULY LOVED"
+           (i.e. two paragraphs separated by ONE BLANK LINE)
+           is_visible=true
+           Save.
+
+      Verification:
+        a) Navigate to /about. Find the new story card.
+        b) Click the "Read story" details summary to expand the body.
+        c) Confirm the rendered body shows the closing "TRAVEL LIVED ..."
+           line as a SEPARATE paragraph with visible vertical spacing above
+           it. Specifically: there should be at least one rendered <p>
+           element for the first paragraph AND another <p> for "TRAVEL
+           LIVED ...", separated by margin-top from Tailwind's `space-y-4`
+           (16px gap). The two paragraphs MUST NOT be glued together.
+        d) Inspect the DOM at `[data-testid^="story-body-"] div p` —
+           there should be 2 <p> children for this story.
+
+      Regression check:
+        e) The existing "Sunrise on Cradle Mountain" story (single
+           paragraph, no blank lines) must still render correctly:
+           single <p>, no extra empty paragraphs, no layout shift.
+
+      Cleanup:
+        f) Delete the "Spacing Bug Repro" story via /admin/about so it
+           doesn't pollute the snapshot.
+
+      Confirm PASS/FAIL for each step. Update /app/test_result.md per the
+      testing protocol.
+
+  - agent: "testing"
+    message: |
+      ✅ BUG FIX VERIFIED - About Us story spacing working correctly
+      
+      Completed comprehensive testing of the About Us story blank-line spacing bug fix.
+      All tests PASSED on preview URL: https://handover-phase.preview.emergentagent.com
+      
+      TEST 2 - MULTI-PARAGRAPH STORY SPACING: ✅ PASSED
+      - Created test story with blank line between paragraphs
+      - Public /about page renders story with proper paragraph structure:
+        • Found 2 <p> elements (one for each paragraph)
+        • First <p> contains: "Join us to rediscover...We'd love to travel with you."
+        • Second <p> contains: "TRAVEL LIVED ... IS A LIFE TRULY LOVED"
+        • Visual spacing between paragraphs: 16.0px (>= 12px required)
+        • space-y-4 container present and working correctly
+      - Blank line in admin textarea now creates proper paragraph break on public page
+      
+      TEST 3 - REGRESSION CHECK: ✅ PASSED
+      - "Sunrise on Cradle Mountain" story (single paragraph, no blank lines)
+      - Renders correctly with exactly 1 <p> element
+      - No spurious empty paragraphs created
+      - No layout shift or visual regression
+      
+      TEST 4 - CLEANUP: ✅ COMPLETE
+      - Deleted all test stories (3 total from multiple test runs)
+      - Database returned to original state (only "Sunrise on Cradle Mountain" remains)
+      
+      TECHNICAL VERIFICATION:
+      - Frontend fix in /app/frontend/src/pages/About.jsx (lines 130-138) working correctly
+      - Story body split on /\n\s*\n+/ regex creates separate <p> elements
+      - Each <p> has className="whitespace-pre-line" to preserve single newlines
+      - Container has className="space-y-4" providing 16px vertical spacing
+      - Empty paragraphs filtered out via .filter(Boolean)
+      - \r\n line endings normalized to \n
+      
+      BUG FIX STATUS: ✅ PRODUCTION-READY
+      The client's reported issue is fully resolved. When operators leave blank lines
+      in story body text via /admin/about, those blank lines now render as proper
+      paragraph spacing on the public /about page.
+      
+      No action items for main agent.
+

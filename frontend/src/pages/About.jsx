@@ -119,8 +119,22 @@ export default function About() {
                           <summary className="cursor-pointer font-accent text-[11px] uppercase tracking-label text-nature-mid hover:text-nature-deep transition-colors">
                             Read story
                           </summary>
-                          <div className="mt-4 editorial text-ink/85 text-sm leading-relaxed whitespace-pre-wrap">
-                            {s.body}
+                          {/* Render the story body as proper paragraphs so the
+                              operator's blank lines in admin become real
+                              vertical spacing (not a collapsed string). Split
+                              on one-or-more blank lines, preserve single
+                              newlines inside a paragraph via whitespace-pre-line.
+                              Fixes client report: trailing blank line before
+                              "TRAVEL LIVED ... IS A LIFE TRULY LOVED" was not
+                              showing on the live site. */}
+                          <div className="mt-4 editorial text-ink/85 text-sm leading-relaxed space-y-4">
+                            {s.body
+                              .replace(/\r\n/g, "\n")
+                              .split(/\n\s*\n+/)
+                              .map((para, pi) => para.trim() ? (
+                                <p key={pi} className="whitespace-pre-line">{para}</p>
+                              ) : null)
+                              .filter(Boolean)}
                           </div>
                         </details>
                       )}
