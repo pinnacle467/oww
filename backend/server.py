@@ -1983,6 +1983,38 @@ async def admin_upload_story_cover(
     return {"cover_url": file_url, "cover_srcset": srcset, "cover_avif_srcset": avif_srcset, "cover_lqip": lqip}
 
 
+@api_router.delete("/admin/stories/{sid}/cover")
+async def admin_remove_story_cover(sid: str, admin: dict = Depends(get_current_admin)):
+    """Wipe the cover_url / srcset / avif_srcset / lqip fields on a story
+    and best-effort delete the underlying image files from disk."""
+    story = await db.stories.find_one({"id": sid}, {"_id": 0})
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    prev_urls = (
+        [story.get("cover_url", "")]
+        + list((story.get("cover_srcset") or {}).values())
+        + list((story.get("cover_avif_srcset") or {}).values())
+    )
+    for u in prev_urls:
+        if u and u.startswith(UPLOADS_URL_PREFIX):
+            try:
+                Path("/app/backend" + u.replace(UPLOADS_URL_PREFIX, "/uploads")).unlink(missing_ok=True)
+            except Exception as e:
+                logger.warning("Could not unlink story cover %s: %s", u, e)
+    await db.stories.update_one(
+        {"id": sid},
+        {"$set": {
+            "cover_url": "",
+            "cover_srcset": {},
+            "cover_avif_srcset": {},
+            "cover_lqip": "",
+            "updated_at": now_iso(),
+        }},
+    )
+    await schedule_snapshot()
+    return {"message": "Cover removed"}
+
+
 # ============================== Blog (standalone /blog) =======================
 # Public blog separate from Stories on the About page. Posts have a slug,
 # featured image (optional), excerpt, rich-text HTML body, draft/published
@@ -2208,6 +2240,38 @@ async def admin_upload_blog_cover(
         "featured_avif_srcset": avif_srcset,
         "featured_lqip": lqip,
     }
+
+
+@api_router.delete("/admin/blog/{pid}/cover")
+async def admin_remove_blog_cover(pid: str, admin: dict = Depends(get_current_admin)):
+    """Wipe the featured_url / srcset / avif_srcset / lqip fields on a blog
+    post and best-effort delete the underlying image files from disk."""
+    post = await db.blog_posts.find_one({"id": pid}, {"_id": 0})
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    prev_urls = (
+        [post.get("featured_url", "")]
+        + list((post.get("featured_srcset") or {}).values())
+        + list((post.get("featured_avif_srcset") or {}).values())
+    )
+    for u in prev_urls:
+        if u and u.startswith(UPLOADS_URL_PREFIX):
+            try:
+                Path("/app/backend" + u.replace(UPLOADS_URL_PREFIX, "/uploads")).unlink(missing_ok=True)
+            except Exception as e:
+                logger.warning("Could not unlink blog cover %s: %s", u, e)
+    await db.blog_posts.update_one(
+        {"id": pid},
+        {"$set": {
+            "featured_url": "",
+            "featured_srcset": {},
+            "featured_avif_srcset": {},
+            "featured_lqip": "",
+            "updated_at": now_iso(),
+        }},
+    )
+    await schedule_snapshot()
+    return {"message": "Featured image removed"}
 
 
 @api_router.post("/admin/blog/image")

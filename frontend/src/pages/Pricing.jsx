@@ -85,9 +85,14 @@ export default function Pricing() {
       ? j.includes
       : (typeof j.includes === "string" ? j.includes.split("|").map((s) => s.trim()).filter(Boolean) : []);
     // Resolve hero image from the media collection (admin-uploaded). Falls
-    // back to the legacy hardcoded `image` prop on JOURNEYS so the page
-    // never renders an empty card frame.
-    const heroMedia = j.hero_media_id ? mediaMap[j.hero_media_id] : null;
+    // back to: (1) the first item of gallery_media_ids if no hero_media_id is
+    // set, (2) the legacy hardcoded `image` prop on JOURNEYS, (3) nothing
+    // (the card then renders the monogram-letter placeholder).
+    const galleryIds = Array.isArray(j.gallery_media_ids) ? j.gallery_media_ids : [];
+    const firstGalleryImage = galleryIds
+      .map((id) => mediaMap[id])
+      .find((m) => m && (m.file_type || "image") === "image");
+    const heroMedia = (j.hero_media_id && mediaMap[j.hero_media_id]) || firstGalleryImage || null;
     const heroUrl = heroMedia ? abs(heroMedia.file_url) : (j.image || "");
     const heroSrcset = heroMedia ? absMap(heroMedia.srcset) : null;
     const heroAvif = heroMedia ? absMap(heroMedia.avif_srcset) : null;

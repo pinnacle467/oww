@@ -249,6 +249,16 @@ function StoriesPanel() {
     finally { setUploadingId(null); }
   };
 
+  const removeCover = async (s) => {
+    if (!window.confirm(`Remove the cover image from "${s.title}"? The image file will be deleted from the server.`)) return;
+    try {
+      await api.delete(`/admin/stories/${s.id}/cover`);
+      await load();
+    } catch (e) {
+      alert(formatApiError(e?.response?.data?.detail) || "Could not remove cover");
+    }
+  };
+
   return (
     <section data-testid="stories-panel">
       <div className="flex items-center justify-between gap-4 mb-4">
@@ -313,6 +323,13 @@ function StoriesPanel() {
                   className="mt-2 w-full inline-flex items-center justify-center gap-1 px-3 py-1.5 border border-gray-300 rounded text-xs hover:bg-gray-50 disabled:opacity-60"
                   data-testid={`upload-cover-${s.id}`}
                 ><Upload className="h-3 w-3" />{uploadingId === s.id ? "Uploading..." : (s.cover_url ? "Replace cover" : "Upload cover")}</button>
+                {s.cover_url && (
+                  <button
+                    onClick={() => removeCover(s)}
+                    className="mt-1.5 w-full inline-flex items-center justify-center gap-1 px-3 py-1.5 border border-red-300 text-red-700 rounded text-xs hover:bg-red-50"
+                    data-testid={`remove-cover-${s.id}`}
+                  ><Trash2 className="h-3 w-3" />Remove cover</button>
+                )}
               </div>
 
               {/* Editable fields */}

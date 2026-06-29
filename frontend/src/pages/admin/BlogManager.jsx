@@ -300,6 +300,22 @@ function PostEditorDrawer({ mode, initial, allMedia, onReloadMedia, onClose, onS
     }
   };
 
+  const removeCover = async () => {
+    if (!draft.featured_url) return;
+    if (!window.confirm("Remove the featured image? The file will be deleted from the server.")) return;
+    if (mode === "edit" && draft.id) {
+      try {
+        await api.delete(`/admin/blog/${draft.id}/cover`);
+        set({ featured_url: "", featured_srcset: {}, featured_avif_srcset: {}, featured_lqip: "" });
+      } catch (e) {
+        alert(formatApiError(e?.response?.data?.detail) || "Could not remove image");
+      }
+    } else {
+      // Create-mode preview — just drop the local state.
+      set({ featured_url: "", featured_srcset: {}, featured_avif_srcset: {}, featured_lqip: "" });
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-stretch justify-end" data-testid="blog-editor-drawer">
       <div className="bg-[#F4F2EE] w-full max-w-3xl h-full overflow-y-auto shadow-2xl">
@@ -403,6 +419,17 @@ function PostEditorDrawer({ mode, initial, allMedia, onReloadMedia, onClose, onS
                   <Upload className="h-4 w-4" />
                   {uploadingCover ? "Uploading..." : draft.featured_url ? "Replace image" : "Upload image"}
                 </button>
+                {draft.featured_url && (
+                  <button
+                    type="button"
+                    onClick={removeCover}
+                    className="ml-2 inline-flex items-center gap-2 px-4 py-2 border border-red-300 text-red-700 rounded-md text-sm hover:bg-red-50"
+                    data-testid="blog-cover-remove-btn"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Remove image
+                  </button>
+                )}
                 <p className="text-xs text-gray-500 mt-2">
                   PNG, JPG, WebP up to 15 MB. Shown on the index card and at the top of the post.
                   {mode === "create" && " The image uploads after the post is saved for the first time."}
