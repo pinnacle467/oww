@@ -166,18 +166,21 @@ export function MultiMediaPicker({
     }
     setUploading(false);
 
-    // Refresh the parent's allMedia, then auto-add the newly uploaded IDs to
-    // the selection in the order they were uploaded.
+    // Refresh the parent's allMedia so the newly uploaded files appear in
+    // the "Available media" pool below. We deliberately DO NOT auto-add
+    // them to the current selection — uploading is a library action; the
+    // operator can then click the new tiles in the pool to add them to
+    // this gallery, and the "X" on a selected tile only removes the link
+    // (the file stays in Available media).
     if (typeof reloadMedia === "function") {
       try { await reloadMedia(); } catch (_) { /* non-fatal */ }
     }
     if (newlyUploadedIds.length) {
-      onChange([...ids, ...newlyUploadedIds]);
-      flashBanner(`Uploaded ${newlyUploadedIds.length} item${newlyUploadedIds.length === 1 ? "" : "s"}.`);
+      flashBanner(`Uploaded ${newlyUploadedIds.length} item${newlyUploadedIds.length === 1 ? "" : "s"} to Available media. Click any tile below to add it to this gallery.`);
     }
     // Keep the queue visible for a moment if any errored so the operator sees the why.
     if (updated.every((q) => q.status === "done")) {
-      setTimeout(() => setUploadQueue([]), 1200);
+      setTimeout(() => setUploadQueue([]), 1500);
     }
   };
 

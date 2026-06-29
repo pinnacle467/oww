@@ -215,7 +215,7 @@ function Drawer({ title, onClose, saving, onSave, draft, setDraft, allMedia, onR
               allowVideos={true}
               allowEmbeds={true}
               allowUpload={true}
-              allowDelete={true}
+              allowDelete={false}
               uploadSection="home-gallery"
               reloadMedia={onReloadMedia}
             />

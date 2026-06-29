@@ -1091,6 +1091,7 @@ class JourneyInput(BaseModel):
     includes: List[str] = Field(default_factory=list)
     excludes: List[str] = Field(default_factory=list)  # C4 — What's Not Included
     highlights: List[str] = Field(default_factory=list)  # Z1 — Tour highlights (sidebar checkmark list on /tours/<slug>)
+    small_group_text: str = ""  # AB1 — per-tour copy for the sidebar "Small group tours" card. Falls back to content key `tour_detail.small_group.body` when empty.
     cta: str = "Enquire"
     is_active: bool = True
     # B1 additions - drive the new /tours/<slug> sub-pages and the nav dropdown.
@@ -1128,6 +1129,7 @@ class JourneyUpdate(BaseModel):
     includes: Optional[List[str]] = None
     excludes: Optional[List[str]] = None  # C4 — What's Not Included
     highlights: Optional[List[str]] = None  # Z1 — Tour highlights (sidebar checkmark list on /tours/<slug>)
+    small_group_text: Optional[str] = None  # AB1 — per-tour override for sidebar "Small group tours" card
     cta: Optional[str] = None
     is_active: Optional[bool] = None
     slug: Optional[str] = None
@@ -3467,6 +3469,18 @@ async def seed():
     )
     if res_hl.modified_count:
         logger.info("Z1: defaulted highlights on %d journey rows", res_hl.modified_count)
+
+    # AB1 migration - default `small_group_text = ""` on every journey row.
+    # When non-empty the public TourDetail sidebar uses this per-tour copy
+    # instead of the site-wide `tour_detail.small_group.body` content key.
+    # Lets retreats say "10 travellers" and tours say "6-8" without forking
+    # the content key. Idempotent.
+    res_sg = await db.journeys.update_many(
+        {"small_group_text": {"$exists": False}},
+        {"$set": {"small_group_text": ""}},
+    )
+    if res_sg.modified_count:
+        logger.info("AB1: defaulted small_group_text on %d journey rows", res_sg.modified_count)
 
     # Phase 3 migration - default `media_ids` to [] on every existing blog_post
     # and home_section row. Idempotent (only $sets when missing). When

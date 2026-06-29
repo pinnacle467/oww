@@ -27,6 +27,7 @@ const EMPTY_DRAFT = {
   includes: "",   // newline-joined string in the form, split on save
   excludes: "International and domestic airfares\nTravel insurance\nVisa fees (if applicable)\nPersonal expenses\nOptional activities not listed in the itinerary",   // C4 — newline-joined string in the form, split on save
   highlights: "",  // Z1 — newline-joined string in the form, split on save. Drives the sidebar checkmark list on /tours/<slug>.
+  small_group_text: "",  // AB1 — per-tour copy for sidebar "Small group tours" card. Plain string. Blank = fall back to content key.
   cta: "Enquire",
   popular: false,
   is_active: true,
@@ -125,6 +126,7 @@ export default function JourneysManager() {
         includes: includesToArray(j._includesText),
         excludes: includesToArray(j._excludesText),
         highlights: includesToArray(j._highlightsText),
+        small_group_text: j.small_group_text || "",
         cta: j.cta,
         popular: !!j.popular,
         is_active: !!j.is_active,
@@ -420,6 +422,7 @@ export default function JourneysManager() {
                     includes: j._includesText || "",
                     excludes: j._excludesText || "",
                     highlights: j._highlightsText || "",
+                    small_group_text: j.small_group_text || "",
                     cta: j.cta || "Enquire",
                     popular: !!j.popular, is_active: !!j.is_active,
                     slug: j.slug || "", hero_media_id: j.hero_media_id || "",
@@ -645,7 +648,7 @@ function DraftFields({ value, onChange, rowId, allMedia, onReloadMedia }) {
             allowVideos={true}
             allowEmbeds={false}
             allowUpload={true}
-            allowDelete={true}
+            allowDelete={false}
             uploadSection="tour-gallery"
             reloadMedia={onReloadMedia}
           />
@@ -712,6 +715,26 @@ function DraftFields({ value, onChange, rowId, allMedia, onReloadMedia }) {
             data-testid={`journey-highlights-${rowId || "new"}`}
           />
           <span className="block text-xs text-gray-500 mt-1">Keep each item to a short line. They are rendered with a gold check mark.</span>
+        </label>
+      </Section>
+
+      {/* ── 7b. Sidebar: Small group tours copy (per-tour override) ───── */}
+      <Section
+        title="Sidebar: Small group tours"
+        subtitle="Copy shown in the right-hand 'Small group tours' card on the detail page. Useful for stating group-size limits, e.g. retreats take 10, tours take 6-8. Leave blank to fall back to the site-wide default in Website Text > tour_detail.small_group.body."
+        testid={`section-small-group-${rowId || "new"}`}
+      >
+        <label className="sm:col-span-2 block">
+          <span className="block text-sm font-medium text-gray-600 mb-1">Small group tours copy</span>
+          <textarea
+            rows={3}
+            className="w-full px-3 py-2 border border-gray-300 rounded focus:border-[#2D4A3E] focus:outline-none focus:ring-1 focus:ring-[#2D4A3E]/40 text-sm"
+            value={value.small_group_text || ""}
+            onChange={(e) => onChange({ small_group_text: e.target.value })}
+            placeholder="e.g. For a more private experience and a better quality of service, our retreats are limited to 10 travellers."
+            data-testid={`journey-small-group-${rowId || "new"}`}
+          />
+          <span className="block text-xs text-gray-500 mt-1">Leave blank to use the site-wide default text instead.</span>
         </label>
       </Section>
 

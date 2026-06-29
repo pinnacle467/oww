@@ -108,15 +108,22 @@ export default function TourDetail() {
     }).catch(() => {});
   }, []);
 
-  // Build the hero carousel items: prefer the gallery_media_ids list (so
-  // the operator controls the order), else fall back to just the
-  // hero_media_id. If neither is available we render a plain placeholder.
-  const heroItems = useMemo(() => {
-    if (!tour) return [];
-    const galleryIds = Array.isArray(tour.gallery_media_ids) ? tour.gallery_media_ids : [];
-    if (galleryIds.length) return buildMediaItems(galleryIds, mediaMap);
-    if (tour.hero_media_id) return buildMediaItems([tour.hero_media_id], mediaMap);
-    return [];
+  // Build the hero shot: prefer `hero_media_id`, else fall back to the
+  // FIRST image of `gallery_media_ids` so a card-grid thumbnail logic
+  // mirrors the public /pricing page. The full gallery_media_ids still
+  // render in the dedicated Gallery tab below — the hero is intentionally
+  // a single shot (no carousel) per client direction.
+  const heroMedia = useMemo(() => {
+    if (!tour) return null;
+    if (tour.hero_media_id && mediaMap[tour.hero_media_id]) {
+      return mediaMap[tour.hero_media_id];
+    }
+    const ids = Array.isArray(tour.gallery_media_ids) ? tour.gallery_media_ids : [];
+    for (const id of ids) {
+      const m = mediaMap[id];
+      if (m && (m.file_type || "image") === "image") return m;
+    }
+    return null;
   }, [tour, mediaMap]);
 
   const galleryItems = useMemo(() => {
@@ -244,11 +251,20 @@ export default function TourDetail() {
               )}
             </ScrollReveal>
 
-            {/* Hero carousel (uses gallery if present, else single hero image). */}
-            {heroItems.length > 0 && (
+            {/* Hero shot - a single image at the top of the tour page. The
+                full gallery sits in the dedicated Gallery tab below so the
+                same photos don't appear twice. */}
+            {heroMedia && (
               <ScrollReveal delay={100}>
-                <div className="mt-7 rounded-sm overflow-hidden shadow-lg bg-white" data-testid="tour-hero-carousel">
-                  <SwipeableMedia items={heroItems} aspectRatio="16/9" />
+                <div className="mt-7 rounded-sm overflow-hidden shadow-lg bg-white aspect-[16/9]" data-testid="tour-hero-shot">
+                  <img
+                    src={heroMedia.file_url}
+                    srcSet={Object.entries(heroMedia.srcset || {}).map(([w, u]) => `${u} ${w}`).join(", ") || undefined}
+                    sizes="(min-width: 1280px) 70vw, 100vw"
+                    alt={heroMedia.caption || tour.name || ""}
+                    loading="eager"
+                    className="h-full w-full object-cover"
+                  />
                 </div>
               </ScrollReveal>
             )}
@@ -548,7 +564,7 @@ export default function TourDetail() {
                   <h3 className="font-display font-light text-ink text-xl mb-3 pb-3 border-b border-nature-deep/15">
                     {smallGroupHeading}
                   </h3>
-                  <p className="text-sm text-ink-soft leading-relaxed editorial">{smallGroupBody}</p>
+                  <p className="text-sm text-ink-soft leading-relaxed editorial">{(tour.small_group_text || "").trim() || smallGroupBody}</p>
                 </div>
               </ScrollReveal>
 

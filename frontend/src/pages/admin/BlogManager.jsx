@@ -463,7 +463,7 @@ function PostEditorDrawer({ mode, initial, allMedia, onReloadMedia, onClose, onS
               allowVideos={true}
               allowEmbeds={true}
               allowUpload={true}
-              allowDelete={true}
+              allowDelete={false}
               uploadSection="blog-gallery"
               reloadMedia={onReloadMedia}
             />
