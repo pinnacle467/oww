@@ -95,10 +95,24 @@ export function HeroSlideshow() {
   return (
     <section className="hero-stage relative h-[100svh] w-full overflow-hidden bg-ink" data-testid="hero-slideshow">
       {/* Slides. ADMIN: replace images via /admin/hero or /admin/website-media */}
-      {HERO.map((slide, i) => (
+      {/* Coverflow staging: the active slide sits flat at Z=0; the
+          immediate prev/next slides peek in tilted from the sides at
+          ~48° rotateY with a Z-offset; everything else hides deep at
+          Z=-600. When reduce-motion is set, the global media-query
+          shortens transitions to ~0 — but the side panels would then
+          snap-rotate which looks bad, so we also collapse prev/next
+          back to `idle` for those users (plain cross-fade only). */}
+      {HERO.map((slide, i) => {
+        const prevIdx = (index - 1 + HERO.length) % HERO.length;
+        const nextIdx = (index + 1) % HERO.length;
+        let stage = "";
+        if (i === index) stage = "active";
+        else if (!reduceMotion && HERO.length > 1 && i === prevIdx) stage = "prev";
+        else if (!reduceMotion && HERO.length > 1 && i === nextIdx) stage = "next";
+        return (
         <div
           key={i}
-          className={`hero-slide absolute inset-0 ${i === index ? "active" : ""}`}
+          className={`hero-slide absolute inset-0 ${stage}`}
           aria-hidden={i !== index}
           data-testid={`hero-slide-${i + 1}`}
           // The LQIP is a ~600 B inline base64 WebP — paints in the FIRST
@@ -145,7 +159,8 @@ export function HeroSlideshow() {
             );
           })()}
         </div>
-      ))}
+        );
+      })}
 
       {/* Cinematic gradient wash */}
       <div className="absolute inset-0 bg-gradient-to-t from-nature-deep/85 via-nature-deep/30 to-nature-deep/45 pointer-events-none" />
