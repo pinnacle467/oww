@@ -89,6 +89,13 @@ export default function JourneysManager() {
     }
   };
 
+  const loadMedia = async () => {
+    try {
+      const { data } = await api.get("/media");
+      setAllMedia(Array.isArray(data) ? data : []);
+    } catch (_) { /* non-fatal */ }
+  };
+
   useEffect(() => { load(); }, []);
 
   const updateLocal = (id, patch) => {
@@ -325,7 +332,7 @@ export default function JourneysManager() {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <DraftFields value={draft} onChange={(p) => setDraft((d) => ({ ...d, ...p }))} allMedia={allMedia} />
+            <DraftFields value={draft} onChange={(p) => setDraft((d) => ({ ...d, ...p }))} allMedia={allMedia} onReloadMedia={loadMedia} />
             <div className="mt-5 flex justify-end gap-2">
               <button onClick={() => { setCreating(false); setDraft({ ...EMPTY_DRAFT, type: activeTab }); }} className="px-4 py-2 text-gray-600 hover:text-gray-900">Cancel</button>
               <button onClick={createJourney} className="px-5 py-2 bg-[#2D4A3E] text-white rounded-lg hover:bg-[#1F3329]">
@@ -433,6 +440,7 @@ export default function JourneysManager() {
                   }}
                   rowId={j.id}
                   allMedia={allMedia}
+                  onReloadMedia={loadMedia}
                 />
 
                 {j.slug && (
@@ -529,7 +537,7 @@ function Section({ title, subtitle, children, testid }) {
   );
 }
 
-function DraftFields({ value, onChange, rowId, allMedia }) {
+function DraftFields({ value, onChange, rowId, allMedia, onReloadMedia }) {
   const isRetreat = (value.type || "tour") === "retreat";
   const detailPath = isRetreat ? `/corporate-retreats/${value.slug || "..."}` : `/tours/${value.slug || "..."}`;
   return (
@@ -633,9 +641,13 @@ function DraftFields({ value, onChange, rowId, allMedia }) {
             allMedia={allMedia || []}
             rowId={rowId}
             label="Photo gallery"
-            description="Drag thumbnails to reorder. Up to 30 images recommended. The first image becomes the hero photo if no separate hero is set."
-            allowVideos={false}
+            description="Drag thumbnails to reorder. Add new images or videos directly here, replace an existing file, or remove one. The first image becomes the hero photo if no separate hero is set."
+            allowVideos={true}
             allowEmbeds={false}
+            allowUpload={true}
+            allowDelete={true}
+            uploadSection="tour-gallery"
+            reloadMedia={onReloadMedia}
           />
         </div>
       </Section>

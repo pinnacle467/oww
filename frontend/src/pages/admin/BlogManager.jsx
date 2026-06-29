@@ -57,6 +57,13 @@ export default function BlogManager() {
     }
   };
 
+  const loadMedia = async () => {
+    try {
+      const { data } = await api.get("/media");
+      setAllMedia(data || []);
+    } catch (_) { /* non-fatal */ }
+  };
+
   useEffect(() => { load(); }, []);
 
   const openCreate = () => setEditorPost({ mode: "create", post: blankDraft() });
@@ -186,6 +193,7 @@ export default function BlogManager() {
           mode={editorPost.mode}
           initial={editorPost.post}
           allMedia={allMedia}
+          onReloadMedia={loadMedia}
           onClose={closeEditor}
           onSaved={async () => { await load(); closeEditor(); }}
         />
@@ -194,7 +202,7 @@ export default function BlogManager() {
   );
 }
 
-function PostEditorDrawer({ mode, initial, allMedia, onClose, onSaved }) {
+function PostEditorDrawer({ mode, initial, allMedia, onReloadMedia, onClose, onSaved }) {
   const [draft, setDraft] = useState(() => ({
     id: initial.id || null,
     title: initial.title || "",
@@ -427,6 +435,10 @@ function PostEditorDrawer({ mode, initial, allMedia, onClose, onSaved }) {
               description="Add multiple cover images, MP4 videos or YouTube / Vimeo URLs. When set, the public post replaces the single featured image with a swipeable gallery. Drag to reorder. Single item renders as a plain hero."
               allowVideos={true}
               allowEmbeds={true}
+              allowUpload={true}
+              allowDelete={true}
+              uploadSection="blog-gallery"
+              reloadMedia={onReloadMedia}
             />
           </div>
 

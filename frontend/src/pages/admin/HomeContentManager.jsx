@@ -37,6 +37,12 @@ export default function HomeContentManager() {
       setLoading(false);
     }
   };
+  const loadMedia = async () => {
+    try {
+      const { data } = await api.get("/media");
+      setAllMedia(data || []);
+    } catch (_) { /* non-fatal */ }
+  };
   useEffect(() => { load(); }, []);
 
   const openCreate = () => { setDraft(EMPTY_SECTION); setCreating(true); setEditing(null); };
@@ -157,6 +163,7 @@ export default function HomeContentManager() {
             draft={draft}
             setDraft={setDraft}
             allMedia={allMedia}
+            onReloadMedia={loadMedia}
             editingId={editing?.id}
           />
         )}
@@ -165,7 +172,7 @@ export default function HomeContentManager() {
   );
 }
 
-function Drawer({ title, onClose, saving, onSave, draft, setDraft, allMedia, editingId }) {
+function Drawer({ title, onClose, saving, onSave, draft, setDraft, allMedia, onReloadMedia, editingId }) {
   return (
     <div className="fixed inset-0 z-50 flex" data-testid="home-content-drawer">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
@@ -207,6 +214,10 @@ function Drawer({ title, onClose, saving, onSave, draft, setDraft, allMedia, edi
               description="Add images, MP4 videos or YouTube / Vimeo URLs. When set, a swipeable gallery renders above the section body. Drag to reorder. A single item renders as a plain image."
               allowVideos={true}
               allowEmbeds={true}
+              allowUpload={true}
+              allowDelete={true}
+              uploadSection="home-gallery"
+              reloadMedia={onReloadMedia}
             />
           </div>
 

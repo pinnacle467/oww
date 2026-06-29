@@ -31,7 +31,6 @@ export function HeroSlideshow() {
   // toggle can re-enable the old behaviour cleanly.
   void legacyTagline;
   const cta1 = useText("home.hero.cta_primary", "Explore Experiences");
-  const cta2 = useText("home.hero.cta_secondary", "Join a Retreat");
   const [index, setIndex] = useState(0);
   const [loaded, setLoaded] = useState(false);
   // Whether the visitor has `prefers-reduced-motion: reduce` set. We still
@@ -212,9 +211,6 @@ export function HeroSlideshow() {
                 <CTAButton to="/pricing" variant="light" withArrow data-testid="hero-cta-experiences">
                   {cta1}
                 </CTAButton>
-                <CTAButton to="/pricing" variant="glass" withArrow data-testid="hero-cta-retreat">
-                  {cta2}
-                </CTAButton>
               </div>
             </div>
           ) : (
@@ -229,9 +225,6 @@ export function HeroSlideshow() {
             >
               <CTAButton to="/pricing" variant="light" withArrow data-testid="hero-cta-experiences">
                 {cta1}
-              </CTAButton>
-              <CTAButton to="/pricing" variant="glass" withArrow data-testid="hero-cta-retreat">
-                {cta2}
               </CTAButton>
             </div>
           )}
