@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, X, Play } from "lucide-react";
 import { useSwipeNav } from "@/hooks/useSwipeNav";
 
@@ -199,7 +200,13 @@ function Lightbox({ items, index, onClose, onPrev, onNext }) {
   const webpSrcSet = srcsetToString(it.srcset);
   const avifSrcSet = srcsetToString(it.avif_srcset);
 
-  return (
+  // Render via a portal to document.body so the lightbox isn't trapped
+  // inside any ancestor that has a `transform`/`will-change: transform`
+  // (e.g. our `.reveal` ScrollReveal wrapper). Such ancestors create a
+  // containing block for `position: fixed` descendants, which would
+  // otherwise leave sticky sidebars / tabs visible on top of the lightbox.
+  if (typeof document === "undefined") return null;
+  return createPortal((
     <div
       className="fixed inset-0 z-[1000] bg-black/95 flex items-center justify-center"
       onClick={onClose}
@@ -254,7 +261,7 @@ function Lightbox({ items, index, onClose, onPrev, onNext }) {
         </p>
       )}
     </div>
-  );
+  ), document.body);
 }
 
 export function SwipeableMedia({

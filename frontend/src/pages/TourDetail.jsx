@@ -271,10 +271,13 @@ export default function TourDetail() {
             )}
 
             {/* TAB STRIP - the signature visual element from the reference.
-                Active tab gets a gold fill with a little down-pointing tail. */}
+                Active tab gets a gold fill with a little down-pointing tail.
+                Keeps all four tabs on a single row (horizontal scroll on
+                very narrow mobiles) and adds a touch of horizontal padding
+                so the strip doesn't sit flush against the column edges. */}
             <ScrollReveal delay={180}>
-              <div className="mt-10 border-b border-nature-deep/15" role="tablist" aria-label="Tour information">
-                <div className="flex flex-wrap -mb-px">
+              <div className="mt-10 border-b border-nature-deep/15 px-2 sm:px-4" role="tablist" aria-label="Tour information">
+                <div className="flex flex-nowrap items-stretch gap-1 sm:gap-2 -mb-px overflow-x-auto no-scrollbar">
                   {tabs.map((t) => {
                     const isActive = activeTab === t.id;
                     return (
@@ -286,7 +289,7 @@ export default function TourDetail() {
                         id={`tour-tab-${t.id}`}
                         onClick={() => setActiveTab(t.id)}
                         className={
-                          "relative -mb-px px-5 sm:px-7 py-3.5 font-accent text-xs sm:text-sm uppercase tracking-label transition-colors duration-200 " +
+                          "relative -mb-px px-3 sm:px-5 py-3 font-accent text-[10px] sm:text-xs uppercase tracking-label whitespace-nowrap transition-colors duration-200 flex items-center justify-center min-w-0 " +
                           (isActive
                             ? "bg-gold text-ink"
                             : "text-ink-soft hover:text-nature-deep")
@@ -297,7 +300,7 @@ export default function TourDetail() {
                         {isActive && (
                           <span
                             aria-hidden="true"
-                            className="absolute left-1/2 -translate-x-1/2 -bottom-2 w-3 h-3 rotate-45 bg-gold"
+                            className="absolute left-1/2 -translate-x-1/2 -bottom-1.5 w-2.5 h-2.5 rotate-45 bg-gold"
                           />
                         )}
                       </button>
