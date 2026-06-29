@@ -160,8 +160,8 @@
   backface-visibility: hidden;
 }
 .hero-slide.prev {
-  opacity: 0.55;
-  transform: translate3d(-32%, 0, -240px) rotateY(46deg);
+  opacity: 0.75;
+  transform: translate3d(-22%, 0, -180px) rotateY(35deg);
   z-index: 2;
 }
 .hero-slide.active {
@@ -170,8 +170,8 @@
   z-index: 5;
 }
 .hero-slide.next {
-  opacity: 0.55;
-  transform: translate3d(32%, 0, -240px) rotateY(-46deg);
+  opacity: 0.75;
+  transform: translate3d(22%, 0, -180px) rotateY(-35deg);
   z-index: 2;
 }
 /* Gentle dark wash that eases in/out with the slide so the transition feels
