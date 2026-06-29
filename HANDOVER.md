@@ -28,6 +28,42 @@
 
 ## 2. What's been built (chronological, most recent first)
 
+### X. Bug fix - About Us story body preserves blank lines + sync_from_live.py extended (2026-06-29, **VERIFIED in preview, NOT YET PUSHED TO LIVE**)
+
+**Client report:** "On the About Us stories, I added a story on a trip we did to Kangaroo Island. At the bottom of the story, I left a space, but the space doesn't appear on the live site." The closing two lines of the body were:
+
+```
+...We'd love to travel with you.
+
+TRAVEL LIVED ... IS A LIFE TRULY LOVED
+```
+
+— the blank line between them was missing on the live About page.
+
+**Root cause (forensic):**
+1. Backend storage is innocent. A round-trip on `/api/admin/stories` with body `"Para one.\n\nTRAVEL LIVED..."` returned bytes `[10, 10]` for the blank-line position. Pydantic + Mongo preserve newlines exactly.
+2. The **currently-deployed live bundle** (`/static/js/main.21a6b2ab.js`, 444 KB) has ZERO occurrences of `whitespace-pre-wrap`, `Read story`, or any story-body rendering markup. The old live About page renders the story body inside a plain block that HTML-normalises consecutive whitespace, so `\n\n` collapsed to a single space.
+3. The preview's About.jsx already had `whitespace-pre-wrap` (added in an earlier session) but the user has not yet pushed to live — which is why the client still sees the bug. Also `whitespace-pre-wrap` only produces ~one line-height of blank space (~28 px with `line-height: 1.8` + `text-sm`) which is too subtle to feel like an editorial paragraph break.
+
+**Fix (frontend/src/pages/About.jsx, story-body rendering inside `<details>`):**
+- The body string is normalised (`\r\n` → `\n`) then split on **one-or-more blank lines** (`/\n\s*\n+/`).
+- Each non-empty chunk renders as its own `<p className="whitespace-pre-line">` inside a `<div className="...space-y-4">`.
+- Empty fragments are `.filter(Boolean)`-stripped so a stray trailing newline doesn't render as a phantom `<p>`.
+- `whitespace-pre-line` inside each paragraph preserves single newlines as line breaks (without the awkward double-space `\n` produces in pre-wrap).
+- **Result:** blank lines in admin → real 16 px margin-top between rendered `<p>` elements. Single-paragraph stories still render exactly one `<p>` (regression-tested).
+
+**Testing agent verification (2/2 PASS + cleanup):**
+- Multi-paragraph story (matching the exact client wording) → 2 `<p>` elements, 16 px vertical gap.
+- Single-paragraph "Sunrise on Cradle Mountain" → still exactly 1 `<p>` (no spurious empties).
+- Test stories cleaned up.
+
+**Secondary fix - `backend/sync_from_live.py` extended:**
+The previous script only pulled `media`, `journeys`, `content`, `site_settings`, `gallery_categories`. Editorial CMS collections (`stories`, `about_blocks`, `home_sections`, `home_faqs`, `blog_posts`) were silently missed by sync, which is why a fresh `/app` clone was never seeing client-authored stories like Kangaroo Island. The script now pulls all five additional collections AND writes them into `site_snapshot.json` so the backend's existing `_apply_snapshot()` consumes them on boot. Verified on a re-run: `media=242 journeys=4 content_keys=178 settings_keys=15 categories=4 stories=1 about_blocks=3 home_sections=4 home_faqs=16 blog_posts=1`, snapshot now 286 KB.
+
+**Important finding for the user:** the Kangaroo Island story is **NOT** in live `/api/stories` (only Cradle Mountain is). Either the client saved it as `is_visible: false` (draft, public endpoint filters drafts out), or there's an authentication issue on save. Once the user verifies the story is saved with `is_visible: true` on live admin AND pushes the preview to live via "Save to Github", the blank-line bug will be fully fixed end-to-end. The render-side fix is on disk and tested in preview.
+
+**Files touched:** `frontend/src/pages/About.jsx` (story-body render), `backend/sync_from_live.py` (5 new collection pulls + snapshot keys), `backend/seed_data/site_snapshot.json` (regenerated via sync, 286 KB).
+
 ### W. Phase 4 of Changes 1-9 — Touch-swipe in lightboxes (2026-06-28, **COMPLETE in preview, frontend 5/5 PASSED, NOT YET PUSHED TO LIVE**)
 
 **User direction (verbatim):** "Masonry stays as is on the gallery page sections. But when on mobile devices anyone taps on any image/video anywhere across the site, it lets them go to next or previous image or video by swiping left and right. On desktop just have a left and right arrow for them to navigate between media. As simple as that."

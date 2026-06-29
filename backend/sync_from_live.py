@@ -113,7 +113,24 @@ async def main():
     content = get(f"{LIVE}/api/content") or {}
     settings = get(f"{LIVE}/api/settings") or {}
     gallery_cats = get(f"{LIVE}/api/gallery-categories") or []
-    print(f"  media={len(media)} journeys={len(journeys)} content_keys={len(content)} settings_keys={len(settings)} categories={gallery_cats}")
+    # 2026-06-29: pull the editorial CMS collections too so a fresh sync
+    # captures admin-authored content (stories on /about, blog posts,
+    # home-page rich-text sections, home FAQs, about_blocks). Previously
+    # these lived only on the live DB and got dropped by `delete_many`
+    # below when older syncs replaced media + journeys + content. Each
+    # endpoint is wrapped in `or []` so a 404 on stale live builds is
+    # treated as "empty" rather than a sync failure.
+    stories = get(f"{LIVE}/api/stories") or []
+    about_blocks = get(f"{LIVE}/api/about-blocks") or []
+    home_sections = get(f"{LIVE}/api/home-sections") or []
+    home_faqs = get(f"{LIVE}/api/home-faqs") or []
+    blog_posts = get(f"{LIVE}/api/blog") or []
+    print(
+        f"  media={len(media)} journeys={len(journeys)} content_keys={len(content)} "
+        f"settings_keys={len(settings)} categories={gallery_cats} stories={len(stories)} "
+        f"about_blocks={len(about_blocks)} home_sections={len(home_sections)} "
+        f"home_faqs={len(home_faqs)} blog_posts={len(blog_posts)}"
+    )
 
     # ---- 1. Download referenced files in parallel ----
     urls = all_referenced_urls(media)
@@ -162,6 +179,21 @@ async def main():
         )
         print(f"  gallery_categories: {await db.gallery_categories.count_documents({})} docs")
 
+    # Replace editorial CMS collections (added 2026-06-29). Each block is
+    # idempotent: if live returned no rows we leave the local copy alone so
+    # an offline live host doesn't wipe local fixtures.
+    for coll_name, payload in (
+        ("stories", stories),
+        ("about_blocks", about_blocks),
+        ("home_sections", home_sections),
+        ("home_faqs", home_faqs),
+        ("blog_posts", blog_posts),
+    ):
+        if isinstance(payload, list) and payload:
+            await db[coll_name].delete_many({})
+            await db[coll_name].insert_many(payload)
+            print(f"  {coll_name}: {await db[coll_name].count_documents({})} docs")
+
     # ---- 3. Write snapshot file so the next deploy is preserved ----
     # `content` and `site_settings` must be a list of {key, value, ...} docs
     # because _apply_snapshot() iterates and calls .get("key") on each entry.
@@ -175,6 +207,13 @@ async def main():
         "site_settings": settings_list,
         "journeys": journeys,
         "gallery_categories": gallery_cats,
+        # 2026-06-29: bundle editorial CMS collections too. _apply_snapshot()
+        # in server.py needs a matching block to consume these on boot.
+        "stories": stories,
+        "about_blocks": about_blocks,
+        "home_sections": home_sections,
+        "home_faqs": home_faqs,
+        "blog_posts": blog_posts,
     }
     snap_path = SEED / "site_snapshot.json"
     snap_path.write_text(json.dumps(snapshot, default=str, indent=2))
