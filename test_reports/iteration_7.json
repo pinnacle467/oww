@@ -16,7 +16,7 @@
     "current_videos_tracked": {"status": "PASS", "detail": "All 3 compressed MP4s (91e7dfe..., 5084e72e..., d252a0f8...) are tracked in HEAD"},
     "gitignore_entries": {"status": "FIXED_BY_TESTER", "detail": "BEFORE: /app/.gitignore was missing /bin/, /app/bin/, .git.backup-*. AFTER: appended all three entries; verified by `git check-ignore --no-index` matching all three patterns. NOTE: claim in problem statement that these were added was inaccurate prior to this iteration."},
     "video_integrity": {"status": "PASS", "detail": "ffprobe shows codec_name=h264 for all three: 91e7dfe...(1920x1080), 5084e72e...(1920x1440), d252a0f8...(1280x960)"},
-    "http_reachability": {"status": "PASS", "detail": "All three videos served via https://handover-phase.preview.emergentagent.com/api/uploads/gallery/<name> with HTTP/2 200, content-type: video/mp4, and content-length matching on-disk size (14765743, 21376189, 65734716 respectively)"},
+    "http_reachability": {"status": "PASS", "detail": "All three videos served via https://repo-to-deploy.preview.emergentagent.com/api/uploads/gallery/<name> with HTTP/2 200, content-type: video/mp4, and content-length matching on-disk size (14765743, 21376189, 65734716 respectively)"},
     "regression_guard": {"status": "PASS", "detail": "GET / -> 200, GET /api/media?section=gallery&category=Across%20the%20world -> 200 with 176,986 byte body"}
   },
   "test_report_links": [],

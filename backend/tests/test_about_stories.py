@@ -18,7 +18,7 @@ import json
 import pytest
 import requests
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://handover-phase.preview.emergentagent.com").rstrip("/")
+BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://repo-to-deploy.preview.emergentagent.com").rstrip("/")
 ADMIN_EMAIL = "info@oncewerewild.com"
 ADMIN_PASSWORD = "WildAtHeart2026"
 SNAPSHOT_PATH = "/app/backend/seed_data/site_snapshot.json"
