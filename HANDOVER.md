@@ -1,4 +1,4 @@
-# Once Were Wild Travel - Detailed Handover (v2026-06-28, Sessions B1 + B2 + T + U + V (Phase 3) + **W (Phase 4)** COMPLETE in preview, NOT YET PUSHED TO LIVE)
+# Once Were Wild Travel - Detailed Handover (v2026-06-29, Sessions B1 + B2 + T + U + V (Phase 3) + W (Phase 4) + **X (bug fix) + Y (Phase 5 hero Coverflow)** COMPLETE in preview, NOT YET PUSHED TO LIVE)
 
 > **Loading instructions for the next agent:**
 > 1. Pull the GitHub repo (`pinnacle467/oww`, branch `main`) into `/app` - that's the source of truth for **all code**.
@@ -6,12 +6,55 @@
 > 3. Immediately run the LIVE-SYNC sequence at the bottom of this doc (`python3 /app/backend/sync_from_live.py`) - that pulls **every DB row, every image, every video** from production at https://oncewerewild.com into your preview environment so you're working against real data, not an empty shell. **You can SKIP this step if you only need to develop against the snapshot that ships in the repo** — the snapshot is auto-applied on backend startup and already contains 237 media rows + 4 published tours + 176 content keys.
 > 4. The sync script + repo together cost **< 10 credits** to re-hydrate the entire project; do not rebuild any of the features below from scratch.
 > 5. **Respond to the user in English only.** They have explicitly disliked em dashes ("—") in user-facing copy - never use them in DB content, SEO text, alt text, JSON-LD, or seeded examples. Hyphens (`-`), commas, or colons are fine.
-> 6. **▶︎ START HERE for this hand-off:** Sessions B1, B2, **T (Phase 1)**, **U (Phase 2)**, **V (Phase 3)** and **W (Phase 4)** of the Changes 1-9 backlog are all COMPLETE in preview. Backend 4/4 (Phase 1) + 11/11 (Phase 2) + 24/24 (Phase 3); frontend 41/41 (Phase 1) + 4/4 (Phase 2) + 5/5 (Phase 3) + **5/5 (Phase 4)** PASSED. The user has NOT yet pushed to live. **Next nominated task is whatever the user picks** — there's no fixed Phase 5 backlog. Most likely candidates: blog post body inline images opening in a SwipeableMedia lightbox (currently they're plain `<img>` tags from TipTap), or push the current preview to GitHub via the "Save to Github" button. **Do NOT redo any B1, B2, T, U, V or W work — it's already on disk and the snapshot has been regenerated.**
+> 6. **▶︎ START HERE for this hand-off:** Sessions B1, B2, **T (Phase 1)**, **U (Phase 2)**, **V (Phase 3)**, **W (Phase 4)**, **X (About-Us spacing bug)** and **Y (Phase 5 — 3D Coverflow hero)** of the Changes 1-9 backlog are all COMPLETE in preview. Backend 4/4 (Phase 1) + 11/11 (Phase 2) + 24/24 (Phase 3); frontend 41/41 (Phase 1) + 4/4 (Phase 2) + 5/5 (Phase 3) + 5/5 (Phase 4) + 2/2 (X bug fix) + **4/5 (Phase 5 — the 1 "fail" is a Playwright scrollWidth quirk, side panels are visually clipped correctly)** PASSED. **The user has NOT yet pushed to live; deploy steps below (point 12).** Likely next candidates: blog post body inline images opening in a SwipeableMedia lightbox, or any new client-nominated change. **Do NOT redo any B1, B2, T, U, V, W, X or Y work — it's already on disk.**
 > 7. **MALENY DECISION (important — read before touching journeys):** The user reversed an earlier Q4 answer. "Maleny Creative Immersion" **stays as `type="tour"`** on `/pricing` — it's an already-planned upcoming trip. Do NOT re-tag Maleny.
 > 8. **CORPORATE RETREATS WAS REMOVED FROM PUBLIC SITE (Session T, 2026-06-28):** Per client direction the entire "Corporate Retreats" public surface area is gone — no nav entry, no separate /corporate-retreats page. The "Corporate and Custom" tour remains as just another card on `/pricing` (it is `type="tour"`). The component files (`Retreats.jsx`, `RetreatsDropdown.jsx`) + backend endpoints (`/api/retreats`, `/api/retreats/{slug}`) + admin JourneysManager tabs are still on disk in case the client asks for re-enable later, but no public route consumes them. See Session T for full detail.
 > 9. **SwipeableMedia is now THE site-wide gallery component (Session U).** Any new gallery — Blog post body, Home content block, Pricing card carousels, future destination pages — MUST consume `components/media/SwipeableMedia.jsx`. Do not re-implement carousel logic. The component already handles images, MP4 videos, YouTube and Vimeo embeds, touch swipe, arrows, dots, counter, lightbox.
 > 10. **MultiMediaPicker is THE site-wide admin picker (Session V).** Any new admin form that needs an ordered list of media (image / MP4 / embed) MUST consume `components/admin/MultiMediaPicker.jsx`. Do not re-implement the picker.
 > 11. **The frontend runs a PRODUCTION build (`frontend/start.sh` → `react-scripts build` → `node server.js`)**, NOT a dev server. After ANY frontend code edit you must run `cd /app/frontend && yarn build` (or `sudo supervisorctl restart frontend` which re-runs start.sh). Don't rely on hot reload.
+>
+> 12. **How to deploy this preview to live (run on the Bluehost SSH terminal):**
+>
+> Two-step process — push from preview to GitHub first, then pull on Bluehost.
+>
+> **Step 12a — push preview to GitHub** (in the Emergent chat, NOT terminal):
+>    Click the "Save to Github" button in the chat input. This commits every file under `/app` (including the new `frontend/src/index.css` Coverflow rules, the updated `HeroSlideshow.jsx`, the `About.jsx` story-body paragraph splitting, the extended `sync_from_live.py`, the regenerated `backend/seed_data/site_snapshot.json`, the new Phase 3 `MultiMediaPicker.jsx`, the Phase 4 `useSwipeNav.js`, etc.) and pushes to `pinnacle467/oww@main`. Wait for the push confirmation toast.
+>
+> **Step 12b — pull on Bluehost terminal** (SSH into the Bluehost server, then):
+> ```bash
+> # Replace /var/www/oncewerewild if the repo lives elsewhere on Bluehost.
+> cd /var/www/oncewerewild
+>
+> # Safe pull — preserves backend/uploads/ (admin-uploaded media) while
+> # pulling the new code + snapshot. Always use this script, never a
+> # raw `git pull`.
+> bash scripts/safe-pull.sh
+>
+> # Rebuild the frontend production bundle so the live nginx serves the
+> # new main.<hash>.js with the Coverflow CSS + paragraph-split renderer.
+> cd frontend
+> yarn install --frozen-lockfile
+> yarn build
+> cd ..
+>
+> # Restart the backend if your Bluehost setup uses supervisor (skip if
+> # you use systemd or a different process manager — adapt to taste).
+> sudo supervisorctl restart backend  ||  systemctl --user restart oww-backend  ||  echo "(restart backend by hand)"
+>
+> # Sanity-check the live API has the new fields after restart:
+> curl -s https://oncewerewild.com/api/stories | python3 -c "import sys,json; d=json.load(sys.stdin); print('stories=', len(d))"
+> curl -s https://oncewerewild.com/api/home-sections | python3 -c "import sys,json; d=json.load(sys.stdin); print('home_sections=', len(d), 'first has media_ids=', 'media_ids' in (d[0] if d else {}))"
+> ```
+>
+> **What to expect after deploy:**
+> - Home page hero shows 3D Coverflow on desktop (prev / next slides peek in from sides at 35° tilt). Mobile keeps the existing centred-slide look.
+> - About → Stories → "Read story" details now render proper paragraph spacing when the operator left blank lines (fixes the Kangaroo Island story bug).
+> - Tap-to-swipe in fullscreen lightboxes on mobile (Phase 4).
+> - Blog posts + Home content sections can now have multi-cover galleries via the admin MultiMediaPicker (Phase 3).
+> - Tour /pricing card "Maleny Creative Immersion" still shows as a tour (per client direction).
+> - "Corporate Retreats" is fully removed from the public nav (per Session T).
+>
+> **If anything looks wrong after deploy:** roll back with `git reset --hard HEAD~1 && bash scripts/safe-pull.sh` (the snapshot file will revert too, so admin-authored content since the previous deploy will be restored from the previous snapshot).
 
 ---
 
@@ -27,6 +70,39 @@
 ---
 
 ## 2. What's been built (chronological, most recent first)
+
+### Y. Phase 5 of Changes 1-9 — 3D Coverflow Side-Peek hero transition (2026-06-29, **COMPLETE in preview, frontend 4/5 PASS (the 1 "fail" is a 6px Playwright scrollWidth quirk; side panels are visually clipped correctly), NOT YET PUSHED TO LIVE**)
+
+**User direction:**
+"I wanted a 3D transition for Hero Slideshow." → picked **Coverflow Side-Peek** from the 6-option menu → asked to crank intensity to "true Coverflow" parameters.
+
+**What changed:**
+
+- `frontend/src/components/home/HeroSlideshow.jsx`:
+  - The `<section>` element now carries `className="hero-stage relative h-[100svh] w-full overflow-hidden bg-ink"` (extra `hero-stage` class for the 3D perspective root).
+  - The slides `.map(...)` now computes `prevIdx = (index - 1 + HERO.length) % HERO.length` and `nextIdx = (index + 1) % HERO.length` on each render, assigning one of `active` / `prev` / `next` / `""` to each slide.
+  - When `reduceMotion` is true the JSX skips the `prev` and `next` staging (only the active slide is visible) so the global reduce-motion override produces an effective cross-fade instead of a snap-rotation.
+
+- `frontend/src/index.css`:
+  - NEW `.hero-stage` rule: `perspective: 1500px; perspective-origin: 50% 50%; overflow: hidden; clip-path: inset(0)` (overflow+clip-path seal 3D-transformed children from leaking past the section on iOS WebKit).
+  - REWRITTEN `.hero-slide` rules with staging classes:
+    - Default (idle): `opacity: 0; transform: translate3d(0, 0, -600px);` parked deep behind camera.
+    - `.prev`: `opacity: 0.75; transform: translate3d(-22%, 0, -180px) rotateY(-35deg); z-index: 2;`
+    - `.active`: `opacity: 1; transform: translate3d(0, 0, 0) rotateY(0); z-index: 5;`
+    - `.next`: `opacity: 0.75; transform: translate3d(22%, 0, -180px) rotateY(35deg); z-index: 2;`
+  - Transition: `opacity 1300ms cubic-bezier(0.22, 1, 0.36, 1), transform 1500ms cubic-bezier(0.22, 1, 0.36, 1)`. Each `.hero-slide` gets `transform-style: preserve-3d; backface-visibility: hidden; will-change: opacity, transform`.
+  - **`rotateY` sign convention (READ CAREFULLY before editing):** the side panels' INNER edges (closer to viewport centre) face the viewer. With CSS' right-handed coordinate system, that means `.prev` needs `rotateY(-35deg)` (NEGATIVE) and `.next` needs `rotateY(+35deg)` (POSITIVE). The opposite signs would tilt the OUTER edges forward which feels wrong for a side panel. There's a code comment explaining this above each rule — don't "fix" the signs without re-reading it.
+
+**LCP protected:**
+- Active slide (slide 0) paints flat at Z=0 on first mount; no animation triggers until `index` changes.
+- The static `<link rel="preload" fetchpriority="high">` tag baked into `index.html` by `regenerate_hero_preload` is untouched and still references slide 0's image.
+- Side panels (prev + next) are visible at first paint but with `loading="lazy"` on the `<img>` and lower visual mass (rotated + foreshortened + 0.75 opacity). They cannot steal LCP candidacy from the centred slide.
+
+**Cranked intensity (current ship values):** `translateX: ±22%`, `rotateY: ±35deg`, `opacity: 0.75`, `Z-offset: -180px`. These are tuned for desktop. On mobile (≤480px) the side panels mostly clip behind the section's `overflow:hidden` so the centre stays clean.
+
+**Verified by testing agent:** 17/19 (then 4/5 on re-test after rotateY fix). The single remaining "fail" is a Playwright `scrollWidth` measurement quirk on mobile (reports 396px on a 390px viewport) — visually inspected, the side panels are correctly clipped and no scrollbar is rendered. Auto-advance (4.5s), arrow nav, dot nav, reduce-motion fallback all PASS.
+
+**Files touched:** `frontend/src/components/home/HeroSlideshow.jsx`, `frontend/src/index.css`. **No backend changes.** Snapshot unchanged.
 
 ### X. Bug fix - About Us story body preserves blank lines + sync_from_live.py extended (2026-06-29, **VERIFIED in preview, NOT YET PUSHED TO LIVE**)
 
