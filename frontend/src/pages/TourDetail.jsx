@@ -1,25 +1,62 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, Link, useLocation } from "react-router-dom";
 import axios from "axios";
-import { Download, ArrowRight, MapPin, Calendar, Clock, Check, X } from "lucide-react";
-import { PageHero } from "@/components/layout/PageHero";
+import { Download, ArrowRight, MapPin, Calendar, Clock, Check, X, ChevronLeft } from "lucide-react";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { CTAButton } from "@/components/ui/CTAButton";
 import { Seo } from "@/components/seo/Seo";
-import { useText } from "@/context/ContentContext";
-import { TourGallery } from "@/components/tour/TourGallery";
+import { useText, useContent } from "@/context/ContentContext";
+import { SwipeableMedia } from "@/components/media/SwipeableMedia";
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || "";
 
-// Single component renders both /tours/<slug> (tours) and
-// /corporate-retreats/<slug> (retreats). The only difference between the
-// two routes is the API endpoint, the back-link, and the breadcrumb copy.
+// Helpers - rewrite relative /api/uploads paths to absolute URLs so the
+// page works on the deployed CDN.
+const abs = (u) => (u && API_BASE && u.startsWith("/") ? `${API_BASE}${u}` : u);
+const absMap = (m) => {
+  if (!m || typeof m !== "object") return null;
+  return Object.fromEntries(Object.entries(m).map(([k, v]) => [k, abs(v)]));
+};
+
+// Build an items[] array (in SwipeableMedia shape) from a list of media ids
+// + the loaded media map. Items missing from the map are silently dropped.
+function buildMediaItems(ids, mediaMap) {
+  return (ids || [])
+    .map((id) => mediaMap[id])
+    .filter(Boolean)
+    .map((m) => {
+      const kind = m.file_type === "video" ? "video"
+        : m.file_type === "embed" ? "embed"
+        : "image";
+      return {
+        id: m.id,
+        kind,
+        url: abs(m.file_url),
+        srcset: kind === "image" ? absMap(m.srcset) : null,
+        avif_srcset: kind === "image" ? absMap(m.avif_srcset) : null,
+        lqip: m.lqip || null,
+        alt: m.alt_text || m.caption || m.alt || "",
+        caption: m.caption || "",
+        embed_provider: m.embed_provider || null,
+        embed_id: m.embed_id || null,
+      };
+    });
+}
+
+// Z1 — Single component renders both /tours/<slug> (tours) and
+// /corporate-retreats/<slug> (retreats). The two-column layout (main +
+// sticky sidebar) matches the client-supplied reference: title, hero
+// carousel, italic description, tab strip with DETAILS / GALLERY /
+// WHAT'S INCLUDED / PRICES & DATES on the left; tour highlights,
+// small-group blurb and testimonials on the right.
 export default function TourDetail() {
   const { slug } = useParams();
   const location = useLocation();
+  const { content } = useContent();
   const [tour, setTour] = useState(null);
-  const [media, setMedia] = useState({});
+  const [mediaMap, setMediaMap] = useState({});
   const [status, setStatus] = useState("loading"); // loading | ok | not-found
+  const [activeTab, setActiveTab] = useState("details");
   const enquireLabel = useText("tours.detail.enquire", "Enquire Now");
 
   // Detect which "kind" of journey this is from the URL. Retreats live
@@ -36,8 +73,24 @@ export default function TourDetail() {
   // without publishing them. Backend validates the token against the row.
   const previewToken = new URLSearchParams(location.search).get("preview") || "";
 
+  // Sidebar copy is admin-editable via /admin/website-text (group inferred
+  // from key prefix - shows up under "Tour detail").
+  const highlightsHeading = useText("tour_detail.highlights.heading", "Tour highlights");
+  const smallGroupHeading = useText("tour_detail.small_group.heading", "Small group tours");
+  const smallGroupBody    = useText(
+    "tour_detail.small_group.body",
+    "For a more private experience and a better quality of service, our small groups are limited to twelve travellers."
+  );
+  const testimonialsHeading = useText("tour_detail.testimonials.heading", "Testimonials");
+  const detailsLabel  = useText("tour_detail.tab.details", "Details");
+  const galleryLabel  = useText("tour_detail.tab.gallery", "Gallery");
+  const includesLabel = useText("tour_detail.tab.includes", "What's Included");
+  const pricesLabel   = useText("tour_detail.tab.prices", "Prices & Dates");
+  const downloadLabel = useText("tour_detail.download_pdf", "Download Full Itinerary (PDF)");
+
   useEffect(() => {
     setStatus("loading");
+    setActiveTab("details");
     const qs = previewToken ? `?preview=${encodeURIComponent(previewToken)}` : "";
     axios
       .get(`${API_BASE}/api/${apiPath}/${slug}${qs}`)
@@ -46,22 +99,43 @@ export default function TourDetail() {
   }, [slug, apiPath, previewToken]);
 
   // Pull the full media list once so we can resolve hero + gallery ids
-  // to proper srcset urls. Browser caches the result.
+  // to proper srcset urls.
   useEffect(() => {
     axios.get(`${API_BASE}/api/media`).then(({ data }) => {
       const map = {};
       (data || []).forEach((m) => { map[m.id] = m; });
-      setMedia(map);
+      setMediaMap(map);
     }).catch(() => {});
   }, []);
 
-  const absolutise = useMemo(() => {
-    const base = process.env.REACT_APP_BACKEND_URL || "";
-    return (urlMap) => {
-      if (!urlMap || typeof urlMap !== "object") return null;
-      return Object.fromEntries(Object.entries(urlMap).map(([k, v]) => [k, base && v ? `${base}${v}` : v]));
-    };
-  }, []);
+  // Build the hero carousel items: prefer the gallery_media_ids list (so
+  // the operator controls the order), else fall back to just the
+  // hero_media_id. If neither is available we render a plain placeholder.
+  const heroItems = useMemo(() => {
+    if (!tour) return [];
+    const galleryIds = Array.isArray(tour.gallery_media_ids) ? tour.gallery_media_ids : [];
+    if (galleryIds.length) return buildMediaItems(galleryIds, mediaMap);
+    if (tour.hero_media_id) return buildMediaItems([tour.hero_media_id], mediaMap);
+    return [];
+  }, [tour, mediaMap]);
+
+  const galleryItems = useMemo(() => {
+    if (!tour) return [];
+    const ids = Array.isArray(tour.gallery_media_ids) ? tour.gallery_media_ids : [];
+    return buildMediaItems(ids, mediaMap);
+  }, [tour, mediaMap]);
+
+  // Site-wide testimonials (already seeded into the home group). We pick
+  // the first two non-empty ones for the sidebar card.
+  const testimonials = useMemo(() => {
+    const out = [];
+    for (let i = 0; i < 6 && out.length < 2; i++) {
+      const q = (content[`testimonials.${i}.quote`] || "").trim();
+      const a = (content[`testimonials.${i}.author`] || "").trim();
+      if (q) out.push({ quote: q, author: a });
+    }
+    return out;
+  }, [content]);
 
   if (status === "loading") {
     return (
@@ -87,10 +161,6 @@ export default function TourDetail() {
     );
   }
 
-  const hero = tour.hero_media_id ? media[tour.hero_media_id] : null;
-  const heroUrl = hero ? (process.env.REACT_APP_BACKEND_URL ? `${API_BASE}${hero.file_url}` : hero.file_url) : null;
-  const heroSrcset = hero ? absolutise(hero.srcset) : null;
-  const heroLqip = hero ? (hero.lqip || "") : "";
   const seoTitle = (tour.seo_title || `${tour.name} - Once Were Wild Travel`).trim();
   const seoDesc = (tour.seo_description || tour.summary || "").trim();
 
@@ -98,16 +168,26 @@ export default function TourDetail() {
   const descriptionHtml = tour.description_html || tour.body_html || "";
   const itineraryHtml = tour.itinerary_html || "";
   const practicalHtml = tour.practical_html || "";
-  // C5 - additional "More Details" rich-text block (separate from About this journey)
   const moreDetailsHtml = tour.more_details_html || "";
-  const hasBody = !!(descriptionHtml || itineraryHtml || practicalHtml || moreDetailsHtml);
-  const galleryIds = Array.isArray(tour.gallery_media_ids) ? tour.gallery_media_ids : [];
-  // C4 - includes / excludes lists
   const includes = Array.isArray(tour.includes) ? tour.includes.filter(Boolean) : [];
   const excludes = Array.isArray(tour.excludes) ? tour.excludes.filter(Boolean) : [];
+  const highlights = Array.isArray(tour.highlights) ? tour.highlights.filter(Boolean) : [];
+
+  // Build a tab list, hiding tabs that have no content. Always at least
+  // the Details tab is present so the layout never collapses.
+  const tabs = [
+    { id: "details",  label: detailsLabel,  show: true },
+    { id: "gallery",  label: galleryLabel,  show: galleryItems.length > 0 },
+    { id: "includes", label: includesLabel, show: includes.length > 0 || excludes.length > 0 },
+    { id: "prices",   label: pricesLabel,   show: !!(tour.priceFrom || tour.dates) },
+  ].filter((t) => t.show);
+
+  // Build the sub-line that sits under the H1 (e.g. "7 nights / Small Group Tour - Sunshine Coast").
+  const subPieces = [tour.nights, kind === "retreat" ? "Corporate Retreat" : "Small Group Tour"].filter(Boolean);
+  const subline = subPieces.join(" - ");
 
   return (
-    <article data-testid="tour-detail-page" data-kind={kind}>
+    <article data-testid="tour-detail-page" data-kind={kind} className="bg-cream/40">
       <Seo
         title={seoTitle}
         description={seoDesc}
@@ -128,194 +208,373 @@ export default function TourDetail() {
         </div>
       )}
 
-      <PageHero
-        eyebrow={tour.region || "Once Were Wild Travel"}
-        title={tour.name}
-        intro={tour.summary || ""}
-        image={heroUrl || ""}
-        lqip={heroLqip}
-        srcset={heroSrcset}
-      />
-
-      <section className="bg-white py-20 sm:py-24">
-        <div className="mx-auto max-w-3xl px-5 sm:px-8">
-          {(tour.nights || tour.dates || tour.region) && (
-            <ScrollReveal>
-              <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 mb-12 pb-12 border-b border-nature-deep/10" data-testid="tour-key-details">
-                {tour.nights && (
-                  <div className="flex items-center gap-2 text-ink-soft">
-                    <Clock className="h-4 w-4 text-gold" />
-                    <span className="font-accent text-sm uppercase tracking-label">{tour.nights}</span>
-                  </div>
-                )}
-                {tour.region && (
-                  <div className="flex items-center gap-2 text-ink-soft">
-                    <MapPin className="h-4 w-4 text-gold" />
-                    <span className="font-accent text-sm uppercase tracking-label">{tour.region}</span>
-                  </div>
-                )}
-                {tour.dates && (
-                  <div className="flex items-center gap-2 text-ink-soft">
-                    <Calendar className="h-4 w-4 text-gold" />
-                    <span className="font-accent text-sm uppercase tracking-label">{tour.dates}</span>
-                  </div>
-                )}
-              </div>
-            </ScrollReveal>
+      {/* Top bar - back-link */}
+      <div className="bg-cream border-b border-nature-deep/10">
+        <div className="mx-auto max-w-6xl px-5 sm:px-8 py-4 flex items-center justify-between">
+          <Link
+            to={backLinkTo}
+            className="inline-flex items-center gap-1.5 text-xs font-accent uppercase tracking-label text-ink-soft hover:text-nature-deep transition-colors duration-200"
+            data-testid="tour-back-link"
+          >
+            <ChevronLeft className="h-3.5 w-3.5" />
+            <span>{backLinkLabel}</span>
+          </Link>
+          {tour.region && (
+            <span className="inline-flex items-center gap-1.5 text-xs font-accent uppercase tracking-label text-ink-soft">
+              <MapPin className="h-3.5 w-3.5 text-gold" />
+              {tour.region}
+            </span>
           )}
+        </div>
+      </div>
 
-          {hasBody ? (
-            <div className="space-y-12">
-              {descriptionHtml && (
-                <ScrollReveal delay={120}>
-                  <div data-testid="tour-section-description">
-                    <h3 className="font-display font-light text-ink text-2xl sm:text-3xl mb-5">About this journey</h3>
+      {/* MAIN 2-COL LAYOUT */}
+      <section className="py-10 sm:py-14">
+        <div className="mx-auto max-w-6xl px-5 sm:px-8 grid gap-10 lg:gap-12 lg:grid-cols-3">
+          {/* ============ LEFT: MAIN ============ */}
+          <div className="lg:col-span-2 min-w-0">
+            <ScrollReveal>
+              <h1 className="font-display font-light text-ink text-4xl sm:text-5xl leading-tight tracking-tight">
+                {tour.name}
+              </h1>
+              {subline && (
+                <p className="mt-2 font-display font-light text-ink-soft text-xl sm:text-2xl">
+                  {subline}
+                </p>
+              )}
+            </ScrollReveal>
+
+            {/* Hero carousel (uses gallery if present, else single hero image). */}
+            {heroItems.length > 0 && (
+              <ScrollReveal delay={100}>
+                <div className="mt-7 rounded-sm overflow-hidden shadow-lg bg-white" data-testid="tour-hero-carousel">
+                  <SwipeableMedia items={heroItems} aspectRatio="16/9" />
+                </div>
+              </ScrollReveal>
+            )}
+
+            {/* Italic quote-style description - matches the client's reference
+                where a short blurb sits between the hero and the tab strip. */}
+            {(descriptionHtml || tour.summary) && (
+              <ScrollReveal delay={140}>
+                <div className="mt-7 border-l-2 border-gold pl-6 py-2" data-testid="tour-quote">
+                  {descriptionHtml ? (
                     <div
-                      className="prose prose-neutral max-w-none text-ink-soft text-base sm:text-lg editorial"
+                      className="prose prose-neutral max-w-none editorial italic text-ink-soft text-base sm:text-lg leading-relaxed"
                       dangerouslySetInnerHTML={{ __html: descriptionHtml }}
                     />
-                  </div>
-                </ScrollReveal>
-              )}
-              {itineraryHtml && (
-                <ScrollReveal delay={140}>
-                  <div data-testid="tour-section-itinerary" className="pt-12 border-t border-nature-deep/10">
-                    <h3 className="font-display font-light text-ink text-2xl sm:text-3xl mb-5">Itinerary</h3>
-                    <div
-                      className="prose prose-neutral max-w-none text-ink-soft text-base sm:text-lg editorial"
-                      dangerouslySetInnerHTML={{ __html: itineraryHtml }}
-                    />
-                  </div>
-                </ScrollReveal>
-              )}
-              {practicalHtml && (
-                <ScrollReveal delay={160}>
-                  <div data-testid="tour-section-practical" className="pt-12 border-t border-nature-deep/10">
-                    <h3 className="font-display font-light text-ink text-2xl sm:text-3xl mb-5">Practical information</h3>
-                    <div
-                      className="prose prose-neutral max-w-none text-ink-soft text-base sm:text-lg editorial"
-                      dangerouslySetInnerHTML={{ __html: practicalHtml }}
-                    />
-                  </div>
-                </ScrollReveal>
-              )}
-              {moreDetailsHtml && (
-                <ScrollReveal delay={170}>
-                  <div data-testid="tour-section-more-details" className="pt-12 border-t border-nature-deep/10">
-                    <h3 className="font-display font-light text-ink text-2xl sm:text-3xl mb-5">More Details</h3>
-                    <div
-                      className="prose prose-neutral max-w-none text-ink-soft text-base sm:text-lg editorial"
-                      dangerouslySetInnerHTML={{ __html: moreDetailsHtml }}
-                    />
-                  </div>
-                </ScrollReveal>
-              )}
-            </div>
-          ) : (
-            tour.summary && (
-              <ScrollReveal delay={120}>
-                <p className="editorial text-ink-soft text-lg leading-relaxed text-center max-w-2xl mx-auto">
-                  {tour.summary}
-                </p>
+                  ) : (
+                    <p className="editorial italic text-ink-soft text-base sm:text-lg leading-relaxed">{tour.summary}</p>
+                  )}
+                </div>
               </ScrollReveal>
-            )
-          )}
-        </div>
-      </section>
+            )}
 
-      {/* Gallery moved ABOVE the price + CTA block (C5) so a media-rich
-          experience surfaces before the visitor is asked to act. */}
-      {galleryIds.length > 0 && (
-        <TourGallery
-          mediaIds={galleryIds}
-          mediaMap={media}
-          eyebrow="Journey gallery"
-          heading="Moments along the way"
-        />
-      )}
-
-      <section className="bg-white pb-4 pt-6 sm:pt-10">
-        <div className="mx-auto max-w-3xl px-5 sm:px-8">
-
-          {/* What's Included / What's Not Included (C4) — two-column on desktop,
-              stacked on mobile. Mirrors the bullet styling of the pricing cards. */}
-          {(includes.length > 0 || excludes.length > 0) && (
-            <ScrollReveal delay={175}>
-              <div className="grid gap-10 sm:grid-cols-2 pt-4 pb-2" data-testid="tour-includes-excludes">
-                {includes.length > 0 && (
-                  <div data-testid="tour-section-includes">
-                    <h3 className="font-display font-light text-ink text-2xl mb-5">What&apos;s Included</h3>
-                    <ul className="space-y-3">
-                      {includes.map((inc) => (
-                        <li key={inc} className="flex items-start gap-3 text-ink/85">
-                          <Check className="h-4 w-4 mt-1 text-nature-mid shrink-0" />
-                          <span className="text-sm sm:text-base">{inc}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {excludes.length > 0 && (
-                  <div data-testid="tour-section-excludes">
-                    <h3 className="font-display font-light text-ink text-2xl mb-5">What&apos;s Not Included</h3>
-                    <ul className="space-y-3">
-                      {excludes.map((exc) => (
-                        <li key={exc} className="flex items-start gap-3 text-ink/85">
-                          <X className="h-4 w-4 mt-1 text-ink-soft/60 shrink-0" />
-                          <span className="text-sm sm:text-base">{exc}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </ScrollReveal>
-          )}
-
-          {tour.priceFrom && (
+            {/* TAB STRIP - the signature visual element from the reference.
+                Active tab gets a gold fill with a little down-pointing tail. */}
             <ScrollReveal delay={180}>
-              <div className="mt-14 pt-12 border-t border-nature-deep/10 text-center">
-                <p className="label-eyebrow text-nature-mid mb-3">Investment</p>
-                <span className="font-display font-light text-nature-deep text-5xl sm:text-6xl">{tour.priceFrom}</span>
-                {tour.priceUnit && <p className="text-ink-soft text-sm mt-2">{tour.priceUnit}</p>}
-                {tour.priceNote && <p className="text-ink-soft/80 text-xs mt-1">{tour.priceNote}</p>}
+              <div className="mt-10 border-b border-nature-deep/15" role="tablist" aria-label="Tour information">
+                <div className="flex flex-wrap -mb-px">
+                  {tabs.map((t) => {
+                    const isActive = activeTab === t.id;
+                    return (
+                      <button
+                        key={t.id}
+                        role="tab"
+                        aria-selected={isActive}
+                        aria-controls={`tour-tab-panel-${t.id}`}
+                        id={`tour-tab-${t.id}`}
+                        onClick={() => setActiveTab(t.id)}
+                        className={
+                          "relative -mb-px px-5 sm:px-7 py-3.5 font-accent text-xs sm:text-sm uppercase tracking-label transition-colors duration-200 " +
+                          (isActive
+                            ? "bg-gold text-ink"
+                            : "text-ink-soft hover:text-nature-deep")
+                        }
+                        data-testid={`tour-tab-${t.id}`}
+                      >
+                        <span>{t.label}</span>
+                        {isActive && (
+                          <span
+                            aria-hidden="true"
+                            className="absolute left-1/2 -translate-x-1/2 -bottom-2 w-3 h-3 rotate-45 bg-gold"
+                          />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </ScrollReveal>
-          )}
 
-          <ScrollReveal delay={220}>
-            <div className="mt-14 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <CTAButton to="/contact" variant="filled" withArrow data-testid="tour-enquire">
-                {enquireLabel}
-              </CTAButton>
-              {tour.itinerary_url && (
-                <a
-                  href={tour.itinerary_url}
-                  download={tour.itinerary_filename || "itinerary.pdf"}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-7 py-3 border border-nature-deep/30 rounded-full font-accent text-sm uppercase tracking-label text-ink hover:bg-nature-deep hover:text-cream transition-colors duration-200"
-                  data-testid="tour-download-pdf"
-                >
-                  <Download className="h-4 w-4" />
-                  Download Itinerary (PDF)
-                </a>
+            {/* TAB PANELS */}
+            <div className="mt-8">
+              {/* DETAILS - itinerary outline + more-details + PDF button.
+                  Per client direction: full day-by-day stays in the PDF; on
+                  the page we render an OUTLINE only via itinerary_html /
+                  more_details_html. */}
+              {activeTab === "details" && (
+                <ScrollReveal>
+                  <div
+                    id="tour-tab-panel-details"
+                    role="tabpanel"
+                    aria-labelledby="tour-tab-details"
+                    data-testid="tour-tab-panel-details"
+                    className="space-y-8"
+                  >
+                    {itineraryHtml ? (
+                      <div>
+                        <h3 className="font-display font-light text-ink text-2xl sm:text-3xl mb-4">Itinerary</h3>
+                        <div
+                          className="prose prose-neutral max-w-none editorial text-ink-soft text-base sm:text-lg"
+                          dangerouslySetInnerHTML={{ __html: itineraryHtml }}
+                        />
+                      </div>
+                    ) : (
+                      // Friendly empty state if the operator hasn't authored
+                      // an outline yet - we still show the PDF link below
+                      // if they have one uploaded.
+                      tour.itinerary_url && (
+                        <p className="editorial text-ink-soft italic">
+                          A full day-by-day itinerary is available in the PDF below.
+                        </p>
+                      )
+                    )}
+                    {moreDetailsHtml && (
+                      <div className={itineraryHtml ? "pt-8 border-t border-nature-deep/10" : ""}>
+                        <h3 className="font-display font-light text-ink text-2xl sm:text-3xl mb-4">More Details</h3>
+                        <div
+                          className="prose prose-neutral max-w-none editorial text-ink-soft text-base sm:text-lg"
+                          dangerouslySetInnerHTML={{ __html: moreDetailsHtml }}
+                        />
+                      </div>
+                    )}
+                    {practicalHtml && (
+                      <div className={(itineraryHtml || moreDetailsHtml) ? "pt-8 border-t border-nature-deep/10" : ""}>
+                        <h3 className="font-display font-light text-ink text-2xl sm:text-3xl mb-4">Practical information</h3>
+                        <div
+                          className="prose prose-neutral max-w-none editorial text-ink-soft text-base sm:text-lg"
+                          dangerouslySetInnerHTML={{ __html: practicalHtml }}
+                        />
+                      </div>
+                    )}
+                    {tour.itinerary_url && (
+                      <div className="pt-2">
+                        <a
+                          href={tour.itinerary_url}
+                          download={tour.itinerary_filename || "itinerary.pdf"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-nature-deep text-cream font-accent text-xs sm:text-sm uppercase tracking-label hover:bg-ink transition-colors duration-200 shadow-md"
+                          data-testid="tour-download-pdf"
+                        >
+                          <Download className="h-4 w-4" />
+                          {downloadLabel}
+                        </a>
+                      </div>
+                    )}
+                    {!itineraryHtml && !moreDetailsHtml && !practicalHtml && !tour.itinerary_url && (
+                      <p className="editorial text-ink-soft italic">
+                        Full itinerary coming soon. Enquire below and we'll send you the day-by-day plan.
+                      </p>
+                    )}
+                  </div>
+                </ScrollReveal>
+              )}
+
+              {/* GALLERY - SwipeableMedia of all gallery_media_ids */}
+              {activeTab === "gallery" && (
+                <ScrollReveal>
+                  <div
+                    id="tour-tab-panel-gallery"
+                    role="tabpanel"
+                    aria-labelledby="tour-tab-gallery"
+                    data-testid="tour-tab-panel-gallery"
+                  >
+                    {galleryItems.length > 0 ? (
+                      <SwipeableMedia items={galleryItems} aspectRatio="16/9" />
+                    ) : (
+                      <p className="editorial text-ink-soft italic">Photos from this journey are coming soon.</p>
+                    )}
+                  </div>
+                </ScrollReveal>
+              )}
+
+              {/* WHAT'S INCLUDED - includes / excludes 2-col */}
+              {activeTab === "includes" && (
+                <ScrollReveal>
+                  <div
+                    id="tour-tab-panel-includes"
+                    role="tabpanel"
+                    aria-labelledby="tour-tab-includes"
+                    data-testid="tour-tab-panel-includes"
+                    className="grid gap-10 sm:grid-cols-2"
+                  >
+                    {includes.length > 0 && (
+                      <div data-testid="tour-section-includes">
+                        <h3 className="font-display font-light text-ink text-2xl mb-5">What&apos;s Included</h3>
+                        <ul className="space-y-3">
+                          {includes.map((inc) => (
+                            <li key={inc} className="flex items-start gap-3 text-ink/85">
+                              <Check className="h-4 w-4 mt-1 text-nature-mid shrink-0" />
+                              <span className="text-sm sm:text-base">{inc}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {excludes.length > 0 && (
+                      <div data-testid="tour-section-excludes">
+                        <h3 className="font-display font-light text-ink text-2xl mb-5">What&apos;s Not Included</h3>
+                        <ul className="space-y-3">
+                          {excludes.map((exc) => (
+                            <li key={exc} className="flex items-start gap-3 text-ink/85">
+                              <X className="h-4 w-4 mt-1 text-ink-soft/60 shrink-0" />
+                              <span className="text-sm sm:text-base">{exc}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </ScrollReveal>
+              )}
+
+              {/* PRICES & DATES */}
+              {activeTab === "prices" && (
+                <ScrollReveal>
+                  <div
+                    id="tour-tab-panel-prices"
+                    role="tabpanel"
+                    aria-labelledby="tour-tab-prices"
+                    data-testid="tour-tab-panel-prices"
+                  >
+                    <div className="grid gap-8 sm:grid-cols-2">
+                      {tour.priceFrom && (
+                        <div className="bg-white rounded-sm p-7 shadow-md border border-nature-deep/8">
+                          <p className="label-eyebrow text-nature-mid mb-3">Investment</p>
+                          <span className="font-display font-light text-nature-deep text-4xl sm:text-5xl block">{tour.priceFrom}</span>
+                          {tour.priceUnit && <p className="text-ink-soft text-sm mt-2">{tour.priceUnit}</p>}
+                          {tour.priceNote && <p className="text-ink-soft/80 text-xs mt-1">{tour.priceNote}</p>}
+                        </div>
+                      )}
+                      {(tour.dates || tour.nights) && (
+                        <div className="bg-white rounded-sm p-7 shadow-md border border-nature-deep/8">
+                          <p className="label-eyebrow text-nature-mid mb-3">Dates</p>
+                          {tour.nights && (
+                            <div className="flex items-center gap-2 mb-2 text-ink">
+                              <Clock className="h-4 w-4 text-gold" />
+                              <span className="font-accent text-sm uppercase tracking-label">{tour.nights}</span>
+                            </div>
+                          )}
+                          {tour.dates && (
+                            <div className="flex items-center gap-2 text-ink">
+                              <Calendar className="h-4 w-4 text-gold" />
+                              <span className="font-accent text-sm uppercase tracking-label">{tour.dates}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-8 flex flex-col sm:flex-row items-center gap-4">
+                      <CTAButton to="/contact" variant="filled" withArrow data-testid="tour-enquire-prices">
+                        {enquireLabel}
+                      </CTAButton>
+                      {tour.itinerary_url && (
+                        <a
+                          href={tour.itinerary_url}
+                          download={tour.itinerary_filename || "itinerary.pdf"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 px-7 py-3 border border-nature-deep/30 rounded-full font-accent text-xs sm:text-sm uppercase tracking-label text-ink hover:bg-nature-deep hover:text-cream transition-colors duration-200"
+                        >
+                          <Download className="h-4 w-4" />
+                          {downloadLabel}
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </ScrollReveal>
               )}
             </div>
-          </ScrollReveal>
-        </div>
-      </section>
 
-      <section className="bg-white pb-20">
-        <div className="mx-auto max-w-3xl px-5 sm:px-8">
-          <ScrollReveal delay={240}>
-            <div className="pt-8 border-t border-nature-deep/10 text-center">
-              <Link to={backLinkTo} className="inline-flex items-center gap-2 text-sm font-accent uppercase tracking-label text-ink-soft hover:text-nature-deep transition-colors duration-200">
-                <ArrowRight className="h-3.5 w-3.5 rotate-180" />
-                <span>{backLinkLabel}</span>
-              </Link>
+            {/* Always-visible Enquire row below the tabs */}
+            <ScrollReveal delay={220}>
+              <div className="mt-12 pt-10 border-t border-nature-deep/10 flex flex-col sm:flex-row items-center justify-center gap-4">
+                <CTAButton to="/contact" variant="filled" withArrow data-testid="tour-enquire">
+                  {enquireLabel}
+                </CTAButton>
+                <Link
+                  to={backLinkTo}
+                  className="inline-flex items-center gap-2 text-sm font-accent uppercase tracking-label text-ink-soft hover:text-nature-deep transition-colors duration-200"
+                >
+                  <ArrowRight className="h-3.5 w-3.5 rotate-180" />
+                  <span>{backLinkLabel}</span>
+                </Link>
+              </div>
+            </ScrollReveal>
+          </div>
+
+          {/* ============ RIGHT: STICKY SIDEBAR ============ */}
+          <aside className="lg:col-span-1 min-w-0" data-testid="tour-sidebar">
+            <div className="lg:sticky lg:top-24 space-y-6">
+              {/* Tour highlights */}
+              {highlights.length > 0 && (
+                <ScrollReveal delay={120}>
+                  <div className="bg-white rounded-sm p-6 sm:p-7 shadow-md border border-nature-deep/8" data-testid="tour-highlights-panel">
+                    <h3 className="font-display font-light text-ink text-xl mb-5 pb-3 border-b border-nature-deep/15">
+                      {highlightsHeading}
+                    </h3>
+                    <ul className="space-y-4">
+                      {highlights.map((h) => (
+                        <li key={h} className="flex items-start gap-3">
+                          <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gold/15 ring-1 ring-gold/40">
+                            <Check className="h-3 w-3 text-nature-deep" strokeWidth={2.5} />
+                          </span>
+                          <span className="text-sm text-ink/85 leading-snug">{h}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </ScrollReveal>
+              )}
+
+              {/* Small group tours blurb */}
+              <ScrollReveal delay={160}>
+                <div className="bg-white rounded-sm p-6 sm:p-7 shadow-md border border-nature-deep/8" data-testid="tour-small-group-panel">
+                  <h3 className="font-display font-light text-ink text-xl mb-3 pb-3 border-b border-nature-deep/15">
+                    {smallGroupHeading}
+                  </h3>
+                  <p className="text-sm text-ink-soft leading-relaxed editorial">{smallGroupBody}</p>
+                </div>
+              </ScrollReveal>
+
+              {/* Testimonials */}
+              {testimonials.length > 0 && (
+                <ScrollReveal delay={200}>
+                  <div className="bg-nature-deep text-cream rounded-sm p-6 sm:p-7 shadow-md" data-testid="tour-testimonials-panel">
+                    <h3 className="font-display font-light text-cream text-xl mb-5 pb-3 border-b border-cream/20">
+                      {testimonialsHeading}
+                    </h3>
+                    <div className="space-y-6">
+                      {testimonials.map((t, i) => (
+                        <figure key={i} className="text-sm">
+                          <blockquote className="editorial italic text-cream/95 leading-relaxed">
+                            &ldquo;{t.quote}&rdquo;
+                          </blockquote>
+                          {t.author && (
+                            <figcaption className="mt-2 font-accent uppercase tracking-label text-[10px] text-gold">
+                              {t.author}
+                            </figcaption>
+                          )}
+                        </figure>
+                      ))}
+                    </div>
+                  </div>
+                </ScrollReveal>
+              )}
             </div>
-          </ScrollReveal>
+          </aside>
         </div>
       </section>
     </article>

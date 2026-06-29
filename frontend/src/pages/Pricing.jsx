@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
-import { Check, Download, ArrowRight } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { ChevronRight } from "lucide-react";
 import { PageHero } from "@/components/layout/PageHero";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
@@ -11,13 +10,23 @@ import { JOURNEYS, PRICING_FINE_PRINT, FAQS } from "@/data/content";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useText, useContent, useRichText } from "@/context/ContentContext";
 import { useMediaSlot } from "@/hooks/useMediaSlot";
+import { FadeImg } from "@/components/ui/FadeImg";
 import { Seo } from "@/components/seo/Seo";
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || "";
 
+// Helper - prefix any /api/uploads/... path with the backend origin so the
+// page works on the deployed CDN. Already-absolute URLs pass through.
+const abs = (u) => (u && API_BASE && u.startsWith("/") ? `${API_BASE}${u}` : u);
+const absMap = (m) => {
+  if (!m || typeof m !== "object") return null;
+  return Object.fromEntries(Object.entries(m).map(([k, v]) => [k, abs(v)]));
+};
+
 export default function Pricing() {
   const { content } = useContent();
   const [adminJourneys, setAdminJourneys] = useState(null);
+  const [mediaMap, setMediaMap] = useState({});
 
   // Fetch the admin-managed journey list. While the request is in flight (or
   // if it fails), fall back to the hardcoded JOURNEYS in /data/content.js so
@@ -33,6 +42,19 @@ export default function Pricing() {
         setAdminJourneys(res.data);
       }
     }).catch(() => { /* fall back to JOURNEYS */ });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Pull the full media list so we can resolve each journey's hero_media_id
+  // to a proper srcset / lqip / fallback url. Browser caches the result.
+  useEffect(() => {
+    let cancelled = false;
+    axios.get(`${API_BASE}/api/media`).then(({ data }) => {
+      if (cancelled) return;
+      const map = {};
+      (data || []).forEach((m) => { map[m.id] = m; });
+      setMediaMap(map);
+    }).catch(() => { /* missing media handled per-card */ });
     return () => { cancelled = true; };
   }, []);
 
@@ -62,6 +84,14 @@ export default function Pricing() {
     const includesArr = Array.isArray(j.includes)
       ? j.includes
       : (typeof j.includes === "string" ? j.includes.split("|").map((s) => s.trim()).filter(Boolean) : []);
+    // Resolve hero image from the media collection (admin-uploaded). Falls
+    // back to the legacy hardcoded `image` prop on JOURNEYS so the page
+    // never renders an empty card frame.
+    const heroMedia = j.hero_media_id ? mediaMap[j.hero_media_id] : null;
+    const heroUrl = heroMedia ? abs(heroMedia.file_url) : (j.image || "");
+    const heroSrcset = heroMedia ? absMap(heroMedia.srcset) : null;
+    const heroAvif = heroMedia ? absMap(heroMedia.avif_srcset) : null;
+    const heroLqip = heroMedia ? (heroMedia.lqip || "") : "";
     return {
       ...j,
       urlSlug,
@@ -79,6 +109,7 @@ export default function Pricing() {
                     : includesArr),
       itineraryUrl: j.itinerary_url || j.itineraryUrl || "",
       itineraryFilename: j.itinerary_filename || j.itineraryFilename || "",
+      heroUrl, heroSrcset, heroAvif, heroLqip,
     };
   });
 
@@ -141,84 +172,66 @@ export default function Pricing() {
         lqip={heroLqip}
       />
 
-      {/* Tier cards */}
-      <section className="bg-cream py-24 sm:py-32">
-        <div className="mx-auto max-w-7xl px-5 sm:px-8">
-          <div className="grid gap-7 lg:grid-cols-3 items-stretch">
-            {journeys.map((j, i) => (
-              <ScrollReveal key={j.id} delay={i * 110}>
-                <div
-                  className={cn(
-                    "relative h-full flex flex-col rounded-sm p-8 sm:p-9 bg-white transition-all duration-500 hover:-translate-y-2",
-                    j.popular ? "border-2 border-gold shadow-2xl lg:-mt-4 lg:mb-4" : "border border-nature-deep/10 shadow-lg"
-                  )}
-                  data-testid={`pricing-card-${j.id}`}
-                >
-                  {j.popular && (
-                    <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-gold px-5 py-1.5 font-accent text-[10px] uppercase tracking-label text-ink">
-                      {popularLabel}
-                    </span>
-                  )}
-                  <p className="label-eyebrow text-nature-mid mb-3">{j.region}</p>
-                  <h3 className="font-display font-light text-ink text-3xl leading-tight mb-1">{j.name}</h3>
-                  <p className="text-ink-soft text-sm mb-6 editorial">{j.summary}</p>
-
-                  <div className="mb-1">
-                    <span className="font-display font-light text-nature-deep text-4xl sm:text-5xl">{j.priceFrom}</span>
-                  </div>
-                  <p className="text-ink-soft text-sm">{j.priceUnit}</p>
-                  <p className="text-ink-soft/80 text-xs mt-1 mb-6">{j.priceNote}</p>
-
-                  <div className="flex items-center gap-2 text-xs text-ink-soft mb-6 font-accent uppercase tracking-label">
-                    <span>{j.nights}</span><span className="text-gold">•</span><span>{j.dates}</span>
-                  </div>
-
-                  <ul className="space-y-3 mb-9 flex-1">
-                    {j.includes.map((inc) => (
-                      <li key={inc} className="flex items-start gap-3 text-ink/85">
-                        <Check className="h-4 w-4 mt-1 text-nature-mid shrink-0" />
-                        <span className="text-sm">{inc}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  <CTAButton to="/contact" variant={j.popular ? "filled" : "gold"} withArrow className="w-full" data-testid={`pricing-cta-${j.id}`}>
-                    {j.cta}
-                  </CTAButton>
-
-                  {/* B1 sub-page link - opens /tours/<slug>. Only renders when
-                      the journey has a URL slug (i.e. came from the admin API
-                      with the B1 backfill applied). Quiet, no chrome. */}
-                  {j.urlSlug && (
-                    <Link
-                      to={`/tours/${j.urlSlug}`}
-                      className="mt-3 inline-flex items-center justify-center gap-2 text-xs font-accent uppercase tracking-label text-nature-deep hover:text-gold transition-colors duration-200 group"
-                      data-testid={`pricing-find-out-more-${j.id}`}
-                    >
-                      <span>Find Out More</span>
-                      <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-                    </Link>
-                  )}
-
-                  {/* Quiet secondary CTA — only renders when the admin has
-                      uploaded a PDF itinerary for this journey. Stays out
-                      of the main CTA's way visually. */}
-                  {j.itineraryUrl && (
-                    <a
-                      href={j.itineraryUrl}
-                      download={j.itineraryFilename || "itinerary.pdf"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-3 inline-flex items-center justify-center gap-2 text-xs font-accent uppercase tracking-label text-ink-soft hover:text-nature-deep transition-colors duration-200"
-                      data-testid={`pricing-itinerary-${j.id}`}
-                    >
-                      <Download className="h-3.5 w-3.5" />
-                      Download Itinerary (PDF)
-                    </a>
-                  )}
-                </div>
-              </ScrollReveal>
-            ))}
+      {/* Z1 — clean 3-col tour-card grid (image-on-top + gold name banner).
+          Matches the layout the client filed via WhatsApp (the
+          arrivederciPuglia reference) while staying in the Once Were Wild
+          gold + cream + ink palette. Whole card is one clickable link to
+          /tours/<slug> for fast scanning. */}
+      <section className="bg-cream py-20 sm:py-28">
+        <div className="mx-auto max-w-6xl px-5 sm:px-8">
+          <div className="grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
+            {journeys.map((j, i) => {
+              const href = j.urlSlug ? `/tours/${j.urlSlug}` : "/contact";
+              return (
+                <ScrollReveal key={j.id || j.urlSlug || i} delay={i * 90}>
+                  <Link
+                    to={href}
+                    className="group block bg-white rounded-sm overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 hover:-translate-y-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2"
+                    data-testid={`pricing-card-${j.id || j.urlSlug || i}`}
+                    aria-label={`View ${j.name}`}
+                  >
+                    {/* Photo */}
+                    <div className="relative aspect-[4/3] overflow-hidden bg-nature-deep/5">
+                      {j.heroUrl ? (
+                        <FadeImg
+                          src={j.heroUrl}
+                          srcset={j.heroSrcset || undefined}
+                          avifSrcset={j.heroAvif || undefined}
+                          alt={j.name}
+                          className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                          sizes="(min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
+                          loading={i < 3 ? "eager" : "lazy"}
+                        />
+                      ) : (
+                        <div className="h-full w-full bg-gradient-to-br from-nature-deep/15 to-gold/10 flex items-center justify-center">
+                          <span className="font-display font-light text-ink/30 text-3xl">{j.name?.[0] || "O"}</span>
+                        </div>
+                      )}
+                      {j.popular && (
+                        <span className="absolute top-3 left-3 rounded-full bg-gold/95 backdrop-blur-sm px-3 py-1 font-accent text-[10px] uppercase tracking-label text-ink shadow-md">
+                          {popularLabel}
+                        </span>
+                      )}
+                    </div>
+                    {/* Gold name banner with chevron - the signature of the
+                        client's reference layout, recoloured to our gold. */}
+                    <div className="flex items-center justify-between gap-3 bg-gold px-5 py-4 transition-colors duration-300 group-hover:bg-nature-deep">
+                      <div className="min-w-0">
+                        {j.region && (
+                          <span className="block label-eyebrow text-ink/60 group-hover:text-cream/70 transition-colors duration-300 text-[10px] mb-0.5 truncate">
+                            {j.region}
+                          </span>
+                        )}
+                        <h3 className="font-display font-light text-ink group-hover:text-cream text-lg sm:text-xl leading-tight tracking-tight truncate transition-colors duration-300">
+                          {j.name}
+                        </h3>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-ink group-hover:text-cream shrink-0 transition-all duration-300 group-hover:translate-x-1" />
+                    </div>
+                  </Link>
+                </ScrollReveal>
+              );
+            })}
           </div>
 
           {/* Fine print */}

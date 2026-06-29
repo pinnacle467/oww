@@ -3864,3 +3864,318 @@ agent_communication:
       
       No action items for main agent.
 
+
+#====================================================================================================
+# Z. arrivederciPuglia-style Tours page redesign (2026-06-29)
+#====================================================================================================
+
+user_problem_statement: |
+  Client (Adele) WhatsApp request: re-style the Tours index and Tour Detail
+  pages to match the arrivederciPuglia.com layout shown in the screenshots
+  she sent, but in the Once Were Wild gold/cream/ink palette instead of
+  orange. Specifically:
+    - Tours index (/pricing): clean 3-col grid of small image cards, each
+      with a coloured banner footer carrying the tour name + chevron. Whole
+      card is clickable.
+    - Tour detail (/tours/<slug>): 2-column layout. Left = title + duration
+      subtitle, hero carousel, italic description quote-box, tab strip
+      (Details / Gallery / What's Included / Prices & Dates). Right sticky
+      sidebar = Tour highlights checkmark list, Small group tours blurb,
+      Testimonials panel. Itinerary outline shown on-page; full day-by-day
+      stays in the PDF download.
+
+backend:
+  - task: "Z1 — highlights field on journeys + Tour highlights sidebar data"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: |
+          Added `highlights: List[str]` to `JourneyInput` and `JourneyUpdate`
+          Pydantic models. Added idempotent Z1 startup migration that defaults
+          highlights=[] on every existing journey row (logs "Z1: defaulted
+          highlights on N journey rows" on first boot, then 0 thereafter).
+
+          Smoke-tested manually:
+            - GET /api/journeys returns highlights=[] on all 4 seeded rows.
+            - PATCH /api/admin/journeys/<id> with highlights=[6 strings]
+              persists and reappears on GET. (Tested on Tasmanian tour.)
+            - GET /api/tours/tasmanian-slow-and-soulful-journeys returns the
+              persisted 6-item highlights list.
+
+          Needs deep_testing_backend_v2 to confirm:
+            • POST /api/admin/journeys with highlights creates a row with
+              the array preserved (order + duplicates).
+            • PATCH /api/admin/journeys/{id} with highlights=[] clears it
+              (round-trip empty array).
+            • PATCH partial update (no highlights key) preserves the
+              existing array (doesn't null it out).
+            • GET /api/tours/{slug} (public) includes highlights.
+            • Regression: includes/excludes/more_details_html still work,
+              media count still ≥ 237, 4 journeys still listed.
+      - working: true
+        agent: "testing"
+        comment: |
+          VERIFIED: All Z1 backend features working correctly. Comprehensive testing completed with 7/7 tests passed.
+          
+          TEST 1 - POST /api/admin/journeys with highlights: ✓ PASSED
+          - Created journey with highlights: ["a", "b", "c"]
+          - Response includes highlights in correct order
+          - GET confirms highlights persisted
+          - Test journey deleted (cleanup successful)
+          
+          TEST 2 - PATCH /api/admin/journeys with highlights: ✓ PASSED
+          - Test 2a: PATCH with ["x","y"] updates field, GET reflects it
+          - Test 2b: PATCH with [] clears field, GET returns []
+          - Test 2c: CRITICAL TEST - PATCH without highlights key (only summary) preserves existing highlights
+          - Original highlights restored after testing
+          
+          TEST 3 - Public GET /api/tours/{slug} includes highlights: ✓ PASSED
+          - Tested with Maleny Creative Immersion (highlights: [])
+          - Tested with Tasmanian Slow and Soulful Journeys (highlights: 6 items)
+          - Both include highlights key in response
+          
+          TEST 4 - Startup migration check: ✓ PASSED
+          - All 4 journeys have highlights field
+          - All highlights fields are lists (correct type)
+          - Migration successful
+          
+          TEST 5 - Regression checks: ✓ PASSED
+          - includes: round-tripped correctly
+          - excludes: round-tripped correctly
+          - more_details_html: round-tripped correctly
+          - gallery_media_ids: round-tripped correctly
+          - description_html: round-tripped correctly
+          - itinerary_html: round-tripped correctly
+          - practical_html: round-tripped correctly
+          - Original values restored after testing
+          
+          TEST 6 - Counts unchanged: ✓ PASSED
+          - GET /api/journeys?type=tour returns 4 entries (expected 4)
+          - GET /api/media returns 242 entries (≥237)
+          - GET /api/about-blocks works (3 entries)
+          - GET /api/stories works (1 entry)
+          - GET /api/home-faqs works (16 entries)
+          - GET /api/home-sections works (4 entries)
+          - GET /api/blog works (1 entry)
+          
+          TEST 7 - Auth regression: ✓ PASSED
+          - Anonymous POST returns 401 (auth required)
+          - Anonymous PATCH returns 401 (auth required)
+          - Anonymous DELETE returns 401 (auth required)
+          
+          ALL Z1 BACKEND FEATURES VERIFIED AND WORKING:
+          ✓ POST /api/admin/journeys with highlights creates row with array preserved
+          ✓ PATCH /api/admin/journeys/{id} with highlights updates field
+          ✓ PATCH with highlights=[] clears field (round-trip empty array)
+          ✓ CRITICAL: PATCH partial update (no highlights key) preserves existing array
+          ✓ GET /api/tours/{slug} (public) includes highlights
+          ✓ Startup migration defaults highlights=[] on all existing rows
+          ✓ No regression in existing fields (includes, excludes, more_details_html, gallery_media_ids, description_html, itinerary_html, practical_html)
+          ✓ Data integrity maintained (4 tours, 242 media items, all endpoints working)
+          ✓ Auth protection working correctly
+          
+          Z1 backend is production-ready.
+
+frontend:
+  - task: "Z2 — Pricing.jsx: clean 3-col image card grid for tours index"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/Pricing.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: |
+          Replaced the heavy multi-line tier cards with a clean 3-column
+          grid (2-col on tablet, 1-col on mobile). Each card:
+            - 4:3 hero image on top (resolved from hero_media_id via
+              the media collection; fall back to placeholder initial
+              monogram when missing).
+            - Gold banner footer with region label + tour name + chevron
+              icon. Whole card is a single <Link to="/tours/<slug>">.
+            - "Most Popular" badge top-left on j.popular row.
+            - Hover: -translate-y, image scale-105, banner background
+              transitions to nature-deep.
+          test-id `pricing-card-{id}` on each card. Manually screenshot-
+          verified at 1920x900 — all 4 journeys render correctly.
+
+  - task: "Z3 — TourDetail.jsx: 2-col layout with hero carousel, tabs and sidebar"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/TourDetail.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: |
+          Full rewrite of TourDetail.jsx. New structure:
+            - Top bar: back-link + region (no full-bleed PageHero anymore).
+            - 2-col grid `lg:grid-cols-3`, main col span-2, sidebar span-1.
+            - LEFT main col:
+                - H1 tour name + duration subtitle ("X nights - Small Group Tour").
+                - Hero SwipeableMedia (uses gallery_media_ids if present,
+                  else falls back to hero_media_id only).
+                - Italic quote box with left gold border showing
+                  description_html / summary.
+                - Tab strip with gold active-tab fill + downward chevron tail.
+                  Tabs: Details / Gallery / What's Included / Prices & Dates.
+                  Tabs auto-hide when their content is empty (so Details
+                  is always visible, others gated on data).
+                - Tab panels:
+                    Details = itinerary_html outline + more_details_html +
+                              practical_html + Download PDF button.
+                              Friendly empty state if all four are blank.
+                    Gallery = SwipeableMedia of gallery_media_ids.
+                    What's Included = 2-col includes / excludes (Check / X).
+                    Prices & Dates = price card + dates card + Enquire CTA.
+                - Always-visible Enquire CTA + back-link below tabs.
+            - RIGHT sticky sidebar (lg:sticky top-24):
+                - Tour highlights card with checkmark list (gold rings
+                  on light gold background). Hidden when highlights=[].
+                - Small group tours blurb (admin-editable via
+                  tour_detail.small_group.* content keys).
+                - Testimonials card (dark green / cream) sourcing first
+                  2 testimonials.N.quote/author content keys from the
+                  existing home group.
+          New content key prefixes (auto-grouped as "Tour detail" in admin
+          via group-from-prefix inference):
+            tour_detail.highlights.heading        ("Tour highlights")
+            tour_detail.small_group.heading       ("Small group tours")
+            tour_detail.small_group.body          ("For a more private...")
+            tour_detail.testimonials.heading      ("Testimonials")
+            tour_detail.tab.details / .gallery / .includes / .prices
+            tour_detail.download_pdf              ("Download Full Itinerary (PDF)")
+          Screenshot-verified at 1920x900 on
+          /tours/tasmanian-slow-and-soulful-journeys (6 highlights seeded
+          for the visual test). Renders correctly; Gallery tab correctly
+          hidden because the seeded row has no gallery_media_ids yet.
+
+  - task: "Z4 — JourneysManager.jsx: highlights textarea"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/admin/JourneysManager.jsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: |
+          Added a 6-row "Tour highlights (one item per line)" textarea
+          immediately below the existing "What's not included" textarea
+          in the DraftFields component. Data flow mirrors includes/excludes:
+          newline-joined string in the form, split to List[str] on save
+          via `includesToArray`. EMPTY_DRAFT has highlights="". load(),
+          createJourney(), saveRow() and the per-row editor's onChange
+          all pass highlights through. test-id `journey-highlights-<rowId>`
+          on the textarea. Manual smoke OK from the public tour API path;
+          interactive admin save needs human or auto frontend test.
+
+metadata:
+  test_sequence: 9
+  run_ui: false
+
+test_plan:
+  current_focus:
+    - "Z1 — highlights field on journeys + Tour highlights sidebar data"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: |
+      Z (Tours redesign) ready for BACKEND testing only. Scope:
+
+        1) POST /api/admin/journeys with `highlights: ["a","b","c"]` returns
+           201 (or whatever the existing endpoint convention is) and the
+           subsequent GET /api/admin/journeys/<id> returns the highlights
+           in the same order. Delete the test row afterwards.
+
+        2) PATCH /api/admin/journeys/<existing id> with
+           `{"highlights": ["x","y"]}` updates the field and GET reflects it.
+
+        3) PATCH /api/admin/journeys/<existing id> with `{"highlights": []}`
+           clears the field (round-trip returns []).
+
+        4) PATCH /api/admin/journeys/<existing id> with NO highlights key
+           preserves whatever was there (does NOT silently clear it). This
+           is the most important assertion — partial updates must not null
+           out fields the client didn't send.
+
+        5) Public GET /api/tours/<slug> includes `highlights` in the
+           response payload.
+
+        6) Migration: confirm `highlights` exists on ALL existing journey
+           rows post-startup (no rows missing the field). Default value
+           should be [] for rows that were created before this change.
+
+        7) Regression: includes, excludes, more_details_html, gallery_media_ids,
+           description_html, itinerary_html, practical_html all still
+           round-trip correctly. 4 journeys still listed on
+           GET /api/journeys?type=tour. Media count still ≥ 237.
+
+        8) Auth: anonymous POST/PATCH to /api/admin/journeys still rejected
+           with 401/403 (no auth regression introduced).
+
+      Credentials: see /app/memory/test_credentials.md
+      (info@oncewerewild.com / ChangeMe-OWW-2026!).
+
+      DO NOT test frontend in this pass. The user will be asked separately
+      whether they want a frontend testing run.
+
+
+
+agent_communication:
+  - agent: "testing"
+    message: |
+      ✅ Z1 BACKEND TESTING COMPLETE - ALL 7 TESTS PASSED
+      
+      Completed comprehensive backend testing for Z1 (Tours redesign - highlights field).
+      All test scenarios passed successfully:
+      
+      1. ✅ POST /api/admin/journeys with highlights: ["a","b","c"]
+         - Response includes highlights in correct order
+         - GET confirms persistence
+         - Test row deleted (cleanup successful)
+      
+      2. ✅ PATCH /api/admin/journeys with highlights updates:
+         - PATCH with ["x","y"] updates field, GET reflects it
+         - PATCH with [] clears field, GET returns []
+         - CRITICAL: PATCH without highlights key preserves existing array (does NOT null it out)
+      
+      3. ✅ Public GET /api/tours/{slug} includes highlights:
+         - Tested with Maleny (highlights: [])
+         - Tested with Tasmanian (highlights: 6 items)
+         - Both include highlights key in response
+      
+      4. ✅ Startup migration check:
+         - All 4 journeys have highlights field
+         - All highlights fields are lists (correct type)
+      
+      5. ✅ Regression checks:
+         - includes, excludes, more_details_html, gallery_media_ids, description_html, itinerary_html, practical_html all round-trip correctly
+         - Original values restored after testing
+      
+      6. ✅ Counts unchanged:
+         - GET /api/journeys?type=tour returns 4 entries
+         - GET /api/media returns 242 entries (≥237)
+         - All other endpoints working (about-blocks, stories, home-faqs, home-sections, blog)
+      
+      7. ✅ Auth regression:
+         - Anonymous POST/PATCH/DELETE all return 401 (auth required)
+      
+      CRITICAL TEST PASSED: Partial PATCH updates (without highlights key) preserve existing highlights array.
+      This ensures admin UI updates to other fields don't accidentally clear the highlights.
+      
+      Z1 backend is production-ready. No action items for main agent.

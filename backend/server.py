@@ -1090,6 +1090,7 @@ class JourneyInput(BaseModel):
     summary: str = ""
     includes: List[str] = Field(default_factory=list)
     excludes: List[str] = Field(default_factory=list)  # C4 — What's Not Included
+    highlights: List[str] = Field(default_factory=list)  # Z1 — Tour highlights (sidebar checkmark list on /tours/<slug>)
     cta: str = "Enquire"
     is_active: bool = True
     # B1 additions - drive the new /tours/<slug> sub-pages and the nav dropdown.
@@ -1126,6 +1127,7 @@ class JourneyUpdate(BaseModel):
     summary: Optional[str] = None
     includes: Optional[List[str]] = None
     excludes: Optional[List[str]] = None  # C4 — What's Not Included
+    highlights: Optional[List[str]] = None  # Z1 — Tour highlights (sidebar checkmark list on /tours/<slug>)
     cta: Optional[str] = None
     is_active: Optional[bool] = None
     slug: Optional[str] = None
@@ -3391,6 +3393,16 @@ async def seed():
     )
     if res_md.modified_count:
         logger.info("C5: defaulted more_details_html on %d journey rows", res_md.modified_count)
+
+    # Z1 migration - default `highlights = []` on every journey row.
+    # Drives the new "Tour highlights" sidebar checkmark list on /tours/<slug>.
+    # Idempotent: only $sets when the field is missing.
+    res_hl = await db.journeys.update_many(
+        {"highlights": {"$exists": False}},
+        {"$set": {"highlights": []}},
+    )
+    if res_hl.modified_count:
+        logger.info("Z1: defaulted highlights on %d journey rows", res_hl.modified_count)
 
     # Phase 3 migration - default `media_ids` to [] on every existing blog_post
     # and home_section row. Idempotent (only $sets when missing). When

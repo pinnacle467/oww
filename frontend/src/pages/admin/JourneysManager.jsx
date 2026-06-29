@@ -26,6 +26,7 @@ const EMPTY_DRAFT = {
   summary: "",
   includes: "",   // newline-joined string in the form, split on save
   excludes: "International and domestic airfares\nTravel insurance\nVisa fees (if applicable)\nPersonal expenses\nOptional activities not listed in the itinerary",   // C4 — newline-joined string in the form, split on save
+  highlights: "",  // Z1 — newline-joined string in the form, split on save. Drives the sidebar checkmark list on /tours/<slug>.
   cta: "Enquire",
   popular: false,
   is_active: true,
@@ -77,6 +78,7 @@ export default function JourneysManager() {
         ...d,
         _includesText: includesToText(d.includes),
         _excludesText: includesToText(d.excludes),
+        _highlightsText: includesToText(d.highlights),
         gallery_media_ids: Array.isArray(d.gallery_media_ids) ? d.gallery_media_ids : [],
       })));
       setAllMedia(Array.isArray(mediaData) ? mediaData : []);
@@ -115,6 +117,7 @@ export default function JourneysManager() {
         summary: j.summary,
         includes: includesToArray(j._includesText),
         excludes: includesToArray(j._excludesText),
+        highlights: includesToArray(j._highlightsText),
         cta: j.cta,
         popular: !!j.popular,
         is_active: !!j.is_active,
@@ -217,6 +220,7 @@ export default function JourneysManager() {
         ...draft,
         includes: includesToArray(draft.includes),
         excludes: includesToArray(draft.excludes),
+        highlights: includesToArray(draft.highlights),
       };
       await api.post("/admin/journeys", payload);
       setDraft({ ...EMPTY_DRAFT, type: activeTab });
@@ -408,6 +412,7 @@ export default function JourneysManager() {
                     priceNote: j.priceNote || "", summary: j.summary || "",
                     includes: j._includesText || "",
                     excludes: j._excludesText || "",
+                    highlights: j._highlightsText || "",
                     cta: j.cta || "Enquire",
                     popular: !!j.popular, is_active: !!j.is_active,
                     slug: j.slug || "", hero_media_id: j.hero_media_id || "",
@@ -423,6 +428,7 @@ export default function JourneysManager() {
                   onChange={(p) => {
                     if (p.includes !== undefined) return updateLocal(j.id, { _includesText: p.includes });
                     if (p.excludes !== undefined) return updateLocal(j.id, { _excludesText: p.excludes });
+                    if (p.highlights !== undefined) return updateLocal(j.id, { _highlightsText: p.highlights });
                     return updateLocal(j.id, p);
                   }}
                   rowId={j.id}
@@ -547,6 +553,18 @@ function DraftFields({ value, onChange, rowId, allMedia }) {
           data-testid={`journey-excludes-${rowId || "new"}`}
         />
         <span className="block text-xs text-gray-500 mt-1">Defaults are pre-populated. Edit, add or remove items per tour.</span>
+      </label>
+      <label className="sm:col-span-2 block">
+        <span className="block text-sm font-medium text-gray-600 mb-1">Tour highlights (one item per line)</span>
+        <textarea
+          rows={6}
+          className="w-full px-3 py-2 border border-gray-300 rounded focus:border-[#2D4A3E] focus:outline-none focus:ring-1 focus:ring-[#2D4A3E]/40 font-mono text-sm"
+          value={value.highlights || ""}
+          onChange={(e) => onChange({ highlights: e.target.value })}
+          placeholder={"7 days / 6 nights with breakfast included\n4 wine tastings at local wineries\n9 guided sightseeing experiences\nEnglish speaking guide\nPrivate driver and car\nExperienced Travel Director at your arrangement"}
+          data-testid={`journey-highlights-${rowId || "new"}`}
+        />
+        <span className="block text-xs text-gray-500 mt-1">Shown as a checkmark list in the sidebar on the tour sub-page.</span>
       </label>
       <label className="sm:col-span-2 flex items-center gap-3 mt-1">
         <input
