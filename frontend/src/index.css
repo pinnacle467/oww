@@ -132,6 +132,12 @@
 .hero-stage {
   perspective: 1500px;
   perspective-origin: 50% 50%;
+  /* 3D-transformed children can escape the parent's overflow clip in some
+     browsers (notably WebKit on iOS). Adding overflow:hidden here too,
+     plus a clip-path to seal the seam, prevents the prev/next side panels
+     from creating a horizontal scrollbar on narrow viewports. */
+  overflow: hidden;
+  clip-path: inset(0);
 }
 
 /* Hero Coverflow Side-Peek (Phase 5): the active slide sits centred and
@@ -161,7 +167,11 @@
 }
 .hero-slide.prev {
   opacity: 0.75;
-  transform: translate3d(-22%, 0, -180px) rotateY(35deg);
+  /* Negative rotateY so the slide's inner edge (closest to centre) pops
+     toward the viewer while the outer edge tilts away — the classic
+     Apple-Coverflow "facing-in" tilt. Positive rotateY would do the
+     opposite (outer edge forward) which feels wrong for a side panel. */
+  transform: translate3d(-22%, 0, -180px) rotateY(-35deg);
   z-index: 2;
 }
 .hero-slide.active {
@@ -171,7 +181,9 @@
 }
 .hero-slide.next {
   opacity: 0.75;
-  transform: translate3d(22%, 0, -180px) rotateY(-35deg);
+  /* Mirror of .prev: positive rotateY on the right side so the slide's
+     inner edge (closer to centre) faces the viewer. */
+  transform: translate3d(22%, 0, -180px) rotateY(35deg);
   z-index: 2;
 }
 /* Gentle dark wash that eases in/out with the slide so the transition feels
