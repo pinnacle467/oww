@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import api, { formatApiError } from "@/lib/api";
-import { Plus, Trash2, RefreshCw, Loader2, X, Save, Check, ArrowUp, ArrowDown, CheckSquare, Square } from "lucide-react";
+import { Plus, Trash2, RefreshCw, Loader2, X, Save, Check, ArrowUp, ArrowDown, CheckSquare, Square, GripVertical } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -32,6 +32,7 @@ export function MediaManager({ section, title, subtitle, categories, ordered, fi
   const [selected, setSelected] = useState(() => new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const [dragId, setDragId] = useState(null);
   const replaceRef = useRef({});
 
   const load = async () => {
@@ -195,6 +196,35 @@ export function MediaManager({ section, title, subtitle, categories, ordered, fi
     } catch { load(); }
   };
 
+  // HTML5 drag-and-drop reorder. Moves the dragged tile to the position
+  // of the tile it was dropped on, then PATCHes new sort_order values on
+  // every row whose index shifted. Same UX as MultiMediaPicker.
+  const onTileDragStart = (id) => () => setDragId(id);
+  const onTileDragOver = () => (e) => { e.preventDefault(); };
+  const onTileDrop = (overId) => async (e) => {
+    e.preventDefault();
+    if (!dragId || dragId === overId) { setDragId(null); return; }
+    const fromIdx = items.findIndex((it) => it.id === dragId);
+    const toIdx = items.findIndex((it) => it.id === overId);
+    if (fromIdx === -1 || toIdx === -1) { setDragId(null); return; }
+    const arr = [...items];
+    const [moved] = arr.splice(fromIdx, 1);
+    arr.splice(toIdx, 0, moved);
+    setItems(arr);
+    setDragId(null);
+    // Persist new sort_order for every row whose index changed. The bulk
+    // PATCH is forgiving (errors fall through to a full reload).
+    try {
+      const lo = Math.min(fromIdx, toIdx);
+      const hi = Math.max(fromIdx, toIdx);
+      await Promise.all(
+        arr.slice(lo, hi + 1).map((row, i) =>
+          api.patch(`/admin/media/${row.id}`, { sort_order: lo + i })
+        )
+      );
+    } catch { load(); }
+  };
+
   // Open the Add modal and PRE-SELECT the currently filtered section so
   // uploads always land where the operator is looking.
   const openAddModal = () => {
@@ -323,13 +353,18 @@ export function MediaManager({ section, title, subtitle, categories, ordered, fi
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {shown.map((item, idx) => {
             const isSelected = selected.has(item.id);
+            const draggable = !!ordered && !selectMode;
             return (
             <div
               key={item.id}
               onClick={selectMode ? () => toggleSelect(item.id) : undefined}
+              draggable={draggable}
+              onDragStart={draggable ? onTileDragStart(item.id) : undefined}
+              onDragOver={draggable ? onTileDragOver(item.id) : undefined}
+              onDrop={draggable ? onTileDrop(item.id) : undefined}
               className={`bg-white rounded-lg border overflow-hidden shadow-sm hover:shadow-md transition-all relative ${
-                selectMode ? "cursor-pointer" : ""
-              } ${isSelected ? "ring-2 ring-[#2D4A3E] border-[#2D4A3E]" : "border-gray-200"}`}
+                selectMode ? "cursor-pointer" : (draggable ? "cursor-move" : "")
+              } ${isSelected ? "ring-2 ring-[#2D4A3E] border-[#2D4A3E]" : (dragId === item.id ? "ring-2 ring-[#2D4A3E] opacity-60" : "border-gray-200")}`}
               data-testid={`media-item-${item.id}`}
             >
               {/* Selection checkbox overlay */}
@@ -342,7 +377,7 @@ export function MediaManager({ section, title, subtitle, categories, ordered, fi
                   </div>
                 </div>
               )}
-              <div className="relative bg-gray-100">
+              <div className="group relative bg-gray-100">
                 {item.file_type === "video"
                   ? (
                     item.thumb_url ? (
@@ -356,51 +391,81 @@ export function MediaManager({ section, title, subtitle, categories, ordered, fi
                   )
                   : <img src={item.file_url} alt={item.caption || ""} className="w-full aspect-[4/3] object-cover" />}
                 {item.file_type === "video" && (
-                  <>
-                    <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <span className="bg-black/55 backdrop-blur-sm rounded-full p-3 text-white shadow-lg">
-                        <svg className="h-7 w-7" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                      </span>
+                  <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <span className="bg-black/55 backdrop-blur-sm rounded-full p-3 text-white shadow-lg">
+                      <svg className="h-7 w-7" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
                     </span>
-                    <span className="absolute top-2 right-2 bg-black/70 text-white text-[11px] font-medium rounded px-2 py-1 uppercase tracking-wider">Video</span>
-                  </>
+                  </span>
                 )}
-              </div>
-              <div className="p-4 space-y-3">
-                {ordered && (
-                  <div className="flex items-center justify-between bg-gray-50 rounded-md px-3 py-2">
-                    <span className="text-sm font-medium text-gray-600">Slide {idx + 1}</span>
-                    <span className="flex gap-1">
-                      <button onClick={() => move(idx, -1)} disabled={idx === 0 || selectMode} className="p-1.5 rounded bg-white border border-gray-300 disabled:opacity-40 hover:bg-gray-100" data-testid={`move-up-${item.id}`} aria-label="Move up"><ArrowUp className="h-4 w-4" /></button>
-                      <button onClick={() => move(idx, 1)} disabled={idx === items.length - 1 || selectMode} className="p-1.5 rounded bg-white border border-gray-300 disabled:opacity-40 hover:bg-gray-100" data-testid={`move-down-${item.id}`} aria-label="Move down"><ArrowDown className="h-4 w-4" /></button>
-                    </span>
+                {item.file_type === "video" && !selectMode && (
+                  <span className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] font-medium rounded px-2 py-0.5 uppercase tracking-wider pointer-events-none">Video</span>
+                )}
+
+                {/* DRAG pill (top-left) — only when this section is ordered */}
+                {draggable && (
+                  <div
+                    className="absolute top-2 left-2 bg-black/55 text-white rounded-md px-2 py-1 text-[10px] uppercase tracking-widest flex items-center gap-1 pointer-events-none select-none"
+                    data-testid={`drag-handle-${item.id}`}
+                  >
+                    <GripVertical className="h-3 w-3" /> drag
                   </div>
                 )}
-                {categories && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Category</label>
-                    <select value={item.category || catOptions[0]} disabled={selectMode}
-                      onChange={(e) => updateItem(item.id, { category: e.target.value })}
-                      className="w-full text-base rounded-md border border-gray-300 px-3 py-2 mt-1 outline-none focus:border-[#2D4A3E] disabled:opacity-60" data-testid={`category-${item.id}`}>
-                      {catOptions.map((c) => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                  </div>
-                )}
-                <div className={`grid ${categories ? "grid-cols-3" : "grid-cols-2"} gap-2 pt-1`}>
-                  {categories && (
-                    <button onClick={() => saveItem(item)} disabled={selectMode} className="flex items-center justify-center gap-1.5 bg-gray-100 text-gray-700 rounded-md px-3 py-2.5 text-sm font-medium hover:bg-gray-200 disabled:opacity-50" data-testid={`save-${item.id}`}>
-                      <Save className="h-4 w-4" /> Save
+
+                {/* Hover overlay: Replace (white) + Delete (red) — small circles */}
+                {!selectMode && (
+                  <div className="absolute top-2 right-2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); replaceRef.current[item.id]?.click(); }}
+                      className="bg-white text-gray-800 rounded-full p-2 shadow hover:bg-gray-100 transition-colors"
+                      title="Replace this file"
+                      aria-label="Replace"
+                      data-testid={`replace-${item.id}`}
+                    >
+                      <RefreshCw className="h-4 w-4" />
                     </button>
-                  )}
-                  <button onClick={() => !selectMode && replaceRef.current[item.id]?.click()} disabled={selectMode} className="flex items-center justify-center gap-1.5 bg-[#2E6DA4] text-white rounded-md px-3 py-2.5 text-sm font-medium hover:bg-[#255b8a] disabled:opacity-50" data-testid={`replace-${item.id}`}>
-                    <RefreshCw className="h-4 w-4" /> Replace
-                  </button>
-                  <input ref={(el) => (replaceRef.current[item.id] = el)} type="file" accept="image/*,video/*" className="hidden" onChange={(e) => replaceImage(item.id, e.target.files[0])} />
-                  <button onClick={() => !selectMode && setToRemove(item)} disabled={selectMode} className="flex items-center justify-center gap-1.5 bg-[#D32F2F] text-white rounded-md px-3 py-2.5 text-sm font-medium hover:bg-[#b62626] disabled:opacity-50" data-testid={`remove-${item.id}`} aria-label="Delete">
-                    <Trash2 className="h-4 w-4" /> Delete
-                  </button>
-                </div>
+                    <input ref={(el) => (replaceRef.current[item.id] = el)} type="file" accept="image/*,video/*" className="hidden" onChange={(e) => replaceImage(item.id, e.target.files[0])} />
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setToRemove(item); }}
+                      className="bg-[#D32F2F] text-white rounded-full p-2 shadow hover:bg-[#b62626] transition-colors"
+                      title="Delete permanently"
+                      aria-label="Delete"
+                      data-testid={`remove-${item.id}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
               </div>
+              {(ordered || categories) && (
+                <div className="p-4 space-y-3">
+                  {ordered && (
+                    <div className="flex items-center justify-between bg-gray-50 rounded-md px-3 py-2">
+                      <span className="text-sm font-medium text-gray-600">Slide {idx + 1}</span>
+                      <span className="flex gap-1">
+                        <button onClick={() => move(idx, -1)} disabled={idx === 0 || selectMode} className="p-1.5 rounded bg-white border border-gray-300 disabled:opacity-40 hover:bg-gray-100" data-testid={`move-up-${item.id}`} aria-label="Move up"><ArrowUp className="h-4 w-4" /></button>
+                        <button onClick={() => move(idx, 1)} disabled={idx === items.length - 1 || selectMode} className="p-1.5 rounded bg-white border border-gray-300 disabled:opacity-40 hover:bg-gray-100" data-testid={`move-down-${item.id}`} aria-label="Move down"><ArrowDown className="h-4 w-4" /></button>
+                      </span>
+                    </div>
+                  )}
+                  {categories && (
+                    <div className="flex items-end gap-2">
+                      <div className="flex-1">
+                        <label className="text-sm font-medium text-gray-600">Category</label>
+                        <select value={item.category || catOptions[0]} disabled={selectMode}
+                          onChange={(e) => updateItem(item.id, { category: e.target.value })}
+                          className="w-full text-sm rounded-md border border-gray-300 px-3 py-2 mt-1 outline-none focus:border-[#2D4A3E] disabled:opacity-60" data-testid={`category-${item.id}`}>
+                          {catOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                      </div>
+                      <button onClick={() => saveItem(item)} disabled={selectMode} className="flex items-center justify-center gap-1.5 bg-gray-100 text-gray-700 rounded-md px-3 py-2 text-sm font-medium hover:bg-gray-200 disabled:opacity-50" data-testid={`save-${item.id}`}>
+                        <Save className="h-4 w-4" /> Save
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           );})}
         </div>

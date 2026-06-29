@@ -92,8 +92,7 @@
 >
 > "We don't need this button on hero slideshow" (the "JOIN A RETREAT →" CTA).
 
-**AA1 — MultiMediaPicker upgraded with opt-in Add / Replace / Delete (`frontend/src/components/admin/MultiMediaPicker.jsx`):**
-Four new optional props (all default to backwards-compatible no-op so any future caller that only wants pick-from-pool continues to work unchanged):
+**AA1 — MultiMediaPicker upgraded with opt-in Add / Replace / Delete (`frontend/src/components/admin/MultiMediaPicker.jsx`):**Four new optional props (all default to backwards-compatible no-op so any future caller that only wants pick-from-pool continues to work unchanged):
 - `allowUpload: boolean` — when true, renders an "Add photos or videos" button at the top-right of the picker.
 - `uploadSection: string` — the media `section` tag applied to newly uploaded rows. Required when `allowUpload` is true. Each consumer passes its own (`tour-gallery`, `blog-gallery`, `home-gallery`) so uploads are discoverable later in `/admin/website-media`.
 - `allowDelete: boolean` — when true, each selected tile gets a small red trash icon that opens a confirm dialog ("This will remove the file from Website Media as well as from every page that references it") and on confirm calls `DELETE /api/admin/media/{id}` plus removes the id from the gallery selection.
@@ -137,9 +136,20 @@ Hero resolution order changed from `hero_media_id → legacy j.image → blank m
 - The secondary `<CTAButton>` (testid `hero-cta-retreat`) is removed from both branches of the bottom-overlay (with-tagline overlay AND CTAs-only fallback). Only the primary "Explore Experiences" button (`hero-cta-experiences`) remains.
 - The `const cta2 = useText("home.hero.cta_secondary", "Join a Retreat")` declaration is also removed because nothing reads it any more. The content-key row itself stays in DB for now (harmless if `/admin/website-text` still lists it; the public JSX simply no longer consumes it). If the client ever wants the button back, restoring it is a 3-line revert.
 
+**AA6 — MediaManager tile UX unified with the MultiMediaPicker pattern (`frontend/src/components/admin/MediaManager.jsx`):**
+The five admin surfaces that consume `MediaManager` (Hero Carousel, Gallery Photos & Videos, Website Images & Videos, About Us Travel Gallery, Charity) used to render a bulky "buttons-below-the-image" strip (Save + Replace + Delete as full-width rectangles). The user requested the cleaner hover-overlay pattern from AA1 so the admin feels visually consistent. Implementation:
+- Tile body now shows the image as the dominant content. The Save / Replace / Delete bottom-strip is gone.
+- On hover (only when not in `selectMode`), the top-right reveals **two small circular icon buttons**: white "Refresh" (Replace) and red "Trash" (Delete-with-confirm). Same colours, same icons, same `data-testid` (`replace-{id}`, `remove-{id}`) as the old bulky buttons, so existing Playwright tests keep working without test-id churn.
+- When the section is `ordered={true}` (currently only Hero Carousel), the top-left also shows a **"DRAG" pill** (test-id `drag-handle-{id}`) and the tile becomes `draggable`. HTML5 drag-and-drop reorder kicks the moved row into its new index and PATCHes new `sort_order` values on every row whose index shifted — same UX as MultiMediaPicker.
+- The Up/Down arrow buttons stay below the tile alongside the "Slide N" label for keyboard accessibility (some operators prefer arrows). Both UIs target the same `move(idx, dir)` function.
+- When `categories={[...]}` is passed (Gallery Photos & Videos), the Category dropdown + Save button now sit in a single compact `flex` row below the image instead of a 3-column grid.
+- Selection-mode checkbox overlay is unchanged. The hover-overlay buttons hide while `selectMode` is active so they can't be mis-clicked.
+- Video tiles still show the play-icon centre overlay; the old top-right "VIDEO" label moved to bottom-right so it doesn't fight with the new Replace/Delete circles.
+- `GripVertical` was added to the lucide imports for the DRAG pill.
+
 **Files touched:**
 - Backend: `backend/server.py` (2 new endpoints after the existing story-cover and blog-cover POSTs).
-- Frontend: `components/admin/MultiMediaPicker.jsx` (major upgrade, full rewrite with backwards-compat defaults), `components/home/HeroSlideshow.jsx`, `pages/Pricing.jsx`, `pages/admin/JourneysManager.jsx`, `pages/admin/BlogManager.jsx`, `pages/admin/HomeContentManager.jsx`, `pages/admin/AboutManager.jsx`.
+- Frontend: `components/admin/MultiMediaPicker.jsx` (major upgrade, full rewrite with backwards-compat defaults), `components/admin/MediaManager.jsx` (tile UX unified to the hover-overlay pattern + HTML5 drag-reorder for ordered sections), `components/home/HeroSlideshow.jsx`, `pages/Pricing.jsx`, `pages/admin/JourneysManager.jsx`, `pages/admin/BlogManager.jsx`, `pages/admin/HomeContentManager.jsx`, `pages/admin/AboutManager.jsx`.
 - No backend migrations, no snapshot regeneration needed (no schema changes to seeded collections — the 2 new endpoints just clear existing fields).
 
 **Verification status:**
