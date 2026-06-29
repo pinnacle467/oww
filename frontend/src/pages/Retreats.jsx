@@ -8,7 +8,7 @@ import { CTAButton } from "@/components/ui/CTAButton";
 import { useText, useRichText } from "@/context/ContentContext";
 import { Seo } from "@/components/seo/Seo";
 
-const API_BASE = process.env.REACT_APP_BACKEND_URL || "";
+import { BACKEND_URL as API_BASE } from "@/lib/backendUrl";
 
 // Public index of Corporate Retreats — mirrors the structure of /pricing
 // but for `type="retreat"` rows only. The Maleny Creative Immersion (re-

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { SwipeableMedia } from "@/components/media/SwipeableMedia";
 
-const API_BASE = process.env.REACT_APP_BACKEND_URL || "";
+import { BACKEND_URL as API_BASE } from "@/lib/backendUrl";
 
 // Helper - rewrite a relative /api/uploads path into an absolute URL when
 // REACT_APP_BACKEND_URL is set, so the gallery works on the deployed CDN.

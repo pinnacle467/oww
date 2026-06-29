@@ -4,7 +4,7 @@ import { SwipeableMedia } from "@/components/media/SwipeableMedia";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { useText } from "@/context/ContentContext";
 
-const API_BASE = process.env.REACT_APP_BACKEND_URL || "";
+import { BACKEND_URL as API_BASE } from "@/lib/backendUrl";
 
 // Public About Us travel gallery (Phase 2 of Changes 1-9, item 2.2).
 // Pulls media rows tagged section="about-travel" and feeds them into the

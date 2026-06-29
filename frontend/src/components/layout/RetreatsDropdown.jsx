@@ -4,7 +4,7 @@ import axios from "axios";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const API_BASE = process.env.REACT_APP_BACKEND_URL || "";
+import { BACKEND_URL as API_BASE } from "@/lib/backendUrl";
 
 // Corporate Retreats dropdown for the desktop navbar. Mirrors ToursDropdown
 // but pulls from /api/retreats (which pre-filters to type='retreat') and

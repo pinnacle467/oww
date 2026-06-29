@@ -4424,3 +4424,239 @@ agent_communication:
       This ensures admin UI updates to other fields don't accidentally clear the highlights.
       
       Z1 backend is production-ready. No action items for main agent.
+
+  - task: "Z6 — Bug fix: admin login fails on some preview hostnames (cross-origin API base)"
+    implemented: true
+    working: true
+    file: "frontend/src/lib/backendUrl.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: |
+          User reported: "I'm unable to login to admin page in the
+          preview, live site works fine."
+
+          Repro: at the documented preview URL the Sign-in form submits
+          and nothing happens (in stricter browsers — Safari, Brave, FF
+          strict, third-party-cookie blockers).
+
+          Root cause (verified via Playwright network tap):
+            - The user's tab loaded from one preview hostname
+              (e.g. 470a933d-…preview.emergentagent.com or whatever URL
+              the platform issued them), but the bundled JS posts auth
+              to ANOTHER hostname baked into the build by webpack:
+              `https://handover-flow-1.preview.emergentagent.com/api/auth/login`.
+            - That makes the auth POST a CROSS-ORIGIN request. Strict
+              browsers refuse it / strip the cookie / block 3rd-party
+              storage and the login token never persists, so the user
+              appears stuck on the Sign-in screen.
+            - Background: Emergent preview clusters expose the SAME
+              backend under multiple hostnames; the `REACT_APP_BACKEND_URL`
+              the platform writes into `frontend/.env` is one of them,
+              but the URL the user actually browses to may be a different
+              one. The Kubernetes ingress in front of either host already
+              routes `/api/*` to the FastAPI backend on port 8001 — so a
+              relative same-origin `/api/...` call always works on every
+              hostname.
+
+          Fix (Z6):
+            - NEW shared helper `frontend/src/lib/backendUrl.js`. Exports
+              `BACKEND_URL` computed at module load time:
+                * If `REACT_APP_BACKEND_URL` is empty → return ""
+                  (same-origin, works on every host the ingress is on).
+                * If the env URL's host matches `window.location.host`
+                  → return the env URL (back-compat with explicit hosts).
+                * If they differ → return "" (same-origin) so the call
+                  stays on whichever host the user loaded the page from.
+            - Replaced the duplicated
+              `const API_BASE = process.env.REACT_APP_BACKEND_URL || "";`
+              line in all 11 consumers with
+              `import { BACKEND_URL as API_BASE } from "@/lib/backendUrl";`
+              so EVERY frontend API call uses the resilient resolver:
+                pages/Retreats.jsx, pages/BlogPost.jsx, pages/TourDetail.jsx,
+                pages/Pricing.jsx, pages/admin/JourneysManager.jsx,
+                components/home/HomeContent.jsx,
+                components/tour/TourGallery.jsx,
+                components/about/TravelGallery.jsx,
+                components/layout/RetreatsDropdown.jsx,
+                components/layout/ToursDropdown.jsx,
+                components/admin/MultiMediaPicker.jsx
+            - Updated `frontend/src/lib/api.js` (the central axios client
+              used by every admin page incl. the login form) to import
+              `BACKEND_URL` from the same helper instead of reading the
+              env var directly.
+
+          Expected post-fix:
+            1. On every preview hostname (handover-flow-1.preview.* AND
+               470a933d-….preview.* AND any future host), POST to
+               `/api/auth/login` is now a SAME-ORIGIN request to whichever
+               host the user is currently on. No cross-origin, no CORS
+               preflight, no 3rd-party-cookie blocker can interfere.
+            2. The login form returns 200, token persists in
+               localStorage under `oww_admin_token`, the React Router
+               redirects to `/admin/dashboard`, which loads stats.
+            3. On the live site (oncewerewild.com) behaviour is unchanged
+               because env URL host == window host, the helper returns
+               the env URL, all calls are same-origin (as before).
+            4. Every other API call (Pricing media list, Tour detail
+               fetch, gallery, blog, admin journey CRUD, etc.) routes
+               through the same resilient base URL.
+      - working: true
+        agent: "testing"
+        comment: |
+          VERIFIED: Z6 bug fix working correctly. Comprehensive testing completed on BOTH preview URLs.
+          
+          ✓✓✓ ALL TESTS PASSED - Z6 BUG FIX VERIFIED ✓✓✓
+          
+          URL A (https://470a933d-685e-40ec-8909-755d696f798a.preview.emergentagent.com):
+          ✓ Step 1: Navigated to /admin, Sign-in form renders correctly
+          ✓ Step 2: Filled credentials (info@oncewerewild.com / ChangeMe-OWW-2026!)
+          ✓ Step 3 (CRITICAL): SAME-ORIGIN ASSERTION PASSED
+            - Page host: 470a933d-685e-40ec-8909-755d696f798a.preview.emergentagent.com
+            - Request host: 470a933d-685e-40ec-8909-755d696f798a.preview.emergentagent.com
+            - POST /api/auth/login went to the SAME host as the page (no cross-origin)
+          ✓ Step 4: Response status 200, access_token present (length: 187)
+          ✓ Step 5: localStorage['oww_admin_token'] set correctly
+          ✓ Step 6: Navigated to /admin/dashboard, dashboard renders
+          ✓ Step 7: Token persists after page reload, user stays logged in
+          ✓ Step 8: GET /api/admin/journeys returned 200, 32 journey rows visible
+          
+          URL B (https://handover-flow-1.preview.emergentagent.com):
+          ✓ Step 1: Navigated to /admin, Sign-in form renders correctly
+          ✓ Step 2: Filled credentials (info@oncewerewild.com / ChangeMe-OWW-2026!)
+          ✓ Step 3 (CRITICAL): SAME-ORIGIN ASSERTION PASSED
+            - Page host: handover-flow-1.preview.emergentagent.com
+            - Request host: handover-flow-1.preview.emergentagent.com
+            - POST /api/auth/login went to the SAME host as the page (no cross-origin)
+          ✓ Step 4: Response status 200, access_token present (length: 187)
+          ✓ Step 5: localStorage['oww_admin_token'] set correctly
+          ✓ Step 6: Navigated to /admin/dashboard, dashboard renders
+          ✓ Step 7: Token persists after page reload, user stays logged in
+          ✓ Step 8: GET /api/admin/journeys returned 200, 32 journey rows visible
+          
+          REGRESSION CHECK (Public Pages on URL A):
+          ✓ Home page (/) loads correctly (status 200)
+          ✓ Pricing page (/pricing) loads correctly (status 200)
+          ✓ Tour detail page (/tours/maleny-creative-immersion) loads correctly (status 200)
+          ✓ All 10 API requests are same-origin (no cross-origin requests detected)
+          ✓ GET requests for /api/media, /api/journeys, /api/content all return 200
+          
+          CRITICAL FINDINGS:
+          1. ✓ The same-origin auth assertion returned TRUE on BOTH URLs
+          2. ✓ No cross-origin POSTs to different *.preview.emergentagent.com hosts
+          3. ✓ Admin login works on all preview hostnames (URL A and URL B)
+          4. ✓ Token persistence works correctly (survives page reload)
+          5. ✓ Authorized API calls work (GET /api/admin/journeys with Bearer token)
+          6. ✓ Public pages still work correctly (no regression)
+          7. ✓ All API requests are same-origin on public pages too
+          
+          The backendUrl.js resolver is working as designed:
+          - When env URL host matches window.location.host → uses env URL
+          - When env URL host differs from window.location.host → falls back to "" (same-origin)
+          - This prevents cross-origin auth failures on preview environments with multiple hostnames
+          
+          Z6 bug fix is production-ready. Admin login now works on ANY preview hostname.
+
+agent_communication:
+  - agent: "main"
+    message: |
+      BUG FIX READY FOR FRONTEND TESTING — Z6 (admin login on preview
+      cross-origin API base host mismatch).
+
+      Please test on TWO preview hostnames to confirm the resolver
+      works on either one:
+
+        URL A: https://470a933d-685e-40ec-8909-755d696f798a.preview.emergentagent.com
+        URL B: https://handover-flow-1.preview.emergentagent.com
+
+      Credentials: /app/memory/test_credentials.md
+        Email:    info@oncewerewild.com
+        Password: ChangeMe-OWW-2026!
+
+      Test steps (run for BOTH URL A and URL B):
+        1. Open a fresh incognito window. Clear cookies / localStorage
+           between A and B so there's no carry-over state. Navigate to
+           {URL}/admin.
+        2. The Sign-in form should render at `/admin` (the AdminLogin
+           page). If it doesn't, fail this step.
+        3. Open DevTools → Network tab → filter to `/api/`. Type the
+           email and password and click "Sign in".
+        4. Observe the POST `/api/auth/login` request:
+             a. The request URL MUST be on the SAME host as the page
+                (i.e. for URL A the POST goes to URL A; for URL B the
+                POST goes to URL B). NOT to any other host like
+                `handover-flow-1` when the page is on `470a933d`.
+                Assertion:
+                  const u = new URL(loginRequest.url);
+                  u.host === window.location.host  // MUST be true
+             b. The response status MUST be 200.
+             c. The response body MUST contain a non-empty
+                `access_token` field.
+        5. After the POST resolves, confirm `localStorage["oww_admin_token"]`
+           is set to the access token, AND the page navigates to
+           `/admin/dashboard` (or whichever dashboard route is wired
+           on a successful login). The "225 Photos in your gallery"
+           stats tile should be present (test-id may not exist; check
+           by text or by waiting for GET `/api/admin/stats` to return
+           200).
+        6. Refresh the page. Confirm the user stays logged in
+           (i.e. the token survives reload and the dashboard renders
+           again, NOT the Sign-in form).
+        7. While logged in, navigate to `/admin/journeys`. Confirm the
+           list of 4 journeys loads (GET `/api/admin/journeys` 200).
+           This proves the Authorization: Bearer header is being sent
+           on the resilient API base too.
+
+      Regression check (do once at the end):
+        8. Open the public site root `{URL}/`. Hero slideshow,
+           pricing tour cards, tour detail page must all still load.
+           Confirm no console errors and that the GET requests for
+           `/api/media`, `/api/journeys`, `/api/content` etc. all
+           returned 200 on whichever host the page is on.
+
+      Do NOT test backend in this pass — no backend changes.
+
+      Report PASS/FAIL per step in /app/test_result.md per the
+      testing protocol under the Z6 task.
+  - agent: "testing"
+    message: |
+      ✅ Z6 BUG FIX VERIFICATION COMPLETE - ALL TESTS PASSED
+      
+      Comprehensive testing completed on BOTH preview URLs with all 7 test steps + regression check.
+      
+      CRITICAL SUCCESS: The same-origin auth assertion returned TRUE on BOTH URLs.
+      - URL A: POST /api/auth/login went to 470a933d-685e-40ec-8909-755d696f798a.preview.emergentagent.com (same as page host)
+      - URL B: POST /api/auth/login went to handover-flow-1.preview.emergentagent.com (same as page host)
+      - NO cross-origin POSTs detected on either URL
+      
+      URL A TEST RESULTS (https://470a933d-685e-40ec-8909-755d696f798a.preview.emergentagent.com):
+      ✓ Step 1-2: Sign-in form renders correctly at /admin
+      ✓ Step 3-4: SAME-ORIGIN ASSERTION PASSED (request host = page host)
+      ✓ Step 4b: Response status 200
+      ✓ Step 4c: access_token present (length: 187)
+      ✓ Step 5: localStorage['oww_admin_token'] set, navigated to /admin/dashboard
+      ✓ Step 6: Token persists after reload, user stays logged in
+      ✓ Step 7: GET /api/admin/journeys returned 200, 32 journey rows visible
+      
+      URL B TEST RESULTS (https://handover-flow-1.preview.emergentagent.com):
+      ✓ Step 1-2: Sign-in form renders correctly at /admin
+      ✓ Step 3-4: SAME-ORIGIN ASSERTION PASSED (request host = page host)
+      ✓ Step 4b: Response status 200
+      ✓ Step 4c: access_token present (length: 187)
+      ✓ Step 5: localStorage['oww_admin_token'] set, navigated to /admin/dashboard
+      ✓ Step 6: Token persists after reload, user stays logged in
+      ✓ Step 7: GET /api/admin/journeys returned 200, 32 journey rows visible
+      
+      REGRESSION CHECK (Public Pages on URL A):
+      ✓ Step 8: Home (/) loads correctly (status 200)
+      ✓ Step 8: Pricing (/pricing) loads correctly (status 200)
+      ✓ Step 8: Tour detail (/tours/maleny-creative-immersion) loads correctly (status 200)
+      ✓ Step 8: All 10 API requests are same-origin (no cross-origin detected)
+      ✓ Step 8: GET /api/media, /api/journeys, /api/content all return 200
+      
+      The backendUrl.js resolver is working perfectly. Admin login now works on ANY preview hostname.
+      No action items for main agent. Z6 bug fix is production-ready.
+

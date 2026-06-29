@@ -13,7 +13,7 @@ import { useMediaSlot } from "@/hooks/useMediaSlot";
 import { FadeImg } from "@/components/ui/FadeImg";
 import { Seo } from "@/components/seo/Seo";
 
-const API_BASE = process.env.REACT_APP_BACKEND_URL || "";
+import { BACKEND_URL as API_BASE } from "@/lib/backendUrl";
 
 // Helper - prefix any /api/uploads/... path with the backend origin so the
 // page works on the deployed CDN. Already-absolute URLs pass through.

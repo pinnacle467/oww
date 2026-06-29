@@ -4,7 +4,7 @@ import axios from "axios";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const API_BASE = process.env.REACT_APP_BACKEND_URL || "";
+import { BACKEND_URL as API_BASE } from "@/lib/backendUrl";
 
 // Tours dropdown for the desktop navbar. Fetches the live published tour
 // list once and renders sub-links beneath the parent "Tours" entry. The

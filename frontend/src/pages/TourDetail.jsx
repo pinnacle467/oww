@@ -8,7 +8,7 @@ import { Seo } from "@/components/seo/Seo";
 import { useText, useContent } from "@/context/ContentContext";
 import { SwipeableMedia } from "@/components/media/SwipeableMedia";
 
-const API_BASE = process.env.REACT_APP_BACKEND_URL || "";
+import { BACKEND_URL as API_BASE } from "@/lib/backendUrl";
 
 // Helpers - rewrite relative /api/uploads paths to absolute URLs so the
 // page works on the deployed CDN.

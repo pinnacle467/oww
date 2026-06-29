@@ -8,7 +8,7 @@ import {
   Star, StarOff, ExternalLink, Copy, Eye, GripVertical,
 } from "lucide-react";
 
-const API_BASE = process.env.REACT_APP_BACKEND_URL || "";
+import { BACKEND_URL as API_BASE } from "@/lib/backendUrl";
 
 // Trip cards on the public /pricing and /corporate-retreats pages. Each row
 // in this manager is one card. B2 adds: filter tabs (Tours vs Corporate

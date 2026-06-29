@@ -16,7 +16,7 @@ import { GripVertical, X } from "lucide-react";
 //   allowVideos   - when true (default), MP4 rows are selectable too.
 //   allowEmbeds   - when true (default), YouTube / Vimeo rows are selectable too.
 
-const API_BASE = process.env.REACT_APP_BACKEND_URL || "";
+import { BACKEND_URL as API_BASE } from "@/lib/backendUrl";
 
 const thumbUrl = (m) => {
   if (!m) return "";

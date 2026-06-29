@@ -4,7 +4,7 @@ import axios from "axios";
 // when REACT_APP_BACKEND_URL is unset (e.g. behind an nginx reverse proxy
 // that routes /api to the backend). This also prevents the "undefined/api"
 // failure mode when the build is created without the env var present.
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
+import { BACKEND_URL } from "@/lib/backendUrl";
 export const API = `${BACKEND_URL}/api`;
 
 const api = axios.create({ baseURL: API });

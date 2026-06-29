@@ -6,7 +6,7 @@ import { FadeImg } from "@/components/ui/FadeImg";
 import { SwipeableMedia } from "@/components/media/SwipeableMedia";
 import { ArrowLeft } from "lucide-react";
 
-const API_BASE = process.env.REACT_APP_BACKEND_URL || "";
+import { BACKEND_URL as API_BASE } from "@/lib/backendUrl";
 const abs = (u) => (u && API_BASE && u.startsWith("/") ? `${API_BASE}${u}` : u);
 const absMap = (m) => {
   if (!m || typeof m !== "object") return null;
