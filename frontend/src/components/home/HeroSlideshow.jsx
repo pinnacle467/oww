@@ -93,7 +93,7 @@ export function HeroSlideshow() {
   const goNext = () => goTo(index + 1);
 
   return (
-    <section className="relative h-[100svh] w-full overflow-hidden bg-ink" data-testid="hero-slideshow">
+    <section className="hero-stage relative h-[100svh] w-full overflow-hidden bg-ink" data-testid="hero-slideshow">
       {/* Slides. ADMIN: replace images via /admin/hero or /admin/website-media */}
       {HERO.map((slide, i) => (
         <div
