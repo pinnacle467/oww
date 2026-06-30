@@ -2709,6 +2709,21 @@ DEFAULT_CONTENT = [
     _c("pricing", "pricing.faq.footer_note", "Still wondering if this is for you? It probably is.", "FAQ closing line"),
     _c("pricing", "pricing.faq.cta", "Book a discovery call", "FAQ CTA"),
 
+    # Tour detail page (sidebar + tab labels + buttons). AD-session adds
+    # these so the client can edit every label from /admin/website-text.
+    # AD3 — the includes tab label defaults to "Inclusions" (renamed from
+    # "What's Included" per the client's request).
+    _c("pricing", "tour_detail.highlights.heading", "Tour highlights", "Tour detail - highlights heading"),
+    _c("pricing", "tour_detail.small_group.heading", "Small group tours", "Tour detail - small group heading"),
+    _c("pricing", "tour_detail.small_group.body",
+       "For a more private experience and a better quality of service, our small groups are limited to twelve travellers.",
+       "Tour detail - small group body (site-wide default; per-tour copy in JourneysManager overrides this)", "richtext"),
+    _c("pricing", "tour_detail.testimonials.heading", "Testimonials", "Tour detail - testimonials heading"),
+    _c("pricing", "tour_detail.tab.details", "Details", "Tour detail - Details tab label"),
+    _c("pricing", "tour_detail.tab.includes", "Inclusions", "Tour detail - Inclusions tab label (AD3 renamed from 'What's Included')"),
+    _c("pricing", "tour_detail.tab.prices", "Prices & Dates", "Tour detail - Prices and Dates tab label"),
+    _c("pricing", "tour_detail.download_pdf", "Download Full Itinerary (PDF)", "Tour detail - download PDF button label"),
+
     # Journeys (3)
     _c("journeys", "journeys.maleny.name", "Maleny Creative Immersion", "Maleny — name"),
     _c("journeys", "journeys.maleny.region", "Sunshine Coast Hinterland", "Maleny — region"),
@@ -3492,6 +3507,19 @@ async def seed():
     )
     if res_sg.modified_count:
         logger.info("AB1: defaulted small_group_text on %d journey rows", res_sg.modified_count)
+
+    # AD3 migration - rename "What's Included" tour-detail tab to "Inclusions".
+    # The seed loop above uses $setOnInsert so existing DB rows holding the
+    # old default keep it; this migration upgrades only those rows that still
+    # match the literal old default value. Custom client edits survive.
+    # Idempotent: once the row no longer holds "What's Included" the filter
+    # stops matching and the migration becomes a no-op.
+    res_inc = await db.content.update_one(
+        {"key": "tour_detail.tab.includes", "value": "What's Included"},
+        {"$set": {"value": "Inclusions", "updated_at": now_iso()}},
+    )
+    if res_inc.modified_count:
+        logger.info("AD3: renamed tour_detail.tab.includes to 'Inclusions'")
 
     # Phase 3 migration - default `media_ids` to [] on every existing blog_post
     # and home_section row. Idempotent (only $sets when missing). When

@@ -83,8 +83,7 @@ export default function TourDetail() {
   );
   const testimonialsHeading = useText("tour_detail.testimonials.heading", "Testimonials");
   const detailsLabel  = useText("tour_detail.tab.details", "Details");
-  const galleryLabel  = useText("tour_detail.tab.gallery", "Gallery");
-  const includesLabel = useText("tour_detail.tab.includes", "What's Included");
+  const includesLabel = useText("tour_detail.tab.includes", "Inclusions");
   const pricesLabel   = useText("tour_detail.tab.prices", "Prices & Dates");
   const downloadLabel = useText("tour_detail.download_pdf", "Download Full Itinerary (PDF)");
 
@@ -108,28 +107,16 @@ export default function TourDetail() {
     }).catch(() => {});
   }, []);
 
-  // Build the hero shot: prefer `hero_media_id`, else fall back to the
-  // FIRST image of `gallery_media_ids` so a card-grid thumbnail logic
-  // mirrors the public /pricing page. The full gallery_media_ids still
-  // render in the dedicated Gallery tab below — the hero is intentionally
-  // a single shot (no carousel) per client direction.
-  const heroMedia = useMemo(() => {
-    if (!tour) return null;
-    if (tour.hero_media_id && mediaMap[tour.hero_media_id]) {
-      return mediaMap[tour.hero_media_id];
-    }
-    const ids = Array.isArray(tour.gallery_media_ids) ? tour.gallery_media_ids : [];
-    for (const id of ids) {
-      const m = mediaMap[id];
-      if (m && (m.file_type || "image") === "image") return m;
-    }
-    return null;
-  }, [tour, mediaMap]);
-
-  const galleryItems = useMemo(() => {
+  // AD1 — Hero carousel restored. Builds the list of media items from
+  // `gallery_media_ids` (the carousel), falling back to `hero_media_id`
+  // when the gallery is empty. Renders nothing when both are empty so a
+  // tour with no photos still lays out cleanly.
+  const heroItems = useMemo(() => {
     if (!tour) return [];
-    const ids = Array.isArray(tour.gallery_media_ids) ? tour.gallery_media_ids : [];
-    return buildMediaItems(ids, mediaMap);
+    const galleryIds = Array.isArray(tour.gallery_media_ids) ? tour.gallery_media_ids : [];
+    if (galleryIds.length) return buildMediaItems(galleryIds, mediaMap);
+    if (tour.hero_media_id) return buildMediaItems([tour.hero_media_id], mediaMap);
+    return [];
   }, [tour, mediaMap]);
 
   // Site-wide testimonials (already seeded into the home group). We pick
@@ -181,10 +168,11 @@ export default function TourDetail() {
   const highlights = Array.isArray(tour.highlights) ? tour.highlights.filter(Boolean) : [];
 
   // Build a tab list, hiding tabs that have no content. Always at least
-  // the Details tab is present so the layout never collapses.
+  // the Details tab is present so the layout never collapses. AD2 — the
+  // Gallery tab has been removed; the hero carousel above is the sole
+  // place tour photos appear on the page.
   const tabs = [
     { id: "details",  label: detailsLabel,  show: true },
-    { id: "gallery",  label: galleryLabel,  show: galleryItems.length > 0 },
     { id: "includes", label: includesLabel, show: includes.length > 0 || excludes.length > 0 },
     { id: "prices",   label: pricesLabel,   show: !!(tour.priceFrom || tour.dates) },
   ].filter((t) => t.show);
@@ -251,20 +239,17 @@ export default function TourDetail() {
               )}
             </ScrollReveal>
 
-            {/* Hero shot - a single image at the top of the tour page. The
-                full gallery sits in the dedicated Gallery tab below so the
-                same photos don't appear twice. */}
-            {heroMedia && (
+            {/* AD1 — Hero carousel. The full gallery_media_ids list is
+                swipeable on touch + has arrows on desktop. The Gallery tab
+                has been removed (AD2) so this is the sole place tour
+                photos appear on the page. Mobile spacing (mt-6 sm:mt-7)
+                gives breathing room between the title/subtitle and the
+                carousel; the italic description quote below gets extra
+                top margin on phones. */}
+            {heroItems.length > 0 && (
               <ScrollReveal delay={100}>
-                <div className="mt-7 rounded-sm overflow-hidden shadow-lg bg-white aspect-[16/9]" data-testid="tour-hero-shot">
-                  <img
-                    src={heroMedia.file_url}
-                    srcSet={Object.entries(heroMedia.srcset || {}).map(([w, u]) => `${u} ${w}`).join(", ") || undefined}
-                    sizes="(min-width: 1280px) 70vw, 100vw"
-                    alt={heroMedia.caption || tour.name || ""}
-                    loading="eager"
-                    className="h-full w-full object-cover"
-                  />
+                <div className="mt-6 sm:mt-7 rounded-sm overflow-hidden shadow-lg bg-white" data-testid="tour-hero-carousel">
+                  <SwipeableMedia items={heroItems} aspectRatio="16/9" />
                 </div>
               </ScrollReveal>
             )}
@@ -273,7 +258,7 @@ export default function TourDetail() {
                 where a short blurb sits between the hero and the tab strip. */}
             {(descriptionHtml || tour.summary) && (
               <ScrollReveal delay={140}>
-                <div className="mt-7 border-l-2 border-gold pl-6 py-2" data-testid="tour-quote">
+                <div className="mt-6 sm:mt-8 border-l-2 border-gold pl-6 py-2" data-testid="tour-quote">
                   {descriptionHtml ? (
                     <div
                       className="prose prose-neutral max-w-none editorial italic text-ink-soft text-base sm:text-lg leading-relaxed"
@@ -401,23 +386,8 @@ export default function TourDetail() {
                 </ScrollReveal>
               )}
 
-              {/* GALLERY - SwipeableMedia of all gallery_media_ids */}
-              {activeTab === "gallery" && (
-                <ScrollReveal>
-                  <div
-                    id="tour-tab-panel-gallery"
-                    role="tabpanel"
-                    aria-labelledby="tour-tab-gallery"
-                    data-testid="tour-tab-panel-gallery"
-                  >
-                    {galleryItems.length > 0 ? (
-                      <SwipeableMedia items={galleryItems} aspectRatio="16/9" />
-                    ) : (
-                      <p className="editorial text-ink-soft italic">Photos from this journey are coming soon.</p>
-                    )}
-                  </div>
-                </ScrollReveal>
-              )}
+              {/* GALLERY tab removed in AD2 — the hero carousel above is
+                  the sole place tour photos appear on the page. */}
 
               {/* WHAT'S INCLUDED - includes / excludes 2-col */}
               {activeTab === "includes" && (
