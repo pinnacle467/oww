@@ -5341,11 +5341,11 @@ backend:
 frontend:
   - task: "AD1 — Restore hero carousel on /tours/<slug>"
     implemented: true
-    working: "NA"
+    working: true
     file: "frontend/src/pages/TourDetail.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
@@ -5366,14 +5366,43 @@ frontend:
           the JSX block, so a tour with neither hero nor gallery (e.g.
           Tasmanian's current data) renders cleanly with no broken
           empty carousel.
+      - working: true
+        agent: "testing"
+        comment: |
+          VERIFIED: AD1 hero carousel restoration working correctly. All assertions PASSED.
+          
+          TEST 1 — Hero carousel on maleny-creative-immersion-retreat:
+          ✓ PASS: Page loaded with h1 = "Maleny Creative Immersion Retreat"
+          ✓ PASS: [data-testid="tour-hero-carousel"] EXISTS (carousel restored)
+          ✓ PASS: [data-testid="tour-hero-shot"] does NOT exist (old single-shot removed)
+          ✓ PASS: Navigation elements present (52 buttons found - left/right arrows + dot indicators)
+          ✓ PASS: Carousel shows "1 OF 25" indicator (25 images in gallery)
+          ✓ PASS: Lightbox opens on image click (fullscreen portal with role="dialog")
+          ✓ PASS: Lightbox closes with Escape key
+          
+          TEST 2 — Empty-gallery fallback on tasmanian-slow-and-soulful-journeys:
+          ✓ PASS: Page loaded with h1 = "Slow and Soulful Tasmania"
+          ✓ PASS: Hero carousel does NOT exist (graceful hide - no hero_media_id or gallery_media_ids)
+          ✓ PASS: Page renders cleanly - title visible, quote section present
+          ✓ PASS: No console errors related to SwipeableMedia or undefined media
+          ✓ PASS: No broken empty carousel placeholder
+          
+          CRITICAL FINDINGS:
+          1. Hero carousel successfully restored from gallery_media_ids (Session AB2 revert complete)
+          2. SwipeableMedia component renders with navigation arrows and dot indicators
+          3. Lightbox functionality working (opens on click, closes on Escape)
+          4. Empty-gallery tours render cleanly without errors
+          5. Mobile spacing correct (mt-6 sm:mt-7 on carousel, mt-6 sm:mt-8 on quote)
+          
+          AD1 hero carousel restoration is PRODUCTION-READY.
 
   - task: "AD2 — Remove Gallery tab from /tours/<slug>"
     implemented: true
-    working: "NA"
+    working: true
     file: "frontend/src/pages/TourDetail.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
@@ -5393,14 +5422,43 @@ frontend:
           Mobile spacing: tab strip uses `px-3 sm:px-5 py-3` so the
           three remaining tabs fit cleanly on a 360px viewport without
           horizontal scroll.
+      - working: true
+        agent: "testing"
+        comment: |
+          VERIFIED: AD2 Gallery tab removal working correctly. All assertions PASSED.
+          
+          TEST 3 — Gallery tab removed on maleny-creative-immersion-retreat:
+          ✓ PASS: Found exactly 3 tabs (expected 3)
+          ✓ PASS: Tab testids are exactly: ["tour-tab-details", "tour-tab-includes", "tour-tab-prices"]
+          ✓ PASS: [data-testid="tour-tab-gallery"] does NOT exist (Gallery tab removed)
+          ✓ PASS: [data-testid="tour-tab-panel-gallery"] does NOT exist (Gallery panel removed)
+          ✓ PASS: Remaining tabs in correct order: Details / Inclusions / Prices & Dates
+          
+          TEST 4 — Mobile spacing at 360x720 viewport:
+          ✓ PASS: Tab strip scrollWidth: 320px, clientWidth: 320px, overflow: 0px (wraps cleanly)
+          ✓ PASS: All 3 tab labels legible:
+            • Details: 74.66px width
+            • Inclusions: 97.78px width
+            • Prices & Dates: 123.56px width
+          ✓ PASS: All tabs > 50px width (fully legible on mobile)
+          ✓ PASS: No horizontal scroll required at 360px viewport
+          
+          CRITICAL FINDINGS:
+          1. Gallery tab and panel completely removed from tab strip
+          2. Only 3 tabs remain: Details, Inclusions, Prices & Dates
+          3. Mobile spacing perfect - no overflow, all tabs legible
+          4. Tab strip uses px-3 sm:px-5 py-3 padding (fits cleanly on 360px)
+          5. Photos now only appear in hero carousel (Gallery tab no longer duplicates them)
+          
+          AD2 Gallery tab removal is PRODUCTION-READY.
 
   - task: "AD3-frontend — Tab label sources from tour_detail.tab.includes"
     implemented: true
-    working: "NA"
+    working: true
     file: "frontend/src/pages/TourDetail.jsx"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
@@ -5411,6 +5469,35 @@ frontend:
           content row. The DB value is the authoritative source; this
           is just the JS default. No other frontend change required —
           TourDetail.jsx already reads via useText("tour_detail.tab.includes", ...).
+      - working: true
+        agent: "testing"
+        comment: |
+          VERIFIED: AD3 "Inclusions" tab label working correctly. All assertions PASSED.
+          
+          TEST 5 — "Inclusions" label on maleny-creative-immersion-retreat:
+          ✓ PASS: Second tab reads "Inclusions" (not "What's Included")
+          ✓ PASS: Tab label sources from tour_detail.tab.includes content key
+          ✓ PASS: Clicking tab opens tour-tab-panel-includes
+          ✓ PASS: Panel contains "What's Included" and "What's Not Included" headings
+            (Note: These H3 headings inside the panel are intentionally NOT renamed - 
+            they pair together and stay as "What's Included" / "What's Not Included".
+            Only the TAB LABEL changed from "What's Included" to "Inclusions")
+          ✓ PASS: useText fallback updated to "Inclusions" in TourDetail.jsx line 86
+          
+          BACKEND ROUND-TRIP VERIFICATION (from AD3 backend tests):
+          ✓ PASS: tour_detail.tab.includes content key exists in DB with value "Inclusions"
+          ✓ PASS: Admin can edit via /admin/website-text under "Journeys & Pricing page" group
+          ✓ PASS: Changes persist and flow to public site immediately
+          ✓ PASS: Idempotent migration preserves custom values on restart
+          
+          CRITICAL FINDINGS:
+          1. Tab label correctly renamed from "What's Included" to "Inclusions"
+          2. Content key tour_detail.tab.includes is editable in admin
+          3. Panel headings inside remain "What's Included" / "What's Not Included" (intentional)
+          4. Frontend reads from content key via useText() with correct fallback
+          5. Backend seed and migration working correctly (verified in AD3 backend tests)
+          
+          AD3 "Inclusions" label rename is PRODUCTION-READY.
 
 metadata:
   created_by: "main_agent"
@@ -5514,5 +5601,89 @@ agent_communication:
       ✓ No regression in existing endpoints
       
       AD3 backend implementation is PRODUCTION-READY.
+      No action items for main agent - please summarize and finish.
+
+  - agent: "testing"
+    message: |
+      ✅✅✅ SESSION AD FRONTEND VERIFICATION COMPLETE - ALL TESTS PASSED ✅✅✅
+      
+      Comprehensive testing of all three AD frontend changes completed successfully.
+      Preview URL: https://170bcf25-942f-44a3-b7ed-d560a9798f92.preview.emergentagent.com
+      
+      ═══════════════════════════════════════════════════════════════════════════
+      TEST RESULTS SUMMARY
+      ═══════════════════════════════════════════════════════════════════════════
+      
+      ✅ TEST 1 — AD1: Hero carousel restored on /tours/maleny-creative-immersion-retreat
+        ✓ Hero carousel EXISTS with data-testid="tour-hero-carousel"
+        ✓ Old single-shot (data-testid="tour-hero-shot") removed
+        ✓ Navigation arrows and dot indicators present (52 buttons, "1 OF 25" counter)
+        ✓ Lightbox opens on image click (fullscreen portal with role="dialog")
+        ✓ Lightbox closes with Escape key
+      
+      ✅ TEST 2 — AD1: Empty-gallery fallback on /tours/tasmanian-slow-and-soulful-journeys
+        ✓ Hero carousel does NOT exist (graceful hide when no gallery_media_ids)
+        ✓ Page renders cleanly - title, quote section visible
+        ✓ No console errors related to SwipeableMedia or undefined media
+        ✓ No broken empty carousel placeholder
+      
+      ✅ TEST 3 — AD2: Gallery tab removed
+        ✓ Exactly 3 tabs found: tour-tab-details, tour-tab-includes, tour-tab-prices
+        ✓ Gallery tab (tour-tab-gallery) does NOT exist
+        ✓ Gallery panel (tour-tab-panel-gallery) does NOT exist
+        ✓ Remaining tabs in correct order: Details / Inclusions / Prices & Dates
+      
+      ✅ TEST 4 — AD2: Mobile spacing at 360x720
+        ✓ Tab strip wraps cleanly (scrollWidth: 320px, clientWidth: 320px, overflow: 0px)
+        ✓ All 3 tab labels legible (Details: 74.66px, Inclusions: 97.78px, Prices: 123.56px)
+        ✓ No horizontal scroll required at 360px viewport
+      
+      ✅ TEST 5 — AD3: "Inclusions" label + content key integration
+        ✓ Second tab reads "Inclusions" (not "What's Included")
+        ✓ Tab label sources from tour_detail.tab.includes content key
+        ✓ Panel contains "What's Included" / "What's Not Included" headings (intentional)
+        ✓ useText fallback updated to "Inclusions" in TourDetail.jsx
+        ✓ Backend round-trip verified in AD3 backend tests (editable in admin)
+      
+      ✅ TEST 6 — Regression: No console errors
+        ✓ Zero console errors captured during all tests
+        ✓ No React errors, lightbox errors, SwipeableMedia errors, or undefined errors
+      
+      ═══════════════════════════════════════════════════════════════════════════
+      CRITICAL FINDINGS
+      ═══════════════════════════════════════════════════════════════════════════
+      
+      1. AD1 HERO CAROUSEL RESTORATION: ✅ WORKING
+         - SwipeableMedia carousel successfully restored from gallery_media_ids
+         - Fallback to hero_media_id when gallery is empty
+         - Empty-gallery tours render cleanly without errors
+         - Lightbox functionality working (opens on click, closes on Escape)
+         - Mobile spacing correct (mt-6 sm:mt-7 on carousel)
+      
+      2. AD2 GALLERY TAB REMOVAL: ✅ WORKING
+         - Gallery tab and panel completely removed from tab strip
+         - Only 3 tabs remain: Details, Inclusions, Prices & Dates
+         - Mobile spacing perfect - no overflow at 360px viewport
+         - Photos now only appear in hero carousel (no duplication)
+      
+      3. AD3 "INCLUSIONS" LABEL RENAME: ✅ WORKING
+         - Tab label correctly renamed from "What's Included" to "Inclusions"
+         - Content key tour_detail.tab.includes editable in admin
+         - Panel headings inside remain "What's Included" / "What's Not Included" (intentional)
+         - Frontend reads from content key via useText() with correct fallback
+      
+      4. REGRESSION: ✅ NO ISSUES
+         - Zero console errors during all tests
+         - All existing functionality intact
+         - No broken layouts or missing elements
+      
+      ═══════════════════════════════════════════════════════════════════════════
+      SESSION AD IS PRODUCTION-READY
+      ═══════════════════════════════════════════════════════════════════════════
+      
+      All three AD changes (hero carousel restoration, Gallery tab removal, 
+      "Inclusions" label rename) are working correctly on the preview environment.
+      Backend tests passed 5/5. Frontend tests passed 6/6.
+      
       No action items for main agent - please summarize and finish.
 
