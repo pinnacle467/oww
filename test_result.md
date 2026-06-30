@@ -289,7 +289,7 @@ backend:
             - Successfully deleted test journey (cleanup complete)
             
             TEST 3 - PATCH PRESERVATION (CRITICAL): ✓ PASSED
-            - Target: Maleny Creative Immersion (id=850eb9d8-b887-4201-bac8-4f0aa75fe782)
+            - Target: Maleny Creative Immersion (id=build-handover)
             - PATCH with ONLY {"small_group_text": "Retreats take 10 travellers max."}
             - small_group_text updated correctly to new value
             - ALL 27 other fields unchanged (name, region, nights, dates, priceFrom, priceUnit, 
@@ -1306,7 +1306,7 @@ frontend:
     status_history:
       - working: true
         agent: "testing"
-        comment: "VERIFIED: No 'undefined/api' requests detected in network logs. Frontend .env correctly configured with REACT_APP_BACKEND_URL=https://repo-to-deploy.preview.emergentagent.com. All API calls use correct backend URL. Backend URL fix is working correctly."
+        comment: "VERIFIED: No 'undefined/api' requests detected in network logs. Frontend .env correctly configured with REACT_APP_BACKEND_URL=https://build-handover.preview.emergentagent.com. All API calls use correct backend URL. Backend URL fix is working correctly."
 
 metadata:
   created_by: "testing_agent"
@@ -1327,7 +1327,7 @@ agent_communication:
   - agent: "testing"
     message: "Smoke test completed successfully. All critical functionality verified: 1) Homepage hero images render correctly (5 high-quality images in slideshow), 2) Gallery page shows 14 photos in grid layout, 3) Journeys/Pricing page loads with 4 images, 4) Contact page loads with 5 images and form, 5) Admin login works and redirects to dashboard. Backend URL fix confirmed - no 'undefined/api' errors detected. Only non-critical failures: posthog.com analytics and cdn-cgi/rum monitoring (third-party services). Site is ready for client demo."
 
-user_problem_statement: "Verify the site at https://repo-to-deploy.preview.emergentagent.com/ still works correctly after performance optimization changes. Check: 1) Homepage loads with hero slideshow cycling through images and fonts applied, 2) Gallery page with category filters (Maleny Retreats, Across Australia, Across the World - NO 'All' tab), 3) Gallery image lightbox (lazy-loaded, <100ms delay expected), 4) Pricing and Contact pages load, 5) Admin login works, 6) Check browser console for JavaScript errors."
+user_problem_statement: "Verify the site at https://build-handover.preview.emergentagent.com/ still works correctly after performance optimization changes. Check: 1) Homepage loads with hero slideshow cycling through images and fonts applied, 2) Gallery page with category filters (Maleny Retreats, Across Australia, Across the World - NO 'All' tab), 3) Gallery image lightbox (lazy-loaded, <100ms delay expected), 4) Pricing and Contact pages load, 5) Admin login works, 6) Check browser console for JavaScript errors."
 
 frontend:
   - task: "Homepage Hero Slideshow After Performance Optimization"
@@ -1589,7 +1589,7 @@ agent_communication:
       
       Site is stable after lazy-loading and WebP logo changes. No action items for main agent.
 
-user_problem_statement: "Quick test of the new admin Journeys Manager at https://repo-to-deploy.preview.emergentagent.com/admin. Test: 1) Login to /admin, 2) Navigate to /admin/journeys via 'Trips & Journeys' tile, 3) Verify 3 existing trips (Maleny Creative Immersion, Slow and Soulful Journeys marked Most Popular, Corporate and Custom), 4) Test 'Add a trip' button and cancel, 5) Edit 'Price headline' on Maleny row to 'From $4,500' and save, 6) Verify 'Upload itinerary (PDF, max 25 MB)' button on each row, 7) Toggle 'Mark as Most Popular' on Maleny row, 8) Check for JavaScript console errors."
+user_problem_statement: "Quick test of the new admin Journeys Manager at https://build-handover.preview.emergentagent.com/admin. Test: 1) Login to /admin, 2) Navigate to /admin/journeys via 'Trips & Journeys' tile, 3) Verify 3 existing trips (Maleny Creative Immersion, Slow and Soulful Journeys marked Most Popular, Corporate and Custom), 4) Test 'Add a trip' button and cancel, 5) Edit 'Price headline' on Maleny row to 'From $4,500' and save, 6) Verify 'Upload itinerary (PDF, max 25 MB)' button on each row, 7) Toggle 'Mark as Most Popular' on Maleny row, 8) Check for JavaScript console errors."
 
 frontend:
   - task: "Admin Login to /admin"
@@ -1735,7 +1735,7 @@ agent_communication:
       
       No action items for main agent. All requirements met.
 
-user_problem_statement: "SMOKE TEST (2 min budget) on https://repo-to-deploy.preview.emergentagent.com/ to confirm no visual regressions after adding critters-webpack-plugin (inlines critical CSS into HTML head and async-loads the rest). Risk: critters can sometimes produce a brief flash-of-unstyled-content (FOUC) on first load, or miss some Tailwind classes used dynamically. Check: 1) Homepage hero photo paints normally, 2) Headline uses SERIF font (Cormorant Garamond) NOT sans-serif, 3) Nav logo positioned correctly, 4) No obvious layout shifts or unstyled flash >200ms, 5) Footer properly styled (dark background, gold accent), 6) /pricing page with 3 trip cards styled correctly, 7) No console errors about missing CSS."
+user_problem_statement: "SMOKE TEST (2 min budget) on https://build-handover.preview.emergentagent.com/ to confirm no visual regressions after adding critters-webpack-plugin (inlines critical CSS into HTML head and async-loads the rest). Risk: critters can sometimes produce a brief flash-of-unstyled-content (FOUC) on first load, or miss some Tailwind classes used dynamically. Check: 1) Homepage hero photo paints normally, 2) Headline uses SERIF font (Cormorant Garamond) NOT sans-serif, 3) Nav logo positioned correctly, 4) No obvious layout shifts or unstyled flash >200ms, 5) Footer properly styled (dark background, gold accent), 6) /pricing page with 3 trip cards styled correctly, 7) No console errors about missing CSS."
 
 frontend:
   - task: "Homepage Hero Photo Rendering After Critters Plugin"
@@ -1918,7 +1918,7 @@ agent_communication:
       
       CONCLUSION: Site is production-ready after critters-webpack-plugin optimization. No action items for main agent.
 
-user_problem_statement: "SMOKE TEST (2 min budget) on https://repo-to-deploy.preview.emergentagent.com/ to verify nothing broke after THREE changes: 1) Cache headers fixed in frontend's Express server (long cache for /assets/*), 2) critters-webpack-plugin inlining critical CSS, 3) AVIF format generation alongside WebP (modern browsers serve AVIF via <picture><source>). Check: 1) Homepage hero photo loads correctly with Cormorant Garamond serif font, 2) 3 Experience Pillars tiles show images and text, 3) Nav logo renders, 4) Chrome DevTools Network tab shows hero image as Content-Type: image/avif (NOT WebP), 5) /pricing page loads with 3 trip cards, 6) /gallery page loads with category filters and images, 7) No console errors, especially no AVIF-related decode errors."
+user_problem_statement: "SMOKE TEST (2 min budget) on https://build-handover.preview.emergentagent.com/ to verify nothing broke after THREE changes: 1) Cache headers fixed in frontend's Express server (long cache for /assets/*), 2) critters-webpack-plugin inlining critical CSS, 3) AVIF format generation alongside WebP (modern browsers serve AVIF via <picture><source>). Check: 1) Homepage hero photo loads correctly with Cormorant Garamond serif font, 2) 3 Experience Pillars tiles show images and text, 3) Nav logo renders, 4) Chrome DevTools Network tab shows hero image as Content-Type: image/avif (NOT WebP), 5) /pricing page loads with 3 trip cards, 6) /gallery page loads with category filters and images, 7) No console errors, especially no AVIF-related decode errors."
 
 frontend:
   - task: "Homepage Hero Photo and Fonts After AVIF + Cache Changes"
@@ -4353,7 +4353,7 @@ agent_communication:
       ✅ BUG FIX VERIFIED - About Us story spacing working correctly
       
       Completed comprehensive testing of the About Us story blank-line spacing bug fix.
-      All tests PASSED on preview URL: https://repo-to-deploy.preview.emergentagent.com
+      All tests PASSED on preview URL: https://build-handover.preview.emergentagent.com
       
       TEST 2 - MULTI-PARAGRAPH STORY SPACING: ✅ PASSED
       - Created test story with blank line between paragraphs
@@ -4974,7 +4974,7 @@ agent_communication:
               (e.g. 470a933d-…preview.emergentagent.com or whatever URL
               the platform issued them), but the bundled JS posts auth
               to ANOTHER hostname baked into the build by webpack:
-              `https://repo-to-deploy.preview.emergentagent.com/api/auth/login`.
+              `https://build-handover.preview.emergentagent.com/api/auth/login`.
             - That makes the auth POST a CROSS-ORIGIN request. Strict
               browsers refuse it / strip the cookie / block 3rd-party
               storage and the login token never persists, so the user
@@ -5037,7 +5037,7 @@ agent_communication:
           
           ✓✓✓ ALL TESTS PASSED - Z6 BUG FIX VERIFIED ✓✓✓
           
-          URL A (https://repo-to-deploy.preview.emergentagent.com):
+          URL A (https://build-handover.preview.emergentagent.com):
           ✓ Step 1: Navigated to /admin, Sign-in form renders correctly
           ✓ Step 2: Filled credentials (info@oncewerewild.com / ChangeMe-OWW-2026!)
           ✓ Step 3 (CRITICAL): SAME-ORIGIN ASSERTION PASSED
@@ -5050,7 +5050,7 @@ agent_communication:
           ✓ Step 7: Token persists after page reload, user stays logged in
           ✓ Step 8: GET /api/admin/journeys returned 200, 32 journey rows visible
           
-          URL B (https://repo-to-deploy.preview.emergentagent.com):
+          URL B (https://build-handover.preview.emergentagent.com):
           ✓ Step 1: Navigated to /admin, Sign-in form renders correctly
           ✓ Step 2: Filled credentials (info@oncewerewild.com / ChangeMe-OWW-2026!)
           ✓ Step 3 (CRITICAL): SAME-ORIGIN ASSERTION PASSED
@@ -5095,8 +5095,8 @@ agent_communication:
       Please test on TWO preview hostnames to confirm the resolver
       works on either one:
 
-        URL A: https://repo-to-deploy.preview.emergentagent.com
-        URL B: https://repo-to-deploy.preview.emergentagent.com
+        URL A: https://build-handover.preview.emergentagent.com
+        URL B: https://build-handover.preview.emergentagent.com
 
       Credentials: /app/memory/test_credentials.md
         Email:    info@oncewerewild.com
@@ -5158,7 +5158,7 @@ agent_communication:
       - URL B: POST /api/auth/login went to handover-flow-1.preview.emergentagent.com (same as page host)
       - NO cross-origin POSTs detected on either URL
       
-      URL A TEST RESULTS (https://repo-to-deploy.preview.emergentagent.com):
+      URL A TEST RESULTS (https://build-handover.preview.emergentagent.com):
       ✓ Step 1-2: Sign-in form renders correctly at /admin
       ✓ Step 3-4: SAME-ORIGIN ASSERTION PASSED (request host = page host)
       ✓ Step 4b: Response status 200
@@ -5167,7 +5167,7 @@ agent_communication:
       ✓ Step 6: Token persists after reload, user stays logged in
       ✓ Step 7: GET /api/admin/journeys returned 200, 32 journey rows visible
       
-      URL B TEST RESULTS (https://repo-to-deploy.preview.emergentagent.com):
+      URL B TEST RESULTS (https://build-handover.preview.emergentagent.com):
       ✓ Step 1-2: Sign-in form renders correctly at /admin
       ✓ Step 3-4: SAME-ORIGIN ASSERTION PASSED (request host = page host)
       ✓ Step 4b: Response status 200
@@ -5191,7 +5191,7 @@ agent_communication:
       ✅ AB1/AB2/AB3 BUG FIX VERIFICATION COMPLETE - ALL 3 TESTS PASSED
       
       Comprehensive end-to-end testing of three client-reported bug fixes completed successfully.
-      Preview URL: https://a0758cff-5668-4a32-8660-c542186717d9.preview.emergentagent.com
+      Preview URL: https://build-handover.preview.emergentagent.com
       Admin credentials: info@oncewerewild.com / ChangeMe-OWW-2026!
       
       TEST 1 — AB3: Admin gallery upload lands in Available media (NOT auto-added) ✅ PASSED

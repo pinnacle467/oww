@@ -11,7 +11,7 @@ import subprocess
 from typing import Dict, List, Any
 
 # Backend URL from frontend/.env
-BACKEND_URL = "https://repo-to-deploy.preview.emergentagent.com"
+BACKEND_URL = "https://build-handover.preview.emergentagent.com"
 API_BASE = f"{BACKEND_URL}/api"
 
 # Admin credentials from /app/memory/test_credentials.md
