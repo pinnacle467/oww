@@ -5,7 +5,7 @@ Quick idempotence check after backend restart
 
 import requests
 
-BASE_URL = "https://170bcf25-942f-44a3-b7ed-d560a9798f92.preview.emergentagent.com"
+BASE_URL = "https://admin-content-sync-5.preview.emergentagent.com"
 API_BASE = f"{BASE_URL}/api"
 
 print("="*80)

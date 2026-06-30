@@ -10,7 +10,7 @@ import requests
 import pyotp
 from pymongo import MongoClient
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://build-handover.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://admin-content-sync-5.preview.emergentagent.com').rstrip('/')
 API = f"{BASE_URL}/api"
 
 ADMIN_EMAIL = "info@oncewerewild.com"

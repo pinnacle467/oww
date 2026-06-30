@@ -12,7 +12,7 @@ import subprocess
 from typing import Dict, Any, List, Optional
 
 # Backend URL from frontend/.env
-BASE_URL = "https://ba765502-99f4-476b-8f71-7e6b0cad8227.preview.emergentagent.com/api"
+BASE_URL = "https://admin-content-sync-5.preview.emergentagent.com/api"
 
 # Admin credentials from /app/memory/test_credentials.md
 ADMIN_EMAIL = "info@oncewerewild.com"

@@ -211,7 +211,7 @@ Total content keys: 183 → **191**. Frontend tests verified the admin round-tri
 
 **Test results:**
 - `deep_testing_backend_v2`: 5/5 PASSED (seed presence + values, round-trip via /api/admin/content, idempotence across `supervisorctl restart backend`, revert to clean state, regression on /api/journeys + /api/media + /api/blog + /api/auth/login).
-- `auto_frontend_testing_agent`: 6/6 PASSED across 5 tests on the preview at `https://170bcf25-942f-44a3-b7ed-d560a9798f92.preview.emergentagent.com` — AD1 hero carousel with arrows + dots + lightbox on Maleny (25 photos), AD1 empty-gallery graceful fallback on Tasmanian, AD2 3-tab strip + Gallery tab absent, AD2 360px mobile no horizontal scroll, AD3 full admin round-trip "Inclusions" → "What you get" → "Inclusions" reflected on public, zero console errors.
+- `auto_frontend_testing_agent`: 6/6 PASSED across 5 tests on the preview at `https://admin-content-sync-5.preview.emergentagent.com` — AD1 hero carousel with arrows + dots + lightbox on Maleny (25 photos), AD1 empty-gallery graceful fallback on Tasmanian, AD2 3-tab strip + Gallery tab absent, AD2 360px mobile no horizontal scroll, AD3 full admin round-trip "Inclusions" → "What you get" → "Inclusions" reflected on public, zero console errors.
 
 **Files touched in AD:**
 - `frontend/src/pages/TourDetail.jsx` — AD1 + AD2 + AD3 fallback string.
@@ -1272,7 +1272,7 @@ The admin user is seeded idempotently on every backend startup.
 
 **`/app/frontend/.env`**
 ```
-REACT_APP_BACKEND_URL=<your preview URL, e.g. https://build-handover.preview.emergentagent.com>
+REACT_APP_BACKEND_URL=<your preview URL, e.g. https://admin-content-sync-5.preview.emergentagent.com>
 WDS_SOCKET_PORT=443
 ENABLE_HEALTH_CHECK=false
 ```

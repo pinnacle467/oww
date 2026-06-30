@@ -11,7 +11,7 @@
 1. `cd /app && git status && git log --oneline -10` — confirm you're on the latest commit. The repo should already be checked out into `/app`.
 2. Restore the .env files (the repo does NOT carry them — see HANDOVER §11):
    - `/app/backend/.env` — `MONGO_URL`, `DB_NAME`, `JWT_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `OTP_LOGIN_ENABLED="false"`, `SENDER_EMAIL`, `RESEND_API_KEY` (blank ok), `PUBLIC_SITE_URL`, `CORS_ORIGINS="*"`.
-   - `/app/frontend/.env` — `REACT_APP_BACKEND_URL=https://170bcf25-942f-44a3-b7ed-d560a9798f92.preview.emergentagent.com`, `WDS_SOCKET_PORT=443`, `ENABLE_HEALTH_CHECK=false`.
+   - `/app/frontend/.env` — `REACT_APP_BACKEND_URL=https://admin-content-sync-5.preview.emergentagent.com`, `WDS_SOCKET_PORT=443`, `ENABLE_HEALTH_CHECK=false`.
 3. `pip install -r /app/backend/requirements.txt -q` and `cd /app/frontend && ls node_modules/.bin/craco` (yarn install only if missing).
 4. `sudo supervisorctl restart all` and confirm all 4 services (backend, frontend, mongodb, nginx-code-proxy) are RUNNING. Smoke: `curl -s http://localhost:8001/api/journeys | python3 -m json.tool | head -20`.
 5. **Run `python3 /app/backend/sync_from_live.py` in BACKGROUND.** It takes ~2-3 minutes. The previous session already ran it on 2026-06-30 (media 309), but the client may have uploaded more since. Wait for `== DONE ==` in `/tmp/sync.log` before doing any content-key audit work, otherwise you'll add keys against a stale DB.
@@ -28,7 +28,7 @@ The user paused before running `auto_frontend_testing_agent` for AE. Run it now.
 **Task to pass to `auto_frontend_testing_agent`:**
 
 ```
-PREVIEW URL: https://170bcf25-942f-44a3-b7ed-d560a9798f92.preview.emergentagent.com
+PREVIEW URL: https://admin-content-sync-5.preview.emergentagent.com
 ADMIN: info@oncewerewild.com / ChangeMe-OWW-2026!
 
 TEST 1 - About sister brands rendering
@@ -209,7 +209,7 @@ Same as the end-of-AD list — none of these blocked AE and none block AF:
 
 ## 5. Quick reference — credentials, URLs, file paths
 
-- Preview URL: `https://170bcf25-942f-44a3-b7ed-d560a9798f92.preview.emergentagent.com`
+- Preview URL: `https://admin-content-sync-5.preview.emergentagent.com`
 - Admin email / password: `info@oncewerewild.com` / `ChangeMe-OWW-2026!`
 - Repo: cloned into `/app` (the `.git` folder is preserved; the user pushes via Save to Github)
 - Backend: FastAPI at `localhost:8001` via supervisor.

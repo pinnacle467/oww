@@ -9,7 +9,7 @@ import time
 import re
 import subprocess
 
-BASE_URL = "https://ba765502-99f4-476b-8f71-7e6b0cad8227.preview.emergentagent.com/api"
+BASE_URL = "https://admin-content-sync-5.preview.emergentagent.com/api"
 ADMIN_EMAIL = "info@oncewerewild.com"
 ADMIN_PASSWORD = "ChangeMe-OWW-2026!"
 
