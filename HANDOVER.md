@@ -1,4 +1,4 @@
-# Once Were Wild Travel - Detailed Handover (v2026-06-29, Sessions B1 + B2 + T + U + V + W + X + Y + Z + AA + **AB (Client-feedback fixes: upload→library not gallery, single hero shot, per-tour small_group_text) + live re-sync** COMPLETE in preview, NOT YET PUSHED TO LIVE)
+# Once Were Wild Travel - Detailed Handover (v2026-06-29, Sessions B1 + B2 + T + U + V + W + X + Y + Z + AA + AB + **AC (Blog page header now editable from Website Text) + live re-sync** COMPLETE in preview, NOT YET PUSHED TO LIVE)
 
 > **Loading instructions for the next agent:**
 > 1. Pull the GitHub repo (`pinnacle467/oww`, branch `main`) into `/app` - that's the source of truth for **all code**.
@@ -81,7 +81,77 @@
 
 ## 2. What's been built (chronological, most recent first)
 
-### AB. Client-feedback fixes on AA + Z + live re-sync (2026-06-29, **COMPLETE in preview, backend 5/5 + frontend 3/3 PASSED, NOT YET PUSHED TO LIVE**)
+### AC. Blog page header now editable from /admin/website-text + live re-sync (2026-06-29, **COMPLETE in preview, backend 5/5 PASSED, NOT YET PUSHED TO LIVE**)
+
+**Client direction (verbatim, from the chat):**
+> "Live sync now and for some reason the option to edit the Blog page header and all is not in the Website Text section. Add it right away"
+
+**Root cause (verified via DB inspection before fix):**
+- `curl /api/content | python -c "..."` returned 0 keys with the `blog.*` prefix.
+- The public `/app/frontend/src/pages/Blog.jsx` reads 5 keys via `useText` / `useRichText` with hardcoded default-value fallbacks. Because the keys never existed in the `content` collection, the public page rendered fine (defaults kicked in) but the admin `/admin/website-text` had no rows to render for a "blog" group, and the group didn't appear in the UI at all.
+- A second issue: even if the keys had been seeded, the frontend `WebsiteText.jsx` `GROUP_LABELS` / `GROUP_ORDER` / `GROUP_PREVIEW_TARGETS` had no entry for `"blog"`, so the group would have appeared without a friendly label and without a "Preview on site" button.
+
+**AC1 — Backend seed (`backend/server.py`):**
+Added 5 entries to `DEFAULT_CONTENT` right after the gallery block (line ~2767). The existing idempotent seed loop in `startup_event` (around line 3270) uses `$setOnInsert`, so:
+- On first boot after this code lands, all 5 keys are inserted with their default values + `group="blog"` + a friendly admin-facing label.
+- On every subsequent boot, the keys are NOT overwritten — admin edits survive.
+- The same seed will fire on Bluehost on the next deploy, so the live DB will get the new keys automatically with the same defaults.
+
+The 5 keys:
+| Key | Type | Default value |
+|---|---|---|
+| `blog.hero.eyebrow` | text | "From the Road" |
+| `blog.hero.title` | richtext | "The *Once Were Wild* journal." |
+| `blog.hero.intro` | richtext | "Field notes, slow reflections and stories from journeys taken outside the scheduled calendar." |
+| `blog.empty.heading` | text | "Stories are on their way." |
+| `blog.empty.body` | richtext | "Our first journal entries are being written between trips. Check back soon, or follow the road with us on Instagram." |
+
+The keys EXACTLY match the `useText("blog.hero.eyebrow", "From the Road")` / `useRichText("blog.hero.title", "The *Once Were Wild* journal.")` calls in `Blog.jsx`, so editing the value in admin immediately changes what the public page renders (no separate frontend wiring needed — the `useText` fallback path was already there for both rendered + un-seeded states).
+
+**AC2 — Admin shell registration (`frontend/src/pages/admin/WebsiteText.jsx`):**
+Three constants updated to expose the new group with a friendly label and preview button:
+- `GROUP_LABELS` gained `blog: "Blog page"`.
+- `GROUP_ORDER` inserts `"blog"` between `"gallery"` and `"contact"` so the navigation order matches the public site's primary nav (Home / Tours / Gallery / **Blog** / About / Contact).
+- `GROUP_PREVIEW_TARGETS` gained `blog: { path: "/blog", label: "Preview Blog page" }` so the "Preview on site" pill in the group header links to the right URL.
+
+**AC3 — Live re-sync (`backend/sync_from_live.py`):**
+The client asked for the live re-sync as the first step. Ran via `nohup ... &` to dodge the 110s foreground timeout (the parallel AVIF probe phase reliably exceeds 2 minutes). Sync completed in ~3 minutes. Snapshot regenerated to **351,934 bytes** (was 311,780 before this session).
+
+Diff vs the start of this session:
+- media: 256 → **286** (+30 — the client has been actively uploading photos to live since AB shipped)
+- about_blocks: 6 → **4** (client removed 2 about-page entries on live)
+- home_faqs: 16 → **9** (client trimmed 7 stale FAQs on live)
+- content: 178 → **178** (no change on live; AC1 will add 5 on next backend boot, taking it to 183 in preview)
+- All other collections unchanged.
+
+The fact that the client deleted some `about_blocks` and `home_faqs` on live (visible in the diff above) is a good sanity signal — they're actively content-editing on live; we need to ship the AB + AC code so their admin gains all the features that have only been in preview.
+
+**Files touched:**
+- Backend: `backend/server.py` (5 new entries in DEFAULT_CONTENT).
+- Frontend: `pages/admin/WebsiteText.jsx` (3 lookup tables updated).
+- Data: `backend/seed_data/site_snapshot.json` regenerated by `sync_from_live.py`.
+
+**Testing verdict:**
+`deep_testing_backend_v2` ran 5/5 against the AC1 backend changes:
+1. PRESENCE (admin endpoint) — `/api/admin/content` returns the `blog` group with EXACTLY 5 items, each with non-empty value, label, type.
+2. PRESENCE (public endpoint) — `/api/content` returns all 5 blog.* keys (total content count: 183).
+3. ROUND-TRIP UPDATE + ISOLATION — PUT-ing one blog key to a test value updated only that key; the other 4 blog keys + every key in the 12 non-blog groups were unchanged. Restore confirmed.
+4. IDEMPOTENT SEED — after `supervisorctl restart backend`, all 5 blog keys survived with bit-for-bit identical values (the `$setOnInsert` guard does not overwrite existing rows).
+5. REGRESSION — `/api/journeys` still returns 4 rows with the AB1 `small_group_text` field, `/api/media` returns 286 rows, no 500s anywhere.
+
+Frontend was NOT auto-tested this round because the change is purely a 3-constant edit in `WebsiteText.jsx` (lookup tables that just decorate the group header). Manual smoke check confirmed the new "Blog page" section appears in `/admin/website-text` with a `Preview Blog page → /blog` pill and all 5 inputs render.
+
+**Out of scope (intentionally — none of this is in the client's AC brief):**
+- Blog post body inline images opening in a SwipeableMedia lightbox (still on the Session W backlog).
+- A "draft / published" workflow for blog posts (currently all posts go live the moment they're saved).
+- Per-blog-post SEO override fields (currently uses the site-wide content keys).
+
+**Important reminder for next agent:**
+The live sync's AVIF probe phase reliably hits the 120s foreground timeout. ALWAYS run it via `nohup ... &` (or `timeout 300 ...`) and check the log file. The Mongo replacement + snapshot regen step is the LAST thing the script does, after the probe completes — interrupting at 120s leaves Mongo stale relative to the live state.
+
+---
+
+### AB. Client-feedback fixes on AA + Z + live re-sync (2026-06-29, **COMPLETE in preview, backend 5/5 + frontend 3/3 PASSED**)
 
 **Client direction (verbatim, from the chat):**
 > "I tried to add media to the Creative workshop retreat. It adds to the photo gallery, but not the available media. It should be the other way around, so if I delete a photo, it only deletes from the photo gallery, not the available media."
