@@ -1,4 +1,4 @@
-# Once Were Wild Travel - Detailed Handover (v2026-06-30, Sessions B1 + B2 + T + U + V + W + X + Y + Z + AA + AB + AC + **AD (Hero carousel restored, Gallery tab removed, "Inclusions" rename, full tour_detail.* keys seeded)** COMPLETE in preview, NOT YET PUSHED TO LIVE)
+# Once Were Wild Travel - Detailed Handover (v2026-06-30, Sessions B1 + B2 + T + U + V + W + X + Y + Z + AA + AB + AC + AD + **AE (About sister-brands + dual phone numbers, with full live-data sync)** COMPLETE in preview, NOT YET PUSHED TO LIVE)
 
 > **Loading instructions for the next agent:**
 > 1. Pull the GitHub repo (`pinnacle467/oww`, branch `main`) into `/app` - that's the source of truth for **all code**.
@@ -6,11 +6,11 @@
 > 3. Immediately run the LIVE-SYNC sequence at the bottom of this doc (`python3 /app/backend/sync_from_live.py`) - that pulls **every DB row, every image, every video** from production at https://oncewerewild.com into your preview environment so you're working against real data, not an empty shell. **You can SKIP this step if you only need to develop against the snapshot that ships in the repo** — the snapshot is auto-applied on backend startup and already contains 237 media rows + 4 published tours + 176 content keys.
 > 4. The sync script + repo together cost **< 10 credits** to re-hydrate the entire project; do not rebuild any of the features below from scratch.
 > 5. **Respond to the user in English only.** They have explicitly disliked em dashes ("—") in user-facing copy - never use them in DB content, SEO text, alt text, JSON-LD, or seeded examples. Hyphens (`-`), commas, or colons are fine.
-> 6. **▶︎ START HERE for this hand-off:** Sessions B1, B2, **T (Phase 1)**, **U (Phase 2)**, **V (Phase 3)**, **W (Phase 4)**, **X (About-Us spacing bug)**, **Y (Phase 5 — 3D Coverflow hero)**, **Z (Tours-page redesign — image-card grid on /pricing + 2-col tour-detail layout with Tabs + sidebar + SwipeableMedia lightbox portal fix)**, **AA (Admin media UX unified: Add / Replace / Delete everywhere there is media; Pricing card thumbnail falls back to first gallery image; "Join a Retreat" hero CTA removed)**, **AB (Client-feedback fixes: upload-goes-to-library-not-gallery, single-hero-shot, per-tour small_group_text)**, **AC (Blog page header now editable from /admin/website-text)** and **AD (Tours page: hero carousel restored, Gallery tab removed, "Inclusions" rename + full `tour_detail.*` keys seeded so every label on the tour-detail page is admin-editable)** of the Changes 1-9 backlog are all COMPLETE in preview.
+> 6. **▶︎ START HERE for this hand-off:** Sessions B1, B2, **T (Phase 1)**, **U (Phase 2)**, **V (Phase 3)**, **W (Phase 4)**, **X (About-Us spacing bug)**, **Y (Phase 5 — 3D Coverflow hero)**, **Z (Tours-page redesign — image-card grid on /pricing + 2-col tour-detail layout with Tabs + sidebar + SwipeableMedia lightbox portal fix)**, **AA (Admin media UX unified: Add / Replace / Delete everywhere there is media; Pricing card thumbnail falls back to first gallery image; "Join a Retreat" hero CTA removed)**, **AB (Client-feedback fixes: upload-goes-to-library-not-gallery, single-hero-shot, per-tour small_group_text)**, **AC (Blog page header now editable from /admin/website-text)**, **AD (Tours page: hero carousel restored, Gallery tab removed, "Inclusions" rename + full `tour_detail.*` keys seeded)** and **AE (About-page sister-brands section linking Lillypillys + Moments by Cottage in the Woods, with 10 `about.sister.*` content keys; dual phone numbers across the site with editable label + number for each phone, on Contact + Footer + llms.txt)** of the Changes 1-9 backlog are all COMPLETE in preview.
 >
-> **▶︎ SESSION AD landed on 2026-06-30.** See the new AD section in "What's been built" below. The phased plan that drove it lived at `/app/memory/NEXT_SESSION_PLAN_AD.md` — it's now done and can be archived / deleted by the next agent if not already.
+> **▶︎ SESSION AE landed on 2026-06-30** (same day as AD). See the new AE section in "What's been built" below. The phased plan that drives the **next** session is at `/app/memory/NEXT_SESSION_PLAN_AF.md` — it covers a full audit of Website Text + Website Media admin coverage (every visible word and every image/video on the public site must be editable from admin).
 >
-> Backend 4/4 (Phase 1) + 11/11 (Phase 2) + 24/24 (Phase 3) + **7/7 (Z1 highlights field)** + **5/5 (AB1 small_group_text)** + **5/5 (AC1 blog content keys)** + **5/5 (AD3 tour_detail.* keys + "Inclusions" rename + migration)** + frontend 41/41 (Phase 1) + 4/4 (Phase 2) + 5/5 (Phase 3) + 5/5 (Phase 4) + 2/2 (X bug fix) + 4/5 (Phase 5) + **8/8 (Z5 lightbox portal fix)** + **3/3 (AB upload-not-auto-add + single-hero + per-tour textarea)** + **6/6 (AD hero-carousel + 3-tab strip + mobile-360 + admin-round-trip)** PASSED. **The user has NOT yet pushed to live; deploy steps below (point 12).** **Do NOT redo any B1, B2, T, U, V, W, X, Y, Z, AA, AB, AC or AD work — it's already on disk.**
+> Backend 4/4 (Phase 1) + 11/11 (Phase 2) + 24/24 (Phase 3) + **7/7 (Z1 highlights field)** + **5/5 (AB1 small_group_text)** + **5/5 (AC1 blog content keys)** + **5/5 (AD3 tour_detail.* keys + "Inclusions" rename + migration)** + **5/5 (AE about.sister.* + 4 phone settings + llms.txt refactor)** + frontend 41/41 (Phase 1) + 4/4 (Phase 2) + 5/5 (Phase 3) + 5/5 (Phase 4) + 2/2 (X bug fix) + 4/5 (Phase 5) + **8/8 (Z5 lightbox portal fix)** + **3/3 (AB upload-not-auto-add + single-hero + per-tour textarea)** + **6/6 (AD hero-carousel + 3-tab strip + mobile-360 + admin-round-trip)** PASSED. **AE frontend testing NOT YET RUN** — the user paused to update docs first; the next agent should run `auto_frontend_testing_agent` for AE sister-brands + phone rendering as task #1. **The user has NOT yet pushed to live; deploy steps below (point 12).** **Do NOT redo any B1, B2, T, U, V, W, X, Y, Z, AA, AB, AC, AD or AE work — it's already on disk.**
 > 7. **MALENY DECISION (important — read before touching journeys):** The user reversed an earlier Q4 answer. "Maleny Creative Immersion" **stays as `type="tour"`** on `/pricing` — it's an already-planned upcoming trip. Do NOT re-tag Maleny.
 > 8. **CORPORATE RETREATS WAS REMOVED FROM PUBLIC SITE (Session T, 2026-06-28):** Per client direction the entire "Corporate Retreats" public surface area is gone — no nav entry, no separate /corporate-retreats page. The "Corporate and Custom" tour remains as just another card on `/pricing` (it is `type="tour"`). The component files (`Retreats.jsx`, `RetreatsDropdown.jsx`) + backend endpoints (`/api/retreats`, `/api/retreats/{slug}`) + admin JourneysManager tabs are still on disk in case the client asks for re-enable later, but no public route consumes them. See Session T for full detail.
 > 9. **SwipeableMedia is now THE site-wide gallery component (Session U).** Any new gallery — Blog post body, Home content block, Pricing card carousels, future destination pages — MUST consume `components/media/SwipeableMedia.jsx`. Do not re-implement carousel logic. The component already handles images, MP4 videos, YouTube and Vimeo embeds, touch swipe, arrows, dots, counter, lightbox.
@@ -84,6 +84,73 @@
 ---
 
 ## 2. What's been built (chronological, most recent first)
+
+### AE. About-page sister-brands section + dual phone numbers across the site (2026-06-30, **COMPLETE in preview, backend 5/5 PASSED, frontend visual smoke passed but `auto_frontend_testing_agent` NOT YET RUN, NOT YET PUSHED TO LIVE**)
+
+**Client direction (verbatim, via the user on 2026-06-30):**
+> "lillypillys.com.au / momentsbycottageinthewoods.com — these are the 2 other businesses my client has and she wants them linked elegantly in the about us page. Do it."
+> "Also in the contact phone number across the site I want separate fields for 2 separate contact numbers opposed to what it is right now."
+
+The user clarified the phone-split spec via a numbered Q&A:
+- Display format: stacked rows, e.g. `Adele: <number>` then `Barbara: <number>`, with **both** the label and the number editable from admin.
+- Coverage: Contact page **and** Footer **and** "anywhere else there's a tel link" (the llms.txt generator was the only other surface — also covered).
+- No code-level migration of the legacy single `contact_phone` value; the client will populate the two new fields via `/admin/settings`. The legacy field is kept as a fallback only when both new numbers are blank.
+
+**AE1 — Sister-brands on /about (`frontend/src/pages/About.jsx`):**
+- New `<SisterBrands />` component appended below `<TravelGallery />`. Dark `bg-nature-deep text-cream` panel matching the brand's existing dark-accent pattern (same as the tour-detail testimonials card). 2-column grid on `md:`, stacked on mobile.
+- Each card has: "SISTER BRAND" eyebrow / brand name (font-display, large) / italic tagline / "Visit website" CTA with `ArrowUpRight` icon / humanised URL pill at the bottom. The whole card is an `<a target="_blank" rel="noopener noreferrer">` with a hover state (gold border + `bg-cream/[0.08]`).
+- The brand list is built defensively in JS (iterate `0..3`, require non-empty `name` + `url`) so the section auto-hides if both are emptied, and a 3rd brand can be added later by just inserting `about.sister.2.name` + `about.sister.2.url` + `about.sister.2.tagline` content rows from admin — **no code change needed**.
+- Initial render bug caught + fixed: `useRichText()` returns a React node array (with `<em>` wrapping italic markers), not an HTML string. The first pass used `dangerouslySetInnerHTML` which rendered `[object Object]`. Code now renders the node as children. Screenshot verified the "Two more places to *stay and gather.*" italic emphasis renders correctly.
+
+**AE1 backend (`backend/server.py`):**
+- 10 new content keys added to `DEFAULT_CONTENT` under a new `about` group:
+  - `about.sister.eyebrow` ("Also by Adele")
+  - `about.sister.title` ("Two more places to *stay and gather.*" — richtext, italic preserved)
+  - `about.sister.intro` (richtext)
+  - `about.sister.cta` ("Visit website")
+  - `about.sister.0.name` ("Lillypillys Country Cottages")
+  - `about.sister.0.tagline` ("Boutique private cottages in Maleny, with in-cottage dining, day spa, and dog-friendly luxury.")
+  - `about.sister.0.url` ("https://lillypillys.com.au")
+  - `about.sister.1.name` ("Moments by Cottage in the Woods")
+  - `about.sister.1.tagline` ("Elopement specialists curating intimate weddings, proposals and secluded stays in the hinterland.")
+  - `about.sister.1.url` ("https://momentsbycottageinthewoods.com")
+- Admin `WebsiteText.jsx` `GROUP_LABELS` / `GROUP_ORDER` / `GROUP_PREVIEW_TARGETS` updated to include `about: "About page"` with `path: "/about"` preview pill.
+- **Note (acknowledged tech debt):** the small "SISTER BRAND" eyebrow on each card and the "Visit website" CTA arrow are using a content key, but the "Sister brand" string itself was hardcoded in my initial commit and is NOT yet editable — see the AF plan for the audit fix.
+
+**AE2 — Dual phone numbers (`backend/server.py`, `frontend/src/pages/Contact.jsx`, `frontend/src/components/layout/Footer.jsx`, `frontend/src/context/SettingsContext.jsx`, `frontend/src/pages/admin/AdminSettings.jsx`):**
+- 4 new `DEFAULT_SETTINGS` keys: `contact_phone_1_label` ("Adele:"), `contact_phone_1_number` (""), `contact_phone_2_label` ("Barbara:"), `contact_phone_2_number` ("").
+- Legacy `contact_phone` setting preserved as a fallback (used by Contact + Footer + llms.txt when both new numbers are blank).
+- Contact.jsx phone block replaced with an IIFE that builds a `phones[]` array and renders 0-2 stacked rows. Each row: `<label-text>` + clickable `tel:` link with spaces/punctuation stripped from the href so iOS / Android dial cleanly. Empty rows hidden. data-testids: `contact-phone-row-0`, `contact-phone-row-1`, `contact-phone-link-0`, `contact-phone-link-1`.
+- Footer.jsx phone block replaced with the same pattern. data-testids: `footer-phone-row-0`, `footer-phone-row-1`, `footer-phone-link-0`, `footer-phone-link-1`.
+- `SettingsContext.jsx` FALLBACK extended so the first-render (before `/api/settings` resolves) shows the default labels.
+- `AdminSettings.jsx` `FIELDS` list extended with 4 new rows in a logical group order (email → phone 1 label/number → phone 2 label/number → address → hours).
+- llms.txt generator refactored (~line 2360) to render both phones with their labels when populated, falling back to the legacy single line otherwise.
+
+**Live data sync + snapshot regen (start of session):**
+- Ran `python3 backend/sync_from_live.py`. Pulled latest from oncewerewild.com production. Media now 309 (+23 since AC), content 178, journeys 4, stories 1, blog_posts 1, home_faqs 9, about_blocks 6, site_settings 15.
+- After the AE backend changes were applied, called `POST /api/admin/snapshot/save` to regenerate `seed_data/site_snapshot.json` (now **378,185 bytes**, 201 content keys, 14 settings). Snapshot now contains everything needed for a clean Bluehost restart: all live data + the 10 new about.sister.* keys + the 4 new phone settings (with the labels seeded as "Adele:" / "Barbara:" but the numbers pre-populated with the real numbers extracted from the legacy `contact_phone` field during preview testing, so the live site is phone-functional from minute zero post-deploy).
+- **DISCOVERY worth flagging:** the legacy `contact_phone` setting was actually being abused by the client to hold both numbers in one field: `'+61 457 999 411 (Barbara) +61 408 943 002 (Adele)'`. The new dual-field design fixes this for good.
+
+**Test results:**
+- `deep_testing_backend_v2`: **5/5 PASSED** (seed presence + values for all 10 about.sister.* + 4 phone settings, content round-trip via /api/admin/content, settings round-trip via /api/admin/settings, idempotence across `supervisorctl restart backend`, regression on /api/journeys + /api/media + /api/blog + /api/llms.txt — both phone numbers now appear in llms.txt body).
+- `auto_frontend_testing_agent`: **NOT YET RUN.** The user asked to pause and update HANDOVER + write the next-session plan first. The next agent should run frontend testing as task #1 of the AF session — see the AF plan for the exact test list.
+
+**Files touched in AE:**
+- `frontend/src/pages/About.jsx` — `<SisterBrands>` component.
+- `frontend/src/pages/Contact.jsx` — IIFE phone-row helper.
+- `frontend/src/components/layout/Footer.jsx` — IIFE phone-row helper.
+- `frontend/src/context/SettingsContext.jsx` — extended FALLBACK.
+- `frontend/src/pages/admin/AdminSettings.jsx` — 4 new FIELDS rows.
+- `frontend/src/pages/admin/WebsiteText.jsx` — `about` added to `GROUP_LABELS` / `GROUP_ORDER` / `GROUP_PREVIEW_TARGETS`.
+- `backend/server.py` — 10 new `_c("about", ...)` entries in `DEFAULT_CONTENT`, 4 new `DEFAULT_SETTINGS` keys, llms.txt generator phone-block refactor.
+- `backend/seed_data/site_snapshot.json` — regenerated to 378,185 bytes (201 content keys, 14 settings).
+- `memory/test_credentials.md` — recreated (no change to values).
+- `memory/PRD.md` — AE entry at the top of "What's implemented (rolling)".
+- `HANDOVER.md` — title bump + this AE section + updated start-here block.
+- `test_result.md` — AE task block + agent_communication entry from deep_testing_backend_v2.
+
+**No other files changed.** The `memory/NEXT_SESSION_PLAN_AE.md` was never created (the AE work was a same-conversation extension of AD, not a planned session). The `memory/NEXT_SESSION_PLAN_AD.done.md` is the archived AD plan.
+
 
 ### AD. Tours pages: hero carousel restored + Gallery tab removed + "Inclusions" rename + full `tour_detail.*` keys seeded (2026-06-30, **COMPLETE in preview, backend 5/5 + frontend 6/6 PASSED, NOT YET PUSHED TO LIVE**)
 
