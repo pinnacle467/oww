@@ -1,4 +1,4 @@
-# Once Were Wild Travel - Detailed Handover (v2026-06-29, Sessions B1 + B2 + T + U + V + W + X + Y + Z + AA + AB + **AC (Blog page header now editable from Website Text) + live re-sync** COMPLETE in preview, NOT YET PUSHED TO LIVE)
+# Once Were Wild Travel - Detailed Handover (v2026-06-30, Sessions B1 + B2 + T + U + V + W + X + Y + Z + AA + AB + AC + **AD (Hero carousel restored, Gallery tab removed, "Inclusions" rename, full tour_detail.* keys seeded)** COMPLETE in preview, NOT YET PUSHED TO LIVE)
 
 > **Loading instructions for the next agent:**
 > 1. Pull the GitHub repo (`pinnacle467/oww`, branch `main`) into `/app` - that's the source of truth for **all code**.
@@ -6,11 +6,11 @@
 > 3. Immediately run the LIVE-SYNC sequence at the bottom of this doc (`python3 /app/backend/sync_from_live.py`) - that pulls **every DB row, every image, every video** from production at https://oncewerewild.com into your preview environment so you're working against real data, not an empty shell. **You can SKIP this step if you only need to develop against the snapshot that ships in the repo** — the snapshot is auto-applied on backend startup and already contains 237 media rows + 4 published tours + 176 content keys.
 > 4. The sync script + repo together cost **< 10 credits** to re-hydrate the entire project; do not rebuild any of the features below from scratch.
 > 5. **Respond to the user in English only.** They have explicitly disliked em dashes ("—") in user-facing copy - never use them in DB content, SEO text, alt text, JSON-LD, or seeded examples. Hyphens (`-`), commas, or colons are fine.
-> 6. **▶︎ START HERE for this hand-off:** Sessions B1, B2, **T (Phase 1)**, **U (Phase 2)**, **V (Phase 3)**, **W (Phase 4)**, **X (About-Us spacing bug)**, **Y (Phase 5 — 3D Coverflow hero)**, **Z (Tours-page redesign — image-card grid on /pricing + 2-col tour-detail layout with Tabs + sidebar + SwipeableMedia lightbox portal fix)**, **AA (Admin media UX unified: Add / Replace / Delete everywhere there is media; Pricing card thumbnail falls back to first gallery image; "Join a Retreat" hero CTA removed)**, **AB (Client-feedback fixes: upload-goes-to-library-not-gallery, single-hero-shot, per-tour small_group_text)** and **AC (Blog page header now editable from /admin/website-text)** of the Changes 1-9 backlog are all COMPLETE in preview.
+> 6. **▶︎ START HERE for this hand-off:** Sessions B1, B2, **T (Phase 1)**, **U (Phase 2)**, **V (Phase 3)**, **W (Phase 4)**, **X (About-Us spacing bug)**, **Y (Phase 5 — 3D Coverflow hero)**, **Z (Tours-page redesign — image-card grid on /pricing + 2-col tour-detail layout with Tabs + sidebar + SwipeableMedia lightbox portal fix)**, **AA (Admin media UX unified: Add / Replace / Delete everywhere there is media; Pricing card thumbnail falls back to first gallery image; "Join a Retreat" hero CTA removed)**, **AB (Client-feedback fixes: upload-goes-to-library-not-gallery, single-hero-shot, per-tour small_group_text)**, **AC (Blog page header now editable from /admin/website-text)** and **AD (Tours page: hero carousel restored, Gallery tab removed, "Inclusions" rename + full `tour_detail.*` keys seeded so every label on the tour-detail page is admin-editable)** of the Changes 1-9 backlog are all COMPLETE in preview.
 >
-> **⚠️ PENDING SESSION AD:** the client has approved a new round of tour-page changes (revert AB2 single-hero back to carousel, remove the Gallery tab, rename "What's Included" → "Inclusions"). **A detailed phased plan is already written at `/app/memory/NEXT_SESSION_PLAN_AD.md`** — read that first if the next session is AD. Nothing in AD has been started yet; the preview is at end-of-AC state.
+> **▶︎ SESSION AD landed on 2026-06-30.** See the new AD section in "What's been built" below. The phased plan that drove it lived at `/app/memory/NEXT_SESSION_PLAN_AD.md` — it's now done and can be archived / deleted by the next agent if not already.
 >
-> Backend 4/4 (Phase 1) + 11/11 (Phase 2) + 24/24 (Phase 3) + **7/7 (Z1 highlights field)** + **5/5 (AB1 small_group_text)** + **5/5 (AC1 blog content keys)** + frontend 41/41 (Phase 1) + 4/4 (Phase 2) + 5/5 (Phase 3) + 5/5 (Phase 4) + 2/2 (X bug fix) + 4/5 (Phase 5) + **8/8 (Z5 lightbox portal fix)** + **3/3 (AB upload-not-auto-add + single-hero + per-tour textarea)** PASSED. **The user has NOT yet pushed to live; deploy steps below (point 12).** **Do NOT redo any B1, B2, T, U, V, W, X, Y, Z, AA, AB or AC work — it's already on disk.**
+> Backend 4/4 (Phase 1) + 11/11 (Phase 2) + 24/24 (Phase 3) + **7/7 (Z1 highlights field)** + **5/5 (AB1 small_group_text)** + **5/5 (AC1 blog content keys)** + **5/5 (AD3 tour_detail.* keys + "Inclusions" rename + migration)** + frontend 41/41 (Phase 1) + 4/4 (Phase 2) + 5/5 (Phase 3) + 5/5 (Phase 4) + 2/2 (X bug fix) + 4/5 (Phase 5) + **8/8 (Z5 lightbox portal fix)** + **3/3 (AB upload-not-auto-add + single-hero + per-tour textarea)** + **6/6 (AD hero-carousel + 3-tab strip + mobile-360 + admin-round-trip)** PASSED. **The user has NOT yet pushed to live; deploy steps below (point 12).** **Do NOT redo any B1, B2, T, U, V, W, X, Y, Z, AA, AB, AC or AD work — it's already on disk.**
 > 7. **MALENY DECISION (important — read before touching journeys):** The user reversed an earlier Q4 answer. "Maleny Creative Immersion" **stays as `type="tour"`** on `/pricing` — it's an already-planned upcoming trip. Do NOT re-tag Maleny.
 > 8. **CORPORATE RETREATS WAS REMOVED FROM PUBLIC SITE (Session T, 2026-06-28):** Per client direction the entire "Corporate Retreats" public surface area is gone — no nav entry, no separate /corporate-retreats page. The "Corporate and Custom" tour remains as just another card on `/pricing` (it is `type="tour"`). The component files (`Retreats.jsx`, `RetreatsDropdown.jsx`) + backend endpoints (`/api/retreats`, `/api/retreats/{slug}`) + admin JourneysManager tabs are still on disk in case the client asks for re-enable later, but no public route consumes them. See Session T for full detail.
 > 9. **SwipeableMedia is now THE site-wide gallery component (Session U).** Any new gallery — Blog post body, Home content block, Pricing card carousels, future destination pages — MUST consume `components/media/SwipeableMedia.jsx`. Do not re-implement carousel logic. The component already handles images, MP4 videos, YouTube and Vimeo embeds, touch swipe, arrows, dots, counter, lightbox.
@@ -84,6 +84,78 @@
 ---
 
 ## 2. What's been built (chronological, most recent first)
+
+### AD. Tours pages: hero carousel restored + Gallery tab removed + "Inclusions" rename + full `tour_detail.*` keys seeded (2026-06-30, **COMPLETE in preview, backend 5/5 + frontend 6/6 PASSED, NOT YET PUSHED TO LIVE**)
+
+**Client direction (verbatim, via Adele on WhatsApp; relayed to next agent via `memory/NEXT_SESSION_PLAN_AD.md`):**
+> "The one thing I think can be improved in the tours page, is if the gallery is deleted altogether, and instead of having one hero shot on the top, we just have a number of pictures of the tour that people can role through. This would make the headings clearer when you view it on the mobile phone too, as it would give space between the headings. And you don't need photos popping up below, as well as above."
+> "She wants to go back to the carousel on the hero of the tour and remove the gallery section all together and rename the 'What's Included' section to 'Inclusions'."
+> "All this should be available to edit for herself in the admin panel of every page on the website."
+
+**AD1 — Hero carousel restored on `/tours/<slug>` (`frontend/src/pages/TourDetail.jsx`):**
+- The AB2 single-image `<img data-testid="tour-hero-shot">` block is reverted to `<SwipeableMedia items={heroItems} aspectRatio="16/9" data-testid="tour-hero-carousel" />`.
+- `heroItems` is a memo that builds the carousel array from `gallery_media_ids` (using the existing `buildMediaItems` helper at the top of the file), falling back to `[hero_media_id]` when the gallery is empty, and to `[]` when both are empty so a tour with no photos still renders cleanly (the JSX is wrapped in `heroItems.length > 0 &&`).
+- Mobile-spacing tweaks per the client's "give space between the headings" feedback: carousel wrapper now uses `mt-6 sm:mt-7`; the italic gold-bordered description quote below uses `mt-6 sm:mt-8`.
+- The SwipeableMedia component already handles touch swipe, desktop arrow buttons, dot indicators, "1 of N" counter and a portal-based fullscreen lightbox on tap (Session Z5 lightbox-portal fix is preserved).
+- Backend data model is UNCHANGED. `gallery_media_ids` stays on the Journey model (the carousel needs it). The admin "Photo gallery" picker in `/admin/journeys` is UNCHANGED (the AB regressions on upload-to-library + soft-X-only are preserved).
+
+**AD2 — Gallery tab removed from `/tours/<slug>` (`frontend/src/pages/TourDetail.jsx`):**
+- The Gallery entry has been deleted from the `tabs` array. Remaining tabs (when applicable): Details / Inclusions / Prices & Dates.
+- The Gallery tab panel JSX block has been deleted.
+- The now-unused `galleryItems` memo and `galleryLabel` `useText` call have been removed (lint job otherwise complains about unused variables).
+- The orphan content key `tour_detail.tab.gallery` is intentionally NOT removed from DB / DEFAULT_CONTENT — the AD plan calls it harmless and keeps it so the operator's admin UI still lists it without breaking.
+- 360px mobile viewport: the 3 remaining tabs fit cleanly with no horizontal scroll (verified by frontend tests).
+
+**AD3 — Rename "What's Included" tab → "Inclusions" (`backend/server.py`):**
+- Seed default for `tour_detail.tab.includes` in `DEFAULT_CONTENT` is now `"Inclusions"`. Frontend `useText` fallback string also updated for parity on fresh environments.
+- New idempotent startup migration added next to the AB1 small_group_text block:
+  ```python
+  res_inc = await db.content.update_one(
+      {"key": "tour_detail.tab.includes", "value": "What's Included"},
+      {"$set": {"value": "Inclusions", "updated_at": now_iso()}},
+  )
+  if res_inc.modified_count:
+      logger.info("AD3: renamed tour_detail.tab.includes to 'Inclusions'")
+  ```
+- Idempotence rationale: the filter is value-based (`"value": "What's Included"`), so once the row holds "Inclusions" (or any custom client value), the filter no longer matches and the migration becomes a permanent no-op. Client custom edits ("What you get", "Your stay includes", etc.) survive every restart.
+- The two H3s inside the Inclusions panel ("What's Included" / "What's Not Included") are intentionally NOT renamed — they pair as a 2-column section. Only the TAB label was renamed per the client's brief.
+
+**AD4 — Audit of "everything editable from admin" (the standing client requirement):**
+This audit surfaced a real issue. Although the Session Z + AC summary notes claimed the `tour_detail.*` content keys were seeded, they were NOT actually present in `DEFAULT_CONTENT` — the same root cause as the AC blog-keys fix. AD ships the FULL family of 8 keys under the `pricing` group (so they appear under "Journeys & Pricing page" in `/admin/website-text`):
+
+| Key | Default value |
+|---|---|
+| `tour_detail.highlights.heading` | "Tour highlights" |
+| `tour_detail.small_group.heading` | "Small group tours" |
+| `tour_detail.small_group.body` | "For a more private experience and a better quality of service, our small groups are limited to twelve travellers." |
+| `tour_detail.testimonials.heading` | "Testimonials" |
+| `tour_detail.tab.details` | "Details" |
+| `tour_detail.tab.includes` | **"Inclusions"** (AD3 — renamed from "What's Included") |
+| `tour_detail.tab.prices` | "Prices & Dates" |
+| `tour_detail.download_pdf` | "Download Full Itinerary (PDF)" |
+
+Total content keys: 183 → **191**. Frontend tests verified the admin round-trip works end-to-end (admin edits → public page reflects → revert → public reverts).
+
+**What to expect after deploy (Bluehost re-pull):**
+- Public `/tours/<slug>` immediately shows a swipeable hero carousel using the existing `gallery_media_ids` — no admin action required.
+- Public `/tours/<slug>` immediately shows exactly 3 tabs: Details / Inclusions / Prices & Dates.
+- Admin `/admin/website-text` → "Journeys & Pricing page" group now lists all 8 `tour_detail.*` keys, each individually editable. The orphan `tour_detail.tab.gallery` (if it was ever seeded on live — it wasn't in this preview) will be listed too; the client can ignore it.
+- The AD3 migration runs once on the first Bluehost restart after deploy and upgrades any DB row that still holds "What's Included" to "Inclusions". Idempotent on every subsequent boot.
+
+**Test results:**
+- `deep_testing_backend_v2`: 5/5 PASSED (seed presence + values, round-trip via /api/admin/content, idempotence across `supervisorctl restart backend`, revert to clean state, regression on /api/journeys + /api/media + /api/blog + /api/auth/login).
+- `auto_frontend_testing_agent`: 6/6 PASSED across 5 tests on the preview at `https://170bcf25-942f-44a3-b7ed-d560a9798f92.preview.emergentagent.com` — AD1 hero carousel with arrows + dots + lightbox on Maleny (25 photos), AD1 empty-gallery graceful fallback on Tasmanian, AD2 3-tab strip + Gallery tab absent, AD2 360px mobile no horizontal scroll, AD3 full admin round-trip "Inclusions" → "What you get" → "Inclusions" reflected on public, zero console errors.
+
+**Files touched in AD:**
+- `frontend/src/pages/TourDetail.jsx` — AD1 + AD2 + AD3 fallback string.
+- `backend/server.py` — 8 new `_c("pricing", "tour_detail.*", ...)` lines in DEFAULT_CONTENT + AD3 migration block.
+- `memory/PRD.md` — AD entry at the top of "What's implemented (rolling)".
+- `HANDOVER.md` — title bump + new AD section + updated start-here checklist.
+- `backend/seed_data/site_snapshot.json` — regenerated by `sync_from_live.py` at session start (353,809 bytes; media now 286 → likely 286-ish after sync).
+- `test_result.md` — AD3 task block + agent_communication entries.
+
+**No other files changed.** The `memory/NEXT_SESSION_PLAN_AD.md` document that drove this session can be archived / deleted by the next agent (its plan is now fully reflected in the HANDOVER + PRD).
+
 
 ### AC. Blog page header now editable from /admin/website-text + live re-sync (2026-06-29, **COMPLETE in preview, backend 5/5 PASSED, NOT YET PUSHED TO LIVE**)
 
