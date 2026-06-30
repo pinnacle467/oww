@@ -26,6 +26,8 @@ const CookiesPolicy = lazy(() => import("@/pages/CookiesPolicy"));
 // the vast majority of visitors hit) doesn't have to download ~150 KB of
 // admin-only JS. Each admin route becomes its own chunk fetched on demand.
 const AdminLogin = lazy(() => import("@/pages/admin/AdminLogin"));
+const ForgotPassword = lazy(() => import("@/pages/admin/ForgotPassword"));
+const ResetPassword = lazy(() => import("@/pages/admin/ResetPassword"));
 const AdminDashboard = lazy(() => import("@/pages/admin/AdminDashboard"));
 const HeroManager = lazy(() => import("@/pages/admin/HeroManager"));
 const GalleryManager = lazy(() => import("@/pages/admin/GalleryManager"));
@@ -94,6 +96,8 @@ function App() {
                         chunk wrapped in Suspense so the public bundle stays
                         small. */}
                     <Route path="/admin" element={<Suspense fallback={<AdminFallback />}><AdminLogin /></Suspense>} />
+                    <Route path="/admin/forgot-password" element={<Suspense fallback={<AdminFallback />}><ForgotPassword /></Suspense>} />
+                    <Route path="/admin/reset-password" element={<Suspense fallback={<AdminFallback />}><ResetPassword /></Suspense>} />
                     <Route path="/admin/dashboard" element={<Suspense fallback={<AdminFallback />}><AdminDashboard /></Suspense>} />
                     <Route path="/admin/hero" element={<Suspense fallback={<AdminFallback />}><HeroManager /></Suspense>} />
                     <Route path="/admin/gallery" element={<Suspense fallback={<AdminFallback />}><GalleryManager /></Suspense>} />

@@ -40,4 +40,4 @@ is also represented in standard schema.org JSON-LD inside every HTML page.
   departure. Travel insurance is strongly advised.
 - This site is operated by humans. Email is the best channel for enquiries.
 
-_Last refreshed: 2026-06-30T08:59:30.736587+00:00_
+_Last refreshed: 2026-06-30T09:14:59.714752+00:00_

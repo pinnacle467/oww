@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import api, { formatApiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { Loader2, ShieldCheck, Mail } from "lucide-react";
@@ -96,6 +96,11 @@ export default function AdminLogin() {
               data-testid="login-submit">
               {loading && <Loader2 className="h-5 w-5 animate-spin" />} Sign in
             </button>
+            <div className="text-center pt-1">
+              <Link to="/admin/forgot-password" className="text-sm text-[#2E6DA4] font-medium hover:underline" data-testid="login-forgot-password">
+                Forgot your password?
+              </Link>
+            </div>
           </form>
         )}
 

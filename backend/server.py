@@ -135,6 +135,48 @@ async def send_otp_email(to_email: str, code: str):
     await asyncio.to_thread(resend.Emails.send, params)
 
 
+async def send_reset_email(to_email: str, reset_link: str, expiry_minutes: int = 30):
+    """Send the admin password-reset email. Mirrors the visual language of
+    `send_otp_email` so the inbox looks consistent. Plain-string interpolation
+    is safe because `reset_link` is built server-side from a base URL we
+    trust + a hex token, and `to_email` is the recipient itself.
+    """
+    html = f"""
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9f7f4;padding:32px 0;font-family:Arial,Helvetica,sans-serif;">
+      <tr><td align="center">
+        <table width="480" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:6px;overflow:hidden;border:1px solid #eee;">
+          <tr><td style="background:#2D4A3E;padding:24px 32px;color:#ffffff;font-size:18px;letter-spacing:2px;">ONCE WERE WILD</td></tr>
+          <tr><td style="padding:32px;">
+            <h1 style="color:#1C1C1C;font-size:22px;margin:0 0 16px;font-weight:600;">Reset your password</h1>
+            <p style="color:#1C1C1C;font-size:16px;margin:0 0 16px;line-height:1.55;">
+              We received a request to reset the password for your Once Were Wild website manager account.
+              Tap the button below to choose a new password. The link expires in {expiry_minutes} minutes.
+            </p>
+            <p style="margin:24px 0;text-align:center;">
+              <a href="{reset_link}" style="background:#2D4A3E;color:#ffffff;text-decoration:none;font-size:16px;font-weight:500;padding:14px 28px;border-radius:6px;display:inline-block;">Choose a new password</a>
+            </p>
+            <p style="color:#5A5A5A;font-size:14px;margin:16px 0 0;line-height:1.55;">
+              If the button does not work, copy and paste this link into your browser:<br />
+              <span style="color:#2D4A3E;word-break:break-all;">{reset_link}</span>
+            </p>
+            <p style="color:#5A5A5A;font-size:14px;margin:16px 0 0;line-height:1.55;">
+              If you did not request this, you can safely ignore this email. Your password will not change.
+            </p>
+          </td></tr>
+          <tr><td style="padding:16px 32px;background:#f9f7f4;color:#9a9a9a;font-size:12px;">Once Were Wild Travel</td></tr>
+        </table>
+      </td></tr>
+    </table>
+    """
+    params = {
+        "from": SENDER_EMAIL,
+        "to": [to_email],
+        "subject": "Reset your Once Were Wild password",
+        "html": html,
+    }
+    await asyncio.to_thread(resend.Emails.send, params)
+
+
 
 # ----------------------------- Models -----------------------------
 class LoginInput(BaseModel):
@@ -153,6 +195,21 @@ class ChallengeInput(BaseModel):
 
 class ChangePasswordInput(BaseModel):
     current_password: str
+    new_password: str
+
+
+class ForgotPasswordInput(BaseModel):
+    """POST /api/auth/forgot-password. The optional origin lets the frontend
+    tell us which host to embed in the reset link so the email works for
+    both preview and production without env reshuffling.
+    """
+    email: EmailStr
+    origin: Optional[str] = ""
+
+
+class ResetPasswordInput(BaseModel):
+    """POST /api/auth/reset-password. Token comes from the emailed link."""
+    token: str
     new_password: str
 
 
@@ -631,6 +688,182 @@ async def change_password(data: ChangePasswordInput, admin: dict = Depends(get_c
         raise HTTPException(status_code=400, detail="Your new password must be at least 8 characters.")
     await db.users.update_one({"id": admin["id"]}, {"$set": {"password_hash": hash_password(data.new_password)}})
     return {"message": "Your password has been updated."}
+
+
+# ----------------------------- Password reset (forgot password) -----------------------------
+# The flow:
+#   1. POST /api/auth/forgot-password { email, origin? }
+#      -> Always returns 200 with a generic message (no email enumeration).
+#      -> If the email matches the seeded admin (ADMIN_EMAIL), generate a
+#         random 32-byte hex token, store SHA-256(token) in password_reset_tokens
+#         with a 30-min expiry, send the user an email containing
+#         <origin>/admin/reset-password?token=<plain>.
+#      -> Idempotent: hitting it again issues a fresh token + invalidates the
+#         previous (this is what the "Resend email" button uses).
+#      -> Rate-limited: max 3 emails per email-address per 15 min window.
+#
+#   2. POST /api/auth/reset-password { token, new_password }
+#      -> Hash the supplied token, lookup, validate (exists, not used, not
+#         expired), update users.password_hash, mark token used, also clear
+#         any login_attempts lockout (UX win).
+
+PASSWORD_RESET_EXPIRY_MINUTES = 30
+PASSWORD_RESET_RATE_LIMIT = 3            # max 3 emails per window
+PASSWORD_RESET_RATE_WINDOW_MIN = 15      # 15-minute window
+
+
+def _hash_reset_token(plain: str) -> str:
+    """SHA-256 hex digest. Tokens are random hex strings of 32 bytes (64 hex
+    chars) so a cryptographic digest at rest gives the same security guarantee
+    as a database leak: an attacker with the table cannot reverse the digest
+    and reuse the link. Bcrypt would also work but SHA-256 is fine for short
+    high-entropy strings and is faster on every lookup."""
+    import hashlib
+    return hashlib.sha256(plain.encode("utf-8")).hexdigest()
+
+
+def _build_reset_link(origin: str, token: str) -> str:
+    """Origin priority:
+       1. Caller-supplied `origin` (frontend window.location.origin) IF it
+          looks like a real HTTP(S) URL. This is what makes preview + prod
+          both work without env shuffling.
+       2. Fallback to PUBLIC_SITE_URL.
+    The path is hardcoded to /admin/reset-password — see the matching React
+    route in App.js."""
+    base = (origin or "").strip().rstrip("/")
+    if not (base.startswith("http://") or base.startswith("https://")):
+        base = SITE_URL.rstrip("/")
+    return f"{base}/admin/reset-password?token={token}"
+
+
+@api_router.post("/auth/forgot-password")
+async def forgot_password(data: ForgotPasswordInput):
+    email = data.email.lower().strip()
+
+    # Always return the same body so this endpoint cannot be used to
+    # enumerate registered email addresses.
+    generic_response = {
+        "message": (
+            "If that email matches an admin account, we have sent password "
+            "reset instructions. Please check your inbox (and spam folder)."
+        )
+    }
+
+    # Rate limit per email — bucket counter with TTL semantics emulated via
+    # the existing login_attempts pattern. Key is prefixed so we don't clash
+    # with login lockouts.
+    rl_id = f"reset:{email}"
+    rl = await db.password_reset_rate.find_one({"identifier": rl_id})
+    now = datetime.now(timezone.utc)
+    if rl:
+        window_started = datetime.fromisoformat(rl.get("window_started_at", now.isoformat()))
+        # Window expired -> reset
+        if (now - window_started) > timedelta(minutes=PASSWORD_RESET_RATE_WINDOW_MIN):
+            await db.password_reset_rate.delete_one({"identifier": rl_id})
+            rl = None
+        elif rl.get("count", 0) >= PASSWORD_RESET_RATE_LIMIT:
+            # Quiet rate-limit: we still return the generic message (don't
+            # let attackers learn the email exists by getting a 429), but
+            # we skip the email send. The legitimate user sees the same
+            # confirmation screen with a "Resend in N minutes" hint via
+            # the existing client-side debounce.
+            return generic_response
+
+    user = await db.users.find_one({"email": email})
+    # Per the user's choice (option 4a), restrict to the seeded admin email.
+    # Even if more users exist later, only ADMIN_EMAIL can use this flow until
+    # we decide otherwise.
+    if user and email == os.environ.get("ADMIN_EMAIL", "").lower().strip():
+        # Invalidate any prior unused tokens for this user (one active link
+        # at a time, matching the rest of the auth surface where re-sending
+        # OTP also invalidates the old code).
+        await db.password_reset_tokens.update_many(
+            {"user_id": user["id"], "used": False},
+            {"$set": {"used": True, "invalidated_at": now_iso(), "reason": "superseded"}},
+        )
+
+        plain_token = secrets.token_hex(32)   # 64-char hex
+        await db.password_reset_tokens.insert_one({
+            "id": str(uuid.uuid4()),
+            "user_id": user["id"],
+            "token_hash": _hash_reset_token(plain_token),
+            "expires_at": (now + timedelta(minutes=PASSWORD_RESET_EXPIRY_MINUTES)).isoformat(),
+            "used": False,
+            "created_at": now_iso(),
+        })
+
+        reset_link = _build_reset_link(data.origin, plain_token)
+
+        # Send the email. If RESEND_API_KEY is empty / not configured, log
+        # a warning + the link itself (so a dev can still complete the
+        # flow in a preview that has not been wired to Resend yet) and
+        # return the generic response so the API contract stays stable.
+        if not RESEND_API_KEY:
+            logger.warning(
+                "RESEND_API_KEY is not set — password reset email NOT sent. "
+                "Reset link for %s would be: %s",
+                email, reset_link,
+            )
+        else:
+            try:
+                await send_reset_email(email, reset_link, expiry_minutes=PASSWORD_RESET_EXPIRY_MINUTES)
+            except Exception as e:
+                # Don't 500 (would reveal the email is registered). Log + carry on.
+                logger.error(f"Failed to send password reset email: {e}")
+
+    # Update rate-limit counter even when the email doesn't exist, so the
+    # endpoint can't be hammered for either enumeration or DoS.
+    if rl:
+        await db.password_reset_rate.update_one(
+            {"identifier": rl_id},
+            {"$set": {"updated_at": now_iso()}, "$inc": {"count": 1}},
+        )
+    else:
+        await db.password_reset_rate.insert_one({
+            "identifier": rl_id,
+            "count": 1,
+            "window_started_at": now.isoformat(),
+            "updated_at": now_iso(),
+        })
+
+    return generic_response
+
+
+@api_router.post("/auth/reset-password")
+async def reset_password(data: ResetPasswordInput):
+    token = (data.token or "").strip()
+    new_password = data.new_password or ""
+
+    if not token or len(token) != 64:
+        raise HTTPException(status_code=400, detail="This reset link is not valid. Please request a new one.")
+    if len(new_password) < 8:
+        raise HTTPException(status_code=400, detail="Your new password must be at least 8 characters.")
+
+    rec = await db.password_reset_tokens.find_one({"token_hash": _hash_reset_token(token)})
+    if not rec or rec.get("used"):
+        raise HTTPException(status_code=400, detail="This reset link has already been used or is no longer valid. Please request a new one.")
+
+    expires_at = datetime.fromisoformat(rec["expires_at"])
+    if expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="This reset link has expired. Please request a new one.")
+
+    user = await db.users.find_one({"id": rec["user_id"]})
+    if not user:
+        raise HTTPException(status_code=400, detail="Account not found.")
+
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {"password_hash": hash_password(new_password), "password_updated_at": now_iso()}},
+    )
+    await db.password_reset_tokens.update_one(
+        {"id": rec["id"]},
+        {"$set": {"used": True, "used_at": now_iso()}},
+    )
+    # UX bonus: clear any active login-attempt lockout for this email so the
+    # user can immediately sign in with their new password.
+    await db.login_attempts.delete_one({"identifier": user["email"]})
+
+    return {"message": "Your password has been reset. You can now sign in with your new password."}
 
 
 # ----------------------------- Contact / Leads -----------------------------
