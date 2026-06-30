@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-06-30T08:14:45.824504+00:00",
+  "generated_at": "2026-06-30T08:59:57.528723+00:00",
   "media": [
     {
       "file_url": "/api/uploads/contact-bg/c6213da9b39140b19135fb900221e491.webp",
@@ -6826,111 +6826,59 @@
     },
     {
       "key": "tour_detail.highlights.heading",
-      "created_at": "2026-06-30T07:05:01.996954+00:00",
-      "group": "pricing",
-      "label": "Tour detail - highlights heading",
-      "type": "text",
       "value": "Tour highlights"
     },
     {
       "key": "tour_detail.small_group.heading",
-      "created_at": "2026-06-30T07:05:01.997256+00:00",
-      "group": "pricing",
-      "label": "Tour detail - small group heading",
-      "type": "text",
       "value": "Small group tours"
     },
     {
       "key": "tour_detail.small_group.body",
-      "created_at": "2026-06-30T07:05:01.997526+00:00",
-      "group": "pricing",
-      "label": "Tour detail - small group body (site-wide default; per-tour copy in JourneysManager overrides this)",
-      "type": "richtext",
       "value": "For a more private experience and a better quality of service, our small groups are limited to twelve travellers."
     },
     {
       "key": "tour_detail.testimonials.heading",
-      "created_at": "2026-06-30T07:05:01.997785+00:00",
-      "group": "pricing",
-      "label": "Tour detail - testimonials heading",
-      "type": "text",
       "value": "Testimonials"
     },
     {
       "key": "tour_detail.tab.details",
-      "created_at": "2026-06-30T07:05:01.998032+00:00",
-      "group": "pricing",
-      "label": "Tour detail - Details tab label",
-      "type": "text",
       "value": "Details"
     },
     {
       "key": "tour_detail.tab.includes",
-      "created_at": "2026-06-30T07:05:01.998277+00:00",
-      "group": "pricing",
-      "label": "Tour detail - Inclusions tab label (AD3 renamed from 'What's Included')",
-      "type": "text",
       "value": "Inclusions"
     },
     {
       "key": "tour_detail.tab.prices",
-      "created_at": "2026-06-30T07:05:01.998518+00:00",
-      "group": "pricing",
-      "label": "Tour detail - Prices and Dates tab label",
-      "type": "text",
       "value": "Prices & Dates"
     },
     {
       "key": "tour_detail.download_pdf",
-      "created_at": "2026-06-30T07:05:01.998771+00:00",
-      "group": "pricing",
-      "label": "Tour detail - download PDF button label",
-      "type": "text",
       "value": "Download Full Itinerary (PDF)"
     },
     {
       "key": "blog.hero.eyebrow",
-      "created_at": "2026-06-30T07:05:02.011734+00:00",
-      "group": "blog",
-      "label": "Blog eyebrow",
-      "type": "text",
       "value": "From the Road"
     },
     {
       "key": "blog.hero.title",
-      "created_at": "2026-06-30T07:05:02.012021+00:00",
-      "group": "blog",
-      "label": "Blog title",
-      "type": "richtext",
       "value": "The *Once Were Wild* journal."
     },
     {
       "key": "blog.hero.intro",
-      "created_at": "2026-06-30T07:05:02.012318+00:00",
-      "group": "blog",
-      "label": "Blog intro",
-      "type": "richtext",
-      "value": "Field notes, slow reflections and stories from journeys taken outside the scheduled calendar."
+      "value": "Field notes, slow reflections and stories from our journeys."
     },
     {
       "key": "blog.empty.heading",
-      "created_at": "2026-06-30T07:05:02.012660+00:00",
-      "group": "blog",
-      "label": "Empty-state heading",
-      "type": "text",
       "value": "Stories are on their way."
     },
     {
       "key": "blog.empty.body",
-      "created_at": "2026-06-30T07:05:02.013018+00:00",
-      "group": "blog",
-      "label": "Empty-state body",
-      "type": "richtext",
       "value": "Our first journal entries are being written between trips. Check back soon, or follow the road with us on Instagram."
     },
     {
       "key": "about.sister.eyebrow",
-      "created_at": "2026-06-30T07:35:28.758189+00:00",
+      "created_at": "2026-06-30T08:59:30.597549+00:00",
       "group": "about",
       "label": "About sister brands - eyebrow",
       "type": "text",
@@ -6938,7 +6886,7 @@
     },
     {
       "key": "about.sister.title",
-      "created_at": "2026-06-30T07:35:28.758500+00:00",
+      "created_at": "2026-06-30T08:59:30.597960+00:00",
       "group": "about",
       "label": "About sister brands - title (use *italic* for emphasis)",
       "type": "richtext",
@@ -6946,7 +6894,7 @@
     },
     {
       "key": "about.sister.intro",
-      "created_at": "2026-06-30T07:35:28.758791+00:00",
+      "created_at": "2026-06-30T08:59:30.598349+00:00",
       "group": "about",
       "label": "About sister brands - intro paragraph",
       "type": "richtext",
@@ -6954,7 +6902,7 @@
     },
     {
       "key": "about.sister.cta",
-      "created_at": "2026-06-30T07:35:28.759059+00:00",
+      "created_at": "2026-06-30T08:59:30.598711+00:00",
       "group": "about",
       "label": "About sister brands - shared CTA label",
       "type": "text",
@@ -6962,16 +6910,15 @@
     },
     {
       "key": "about.sister.0.name",
-      "created_at": "2026-06-30T07:35:28.759470+00:00",
+      "created_at": "2026-06-30T08:59:30.599084+00:00",
       "group": "about",
       "label": "Sister brand 1 - name",
       "type": "text",
-      "value": "Lillypillys Country Cottages",
-      "updated_at": "2026-06-30T08:14:43.333967+00:00"
+      "value": "Lillypillys Country Cottages"
     },
     {
       "key": "about.sister.0.tagline",
-      "created_at": "2026-06-30T07:35:28.759888+00:00",
+      "created_at": "2026-06-30T08:59:30.599441+00:00",
       "group": "about",
       "label": "Sister brand 1 - tagline",
       "type": "text",
@@ -6979,7 +6926,7 @@
     },
     {
       "key": "about.sister.0.url",
-      "created_at": "2026-06-30T07:35:28.760239+00:00",
+      "created_at": "2026-06-30T08:59:30.599798+00:00",
       "group": "about",
       "label": "Sister brand 1 - website URL",
       "type": "text",
@@ -6987,7 +6934,7 @@
     },
     {
       "key": "about.sister.1.name",
-      "created_at": "2026-06-30T07:35:28.760564+00:00",
+      "created_at": "2026-06-30T08:59:30.600176+00:00",
       "group": "about",
       "label": "Sister brand 2 - name",
       "type": "text",
@@ -6995,7 +6942,7 @@
     },
     {
       "key": "about.sister.1.tagline",
-      "created_at": "2026-06-30T07:35:28.760831+00:00",
+      "created_at": "2026-06-30T08:59:30.600536+00:00",
       "group": "about",
       "label": "Sister brand 2 - tagline",
       "type": "text",
@@ -7003,7 +6950,7 @@
     },
     {
       "key": "about.sister.1.url",
-      "created_at": "2026-06-30T07:35:28.761089+00:00",
+      "created_at": "2026-06-30T08:59:30.600892+00:00",
       "group": "about",
       "label": "Sister brand 2 - website URL",
       "type": "text",
@@ -7058,23 +7005,19 @@
     },
     {
       "key": "contact_phone_1_label",
-      "value": "Adele:",
-      "updated_at": "2026-06-30T08:14:43.815517+00:00"
+      "value": "Adele:"
     },
     {
       "key": "contact_phone_1_number",
-      "value": "+61 408 943 002",
-      "updated_at": "2026-06-30T08:14:43.816107+00:00"
+      "value": ""
     },
     {
       "key": "contact_phone_2_label",
-      "value": "Barbara:",
-      "updated_at": "2026-06-30T08:09:07.526658+00:00"
+      "value": "Barbara:"
     },
     {
       "key": "contact_phone_2_number",
-      "value": "+61 457 999 411",
-      "updated_at": "2026-06-30T08:09:07.527133+00:00"
+      "value": ""
     }
   ],
   "journeys": [
@@ -7103,8 +7046,8 @@
       "itinerary_filename": "",
       "sort_order": 0,
       "created_at": "2026-06-24T07:30:57.634047+00:00",
-      "updated_at": "2026-06-30T06:46:23.747206+00:00",
-      "slug": "maleny-creative-immersion-retreat",
+      "updated_at": "2026-06-30T08:03:27.775134+00:00",
+      "slug": "maleny-creative-immersion-womens-retreat-sunshine-coast",
       "status": "published",
       "type": "tour",
       "gallery_media_ids": [
@@ -7155,7 +7098,7 @@
         "Sunrises; sunsets; platypus viewing; hinterland walks",
         "Visits to the artisan villages of Maleny and Montville"
       ],
-      "small_group_text": ""
+      "small_group_text": "Our Maleny retreats cater for up to 10 ladies in our own luxury cottage style accommodations at\nLillypilly's Country Cottages and Moments by Cottage in the Woods."
     },
     {
       "id": "ae57de03-978b-4ca3-a562-1735675ee464",
@@ -7182,8 +7125,8 @@
       "itinerary_filename": "Tasmania 2027.pdf",
       "sort_order": 1,
       "created_at": "2026-06-24T07:30:57.644975+00:00",
-      "updated_at": "2026-06-30T06:54:24.760274+00:00",
-      "slug": "tasmanian-slow-and-soulful-journeys",
+      "updated_at": "2026-06-30T08:04:01.250894+00:00",
+      "slug": "tasmanian-slow-and-soulful-womens-tours",
       "status": "published",
       "type": "tour",
       "gallery_media_ids": [
@@ -7243,19 +7186,19 @@
       "hero_media_id": "",
       "seo_description": "",
       "seo_title": "",
-      "small_group_text": ""
+      "small_group_text": "True Small-Group Travel: Real connection requires space. To ensure a deeply personal experience and seamless care, we limit our group size to 8 ladies, allowing us to offer exceptional personal service and the feeling of travelling with close friends."
     },
     {
       "id": "37ed2680-f641-4dcc-b85e-07140d0636e0",
       "name": "Wild and Wondrous West Coast",
       "region": "Western Australia",
       "nights": "12 to 23 nights",
-      "dates": "Feb 5 to Feb 17, 2027(12  Nights) OR Feb 16 to Feb 28, 2027(12 Nights) | Feb 5 to Feb 28, 2027(23 Nights)",
+      "dates": "12 nights from Feb 05, 2027 OR Feb 16, 2027 | 23 nights from Feb 05, 2027",
       "priceFrom": "From $7,950",
       "priceUnit": "per person, 12 night tours",
       "priceNote": "Full 23 night Odyssey from $15,200, GST included",
       "popular": false,
-      "summary": "Intimate small group odysseys across Westerns Australia's most breathtaking states, six to eight women.",
+      "summary": "True Small-Group Travel: Real connection requires space. To ensure a deeply personal experience and seamless care, we limit our groups to 8 guests, allowing us to offer exceptional personal service and the feeling of travelling with close friends.",
       "includes": [
         "Twin share accommodation throughout",
         "Meals as specified, wine with dinner",
@@ -7266,12 +7209,12 @@
       ],
       "cta": "Enquire about WA",
       "is_active": true,
-      "itinerary_url": "",
-      "itinerary_filename": "",
+      "itinerary_url": "/api/uploads/itineraries/b3e3bf0cfbf041d3a332a21e21e6f5cd.pdf",
+      "itinerary_filename": "Wild and Wonderous West Coast.pdf",
       "sort_order": 2,
       "created_at": "2026-06-24T10:28:01.511628+00:00",
-      "updated_at": "2026-06-30T06:56:53.136433+00:00",
-      "slug": "western-australian-slow-and-soulful-journeys",
+      "updated_at": "2026-06-30T08:16:22.247720+00:00",
+      "slug": "western-australian-wild-and-wondrous-tours",
       "status": "published",
       "type": "tour",
       "gallery_media_ids": [
@@ -7294,7 +7237,7 @@
       ],
       "more_details_html": "",
       "highlights": [],
-      "small_group_text": "",
+      "small_group_text": "True Small-Group Travel: Real connection requires space. To ensure a deeply personal experience and seamless care, we limit our group size to 8 ladies, allowing us to offer exceptional personal service and the feeling of travelling with close friends.",
       "hero_media_id": "",
       "seo_description": "",
       "seo_title": ""
@@ -7324,7 +7267,7 @@
       "itinerary_filename": "",
       "sort_order": 3,
       "created_at": "2026-06-24T07:30:57.645241+00:00",
-      "updated_at": "2026-06-27T11:44:35.171406+00:00",
+      "updated_at": "2026-06-30T07:57:21.205824+00:00",
       "slug": "corporate-and-custom",
       "status": "published",
       "type": "tour",
@@ -7342,7 +7285,10 @@
       ],
       "more_details_html": "",
       "highlights": [],
-      "small_group_text": ""
+      "small_group_text": "Tailored to your circle, with us by your side: Your custom itinerary adapts beautifully to any group size, from an intimate getaway for two to a celebration with your favorite people. You choose the guest list, and we handle the rest. Best of all, we don’t just design the magic, we are right there with you on the road, hosting your journey and ensuring every moment is seamless, relaxed, and unforgettable.",
+      "hero_media_id": "",
+      "seo_description": "",
+      "seo_title": ""
     }
   ],
   "about_blocks": [
