@@ -57,7 +57,9 @@ export default function TourDetail() {
   const [mediaMap, setMediaMap] = useState({});
   const [status, setStatus] = useState("loading"); // loading | ok | not-found
   const [activeTab, setActiveTab] = useState("details");
-  const enquireLabel = useText("tours.detail.enquire", "Enquire Now");
+  // AF - moved this from `tours.detail.enquire` to `tour_detail.enquire`
+  // so every tour-detail label lives under one group in /admin/website-text.
+  const enquireLabel = useText("tour_detail.enquire", "Enquire Now");
 
   // Detect which "kind" of journey this is from the URL. Retreats live
   // under /corporate-retreats/* so we hit a different API endpoint and
@@ -66,15 +68,15 @@ export default function TourDetail() {
   const kind = isRetreat ? "retreat" : "tour";
   const apiPath = isRetreat ? "retreats" : "tours";
   const backLinkTo = isRetreat ? "/corporate-retreats" : "/pricing";
-  const backLinkLabel = isRetreat ? "View all retreats" : "View all tours";
+  const backToToursLabel = useText("tour_detail.back_to_tours", "View all tours");
+  const backLinkLabel = isRetreat ? "View all retreats" : backToToursLabel;
   const seoPath = isRetreat ? `/corporate-retreats/${slug}` : `/tours/${slug}`;
 
   // Optional ?preview=<token> query param lets the admin preview drafts
   // without publishing them. Backend validates the token against the row.
   const previewToken = new URLSearchParams(location.search).get("preview") || "";
 
-  // Sidebar copy is admin-editable via /admin/website-text (group inferred
-  // from key prefix - shows up under "Tour detail").
+  // Sidebar copy is admin-editable via /admin/website-text > Tour detail page.
   const highlightsHeading = useText("tour_detail.highlights.heading", "Tour highlights");
   const smallGroupHeading = useText("tour_detail.small_group.heading", "Small group tours");
   const smallGroupBody    = useText(
@@ -86,6 +88,22 @@ export default function TourDetail() {
   const includesLabel = useText("tour_detail.tab.includes", "Inclusions");
   const pricesLabel   = useText("tour_detail.tab.prices", "Prices & Dates");
   const downloadLabel = useText("tour_detail.download_pdf", "Download Full Itinerary (PDF)");
+  // AF - states + sub-line copy
+  const loadingLabel = useText("tour_detail.loading", "Loading...");
+  const notFoundTitle = useText("tour_detail.not_found_title", "Tour not found");
+  const notFoundBody = useText(
+    "tour_detail.not_found_body",
+    "This tour may have been moved or is no longer published. View our current journeys instead."
+  );
+  const tourKindLabel = useText("tour_detail.kind.tour", "Small Group Tour");
+  const pdfOnlyNote = useText(
+    "tour_detail.pdf_only_note",
+    "A full day-by-day itinerary is available in the PDF below."
+  );
+  const emptyMessage = useText(
+    "tour_detail.empty_message",
+    "Full itinerary coming soon. Enquire below and we'll send you the day-by-day plan."
+  );
 
   useEffect(() => {
     setStatus("loading");
@@ -134,7 +152,7 @@ export default function TourDetail() {
   if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-cream" data-testid="tour-detail-loading">
-        <p className="text-ink-soft text-sm">Loading...</p>
+        <p className="text-ink-soft text-sm">{loadingLabel}</p>
       </div>
     );
   }
@@ -143,12 +161,12 @@ export default function TourDetail() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-cream px-6" data-testid="tour-detail-not-found">
         <h1 className="font-display font-light text-ink text-4xl mb-4">
-          {isRetreat ? "Retreat not found" : "Tour not found"}
+          {isRetreat ? "Retreat not found" : notFoundTitle}
         </h1>
         <p className="text-ink-soft mb-8 text-center max-w-md">
           {isRetreat
             ? "This retreat may have been moved or is no longer published."
-            : "This tour may have been moved or is no longer published. View our current journeys instead."}
+            : notFoundBody}
         </p>
         <CTAButton to={backLinkTo} variant="filled" withArrow>{backLinkLabel}</CTAButton>
       </div>
@@ -340,7 +358,7 @@ export default function TourDetail() {
                       // if they have one uploaded.
                       tour.itinerary_url && (
                         <p className="editorial text-ink-soft italic">
-                          A full day-by-day itinerary is available in the PDF below.
+                          {pdfOnlyNote}
                         </p>
                       )
                     )}
@@ -379,7 +397,7 @@ export default function TourDetail() {
                     )}
                     {!itineraryHtml && !moreDetailsHtml && !practicalHtml && !tour.itinerary_url && (
                       <p className="editorial text-ink-soft italic">
-                        Full itinerary coming soon. Enquire below and we'll send you the day-by-day plan.
+                        {emptyMessage}
                       </p>
                     )}
                   </div>

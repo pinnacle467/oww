@@ -22,6 +22,8 @@ export function FromTheJournal() {
     "Field notes and slow reflections from journeys taken between scheduled tours.",
   );
   const ctaLabel = useText("home.journal.cta", "Read the journal");
+  // AF - admin-editable label inside each journal card.
+  const cardReadMore = useText("home.journal.card_read_more", "Read more");
 
   const [posts, setPosts] = useState(null); // null = loading, [] = empty
 
@@ -58,7 +60,7 @@ export function FromTheJournal() {
 
         <div className="grid gap-8 md:grid-cols-3">
           {posts.map((p) => (
-            <JournalCard key={p.id} post={p} />
+            <JournalCard key={p.id} post={p} readMoreLabel={cardReadMore} />
           ))}
         </div>
 
@@ -77,7 +79,7 @@ export function FromTheJournal() {
   );
 }
 
-function JournalCard({ post }) {
+function JournalCard({ post, readMoreLabel }) {
   return (
     <Link
       to={`/blog/${post.slug || post.id}`}
@@ -112,7 +114,7 @@ function JournalCard({ post }) {
           <p className="text-ink-soft text-base leading-relaxed line-clamp-3">{post.excerpt}</p>
         )}
         <span className="mt-5 inline-flex items-center gap-1 text-xs tracking-widest uppercase text-nature-deep">
-          Read more
+          {readMoreLabel}
           <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
         </span>
       </div>

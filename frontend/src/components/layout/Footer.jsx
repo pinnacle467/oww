@@ -17,6 +17,10 @@ export function Footer() {
   const emailPh = useText("footer.enquiry_email_placeholder", "Your email");
   const submitLabel = useText("footer.enquiry_submit", "Send enquiry");
   const copyrightSuffix = useText("footer.copyright_suffix", "Slow journeys, wild hearts");
+  // AF - new admin-editable labels.
+  const sendingLabel = useText("footer.enquiry_sending", "Sending");
+  const rightsText = useText("footer.copyright_rights_text", "All rights reserved.");
+  const cookiesLink = useText("footer.cookies_link", "Cookies");
   const links = NAV_LINKS.map((l, i) => ({
     label: content[`nav.${i}.label`] || l.label,
     to: content[`nav.${i}.to`] || l.to,
@@ -166,7 +170,7 @@ export function Footer() {
                 </select>
                 {status === "error" && <p className="text-gold text-sm">{msg}</p>}
                 <CTAButton type="submit" variant="gold" className="w-full" disabled={status === "sending"} data-testid="footer-enquiry-submit">
-                  {status === "sending" ? "Sending" : submitLabel}
+                  {status === "sending" ? sendingLabel : submitLabel}
                 </CTAButton>
               </form>
             )}
@@ -174,9 +178,9 @@ export function Footer() {
         </div>
 
         <div className="mt-16 border-t border-cream/15 pt-7 flex flex-col sm:flex-row items-center justify-between gap-3 text-cream/55 text-xs">
-          <p>© {new Date().getFullYear()} Once Were Wild Travel. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Once Were Wild Travel. {rightsText}</p>
           <div className="flex items-center gap-4">
-            <Link to="/cookies" className="hover:text-cream transition-colors" data-testid="footer-cookies-link">Cookies</Link>
+            <Link to="/cookies" className="hover:text-cream transition-colors" data-testid="footer-cookies-link">{cookiesLink}</Link>
             <p className="font-accent uppercase tracking-label">{copyrightSuffix}</p>
           </div>
         </div>

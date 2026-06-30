@@ -9,18 +9,23 @@ const GROUP_LABELS = {
   nav: "Navigation",
   home: "Home page",
   pricing: "Journeys & Pricing page",
-  journeys: "Journey details",
-  faqs: "Frequently asked questions",
+  tour_detail: "Tour detail page",
+  journeys: "Journey cards (Maleny, Slow & Soulful, Corporate)",
+  faqs: "Pricing FAQ accordion",
   gallery: "Gallery page",
   blog: "Blog page",
   about: "About page",
   contact: "Contact page",
-  pillars: "Experience pillars",
-  testimonials: "Testimonials",
+  pillars: "Home - Experience pillars",
+  testimonials: "Home - Testimonials carousel",
   footer: "Footer",
   seo: "SEO & search visibility",
 };
-const GROUP_ORDER = ["brand", "nav", "home", "pricing", "journeys", "faqs", "gallery", "blog", "about", "contact", "pillars", "testimonials", "footer", "seo"];
+const GROUP_ORDER = [
+  "brand", "nav", "home", "pricing", "tour_detail", "journeys", "faqs",
+  "gallery", "blog", "about", "contact", "pillars", "testimonials",
+  "footer", "seo",
+];
 
 // Where each text group renders on the public site. Used by the
 // "Preview on site" pill in each group header.
@@ -29,6 +34,7 @@ const GROUP_PREVIEW_TARGETS = {
   nav:      { path: "/",         label: "View navigation" },
   home:     { path: "/",         label: "Preview home page" },
   pricing:  { path: "/pricing",  label: "Preview Journeys page" },
+  tour_detail: { path: "/pricing", label: "Open a Tour from the list" },
   journeys: { path: "/pricing",  label: "Preview Journey cards" },
   faqs:     { path: "/pricing#faq-accordion", label: "Preview FAQs" },
   gallery:  { path: "/gallery",  label: "Preview Gallery page" },

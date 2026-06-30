@@ -2885,6 +2885,7 @@ DEFAULT_CONTENT = [
        "Field notes and slow reflections from journeys taken between scheduled tours.",
        "Journal strip intro"),
     _c("home", "home.journal.cta", "Read the journal", "Journal strip CTA button label"),
+    _c("home", "home.journal.card_read_more", "Read more", "Journal strip - 'Read more' label inside each card"),
 
     # Home — "Questions Gently Answered" FAQ accordion
     _c("home", "home.faq.eyebrow", "Common Questions", "Home FAQ eyebrow"),
@@ -2968,16 +2969,35 @@ DEFAULT_CONTENT = [
     # these so the client can edit every label from /admin/website-text.
     # AD3 — the includes tab label defaults to "Inclusions" (renamed from
     # "What's Included" per the client's request).
-    _c("pricing", "tour_detail.highlights.heading", "Tour highlights", "Tour detail - highlights heading"),
-    _c("pricing", "tour_detail.small_group.heading", "Small group tours", "Tour detail - small group heading"),
-    _c("pricing", "tour_detail.small_group.body",
+    # AF — moved to a dedicated `tour_detail` group so it shows as its own
+    # card in /admin/website-text instead of being buried under
+    # "Journeys & Pricing". A seed-time migration updates the group field
+    # on existing rows (see migrate_tour_detail_group() below).
+    _c("tour_detail", "tour_detail.highlights.heading", "Tour highlights", "Sidebar - Tour highlights heading"),
+    _c("tour_detail", "tour_detail.small_group.heading", "Small group tours", "Sidebar - Small group heading"),
+    _c("tour_detail", "tour_detail.small_group.body",
        "For a more private experience and a better quality of service, our small groups are limited to twelve travellers.",
-       "Tour detail - small group body (site-wide default; per-tour copy in JourneysManager overrides this)", "richtext"),
-    _c("pricing", "tour_detail.testimonials.heading", "Testimonials", "Tour detail - testimonials heading"),
-    _c("pricing", "tour_detail.tab.details", "Details", "Tour detail - Details tab label"),
-    _c("pricing", "tour_detail.tab.includes", "Inclusions", "Tour detail - Inclusions tab label (AD3 renamed from 'What's Included')"),
-    _c("pricing", "tour_detail.tab.prices", "Prices & Dates", "Tour detail - Prices and Dates tab label"),
-    _c("pricing", "tour_detail.download_pdf", "Download Full Itinerary (PDF)", "Tour detail - download PDF button label"),
+       "Sidebar - Small group body (site-wide default; per-tour copy in JourneysManager overrides this)", "richtext"),
+    _c("tour_detail", "tour_detail.testimonials.heading", "Testimonials", "Sidebar - Testimonials heading"),
+    _c("tour_detail", "tour_detail.tab.details", "Details", "Tab strip - Details label"),
+    _c("tour_detail", "tour_detail.tab.includes", "Inclusions", "Tab strip - Inclusions label (renamed from 'What's Included')"),
+    _c("tour_detail", "tour_detail.tab.prices", "Prices & Dates", "Tab strip - Prices & Dates label"),
+    _c("tour_detail", "tour_detail.download_pdf", "Download Full Itinerary (PDF)", "Download PDF button label"),
+    _c("tour_detail", "tour_detail.enquire", "Enquire Now", "Enquire button label (bottom of page and inside Prices tab)"),
+    # AF - states + back-link
+    _c("tour_detail", "tour_detail.loading", "Loading...", "Loading state while a tour is being fetched"),
+    _c("tour_detail", "tour_detail.not_found_title", "Tour not found", "404 - title shown when a tour slug doesn't exist"),
+    _c("tour_detail", "tour_detail.not_found_body",
+       "This tour may have been moved or is no longer published. View our current journeys instead.",
+       "404 - body text shown under the title", "richtext"),
+    _c("tour_detail", "tour_detail.kind.tour", "Small Group Tour", "Sub-title text under the tour name (e.g. '7 nights / Small Group Tour - Sunshine Coast')"),
+    _c("tour_detail", "tour_detail.pdf_only_note",
+       "A full day-by-day itinerary is available in the PDF below.",
+       "Details tab - text shown when there's no inline itinerary but the PDF is uploaded"),
+    _c("tour_detail", "tour_detail.empty_message",
+       "Full itinerary coming soon. Enquire below and we'll send you the day-by-day plan.",
+       "Details tab - text shown when no itinerary content is set"),
+    _c("tour_detail", "tour_detail.back_to_tours", "View all tours", "Back-link label (top of page, bottom of page, and the Tours-dropdown footer link in the nav)"),
 
     # About page - sister-brands section (AE). Two linked brands the
     # client also operates: Lillypillys Country Cottages and Moments by
@@ -3003,6 +3023,20 @@ DEFAULT_CONTENT = [
        "Elopement specialists curating intimate weddings, proposals and secluded stays in the hinterland.",
        "Sister brand 2 - tagline"),
     _c("about", "about.sister.1.url", "https://momentsbycottageinthewoods.com", "Sister brand 2 - website URL"),
+
+    # AF - About page body strings (empty states + story card CTA)
+    _c("about", "about.blocks.empty",
+       "More about us, coming soon.",
+       "Our Story column - placeholder shown when no story paragraphs are added yet"),
+    _c("about", "about.stories.empty",
+       "New stories are being written. Check back soon.",
+       "Field Notes column - placeholder shown when no stories have been written yet"),
+    _c("about", "about.stories.read_cta", "Read story", "Field Notes story card - 'Read story' toggle label"),
+    # AF - About > Travel gallery section (the photo/video carousel
+    # between Field Notes and Sister Brands). Existing useText() calls
+    # in TravelGallery.jsx had no DB rows so the admin couldn't see them.
+    _c("about", "about.travel.eyebrow", "From the road", "Travel gallery - eyebrow above the carousel"),
+    _c("about", "about.travel.title", "Travel notes in photos and video", "Travel gallery - heading above the carousel"),
 
     # Journeys (3)
     _c("journeys", "journeys.maleny.name", "Maleny Creative Immersion", "Maleny — name"),
@@ -3073,6 +3107,18 @@ DEFAULT_CONTENT = [
     _c("blog", "blog.empty.body",
        "Our first journal entries are being written between trips. Check back soon, or follow the road with us on Instagram.",
        "Empty-state body", "richtext"),
+    # AF - additional blog page states + card CTA
+    _c("blog", "blog.loading", "Loading the journal...", "Loading message shown while the post list is fetched"),
+    _c("blog", "blog.load_more", "Read more posts", "'Read more posts' button at the bottom of the blog index"),
+    _c("blog", "blog.card.read_more", "Read more", "Card hover label at the bottom of each blog card on the index"),
+    # AF - blog post detail page
+    _c("blog", "blog.post.loading", "Loading...", "Loading message shown while a single blog post is fetched"),
+    _c("blog", "blog.post.not_found_title", "Post not found", "404 - title shown when a blog slug does not exist"),
+    _c("blog", "blog.post.not_found_body",
+       "This post may have been removed or is still being drafted. The journal index has every published story.",
+       "404 - body text", "richtext"),
+    _c("blog", "blog.post.not_found_cta", "Back to journal", "404 - back-link button label"),
+    _c("blog", "blog.post.back_to_journal", "Back to the journal", "Back-link label at the top and bottom of a published blog post"),
 
     # Contact page
     _c("contact", "contact.hero.eyebrow", "Say Hello", "Contact eyebrow"),
@@ -3093,6 +3139,10 @@ DEFAULT_CONTENT = [
     _c("footer", "footer.enquiry_email_placeholder", "Your email", "Footer email placeholder"),
     _c("footer", "footer.enquiry_submit", "Send enquiry", "Footer submit"),
     _c("footer", "footer.copyright_suffix", "Slow journeys, wild hearts", "Footer right-side tagline"),
+    # AF - footer additions
+    _c("footer", "footer.copyright_rights_text", "All rights reserved.", "Copyright row - text after the brand name (e.g. '© 2026 Once Were Wild Travel. All rights reserved.')"),
+    _c("footer", "footer.cookies_link", "Cookies", "Bottom-row link to the Cookies policy"),
+    _c("footer", "footer.enquiry_sending", "Sending", "Quick enquiry form - submit button label while the request is in flight"),
 
     # ---------------------------------------------------------------
     # SEO + GEO (per-page meta). Each page's <Seo> component reads
@@ -3582,6 +3632,25 @@ async def seed():
                 "created_at": now_iso(),
             }},
             upsert=True,
+        )
+
+    # AF - one-time migration: tour_detail.* keys used to live in the
+    # "pricing" group on legacy DBs. Move them to their own "tour_detail"
+    # group so they appear as a dedicated card in /admin/website-text.
+    # Idempotent: re-runs are a no-op once the rows are migrated.
+    await db.content.update_many(
+        {"key": {"$regex": "^tour_detail\\."}, "group": "pricing"},
+        {"$set": {"group": "tour_detail"}},
+    )
+    # AF - one-time migration: backfill the human label for legacy keys
+    # whose label was never set (label == key). Looks each key up in
+    # DEFAULT_CONTENT and copies the canonical label across. Safe to
+    # re-run on every startup.
+    _default_labels = {e["key"]: e.get("label") for e in DEFAULT_CONTENT if e.get("label")}
+    for k, lab in _default_labels.items():
+        await db.content.update_one(
+            {"key": k, "$or": [{"label": {"$exists": False}}, {"label": ""}, {"label": k}]},
+            {"$set": {"label": lab}},
         )
     # One-time media seed AND auto-migration on every deploy.
     #

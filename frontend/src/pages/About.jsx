@@ -13,6 +13,11 @@ export default function About() {
   const eyebrow = useText("about.hero.eyebrow", "About Us");
   const title = useRichText("about.hero.title", "The women behind *the wild.*");
   const intro = useText("about.hero.intro", "Slow, soulful journeys built by women who have walked the path themselves.");
+  // AF - body strings (empty states + story-card 'Read story' label) so the
+  // operator can edit them from /admin/website-text > About page.
+  const blocksEmpty  = useText("about.blocks.empty", "More about us, coming soon.");
+  const storiesEmpty = useText("about.stories.empty", "New stories are being written. Check back soon.");
+  const readStoryCta = useText("about.stories.read_cta", "Read story");
   const { src: heroImg, lqip: heroLqip, srcset: heroSrcset } = useMediaSlot("about-hero");
 
   const [blocks, setBlocks] = useState([]);
@@ -45,7 +50,7 @@ export default function About() {
           <div className="lg:col-span-4" data-testid="about-blocks">
             <p className="label-eyebrow text-nature-mid mb-4">Our Story</p>
             {blocks.length === 0 ? (
-              <p className="editorial text-ink-soft text-base">More about us, coming soon.</p>
+              <p className="editorial text-ink-soft text-base">{blocksEmpty}</p>
             ) : (
               <div className="space-y-5">
                 {blocks.map((b) => (
@@ -76,7 +81,7 @@ export default function About() {
 
             {stories.length === 0 ? (
               <div className="rounded-sm border border-nature-deep/15 bg-white p-10 text-center">
-                <p className="editorial text-ink-soft">New stories are being written. Check back soon.</p>
+                <p className="editorial text-ink-soft">{storiesEmpty}</p>
               </div>
             ) : (
               <div className="grid gap-7 sm:grid-cols-2">
@@ -118,7 +123,7 @@ export default function About() {
                       {s.body && (
                         <details className="mt-auto" data-testid={`story-body-${s.id}`}>
                           <summary className="cursor-pointer font-accent text-[11px] uppercase tracking-label text-nature-mid hover:text-nature-deep transition-colors">
-                            Read story
+                            {readStoryCta}
                           </summary>
                           {/* Render the story body as proper paragraphs so the
                               operator's blank lines in admin become real

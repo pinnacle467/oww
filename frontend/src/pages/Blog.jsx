@@ -30,6 +30,10 @@ export default function Blog() {
     "blog.empty.body",
     "Our first journal entries are being written between trips. Check back soon, or follow the road with us on Instagram.",
   );
+  // AF - additional public-facing strings the operator can edit.
+  const loadingLabel = useText("blog.loading", "Loading the journal...");
+  const loadMoreLabel = useText("blog.load_more", "Read more posts");
+  const cardReadMore = useText("blog.card.read_more", "Read more");
 
   const { src: heroImg, lqip: heroLqip, srcset: heroSrcset } = useMediaSlot("blog-hero");
 
@@ -68,7 +72,7 @@ export default function Blog() {
       <section className="bg-cream py-20 sm:py-28" data-testid="blog-list">
         <div className="mx-auto max-w-7xl px-5 sm:px-8">
           {loading ? (
-            <div className="text-center text-ink-soft text-base py-16">Loading the journal...</div>
+            <div className="text-center text-ink-soft text-base py-16">{loadingLabel}</div>
           ) : posts.length === 0 ? (
             <div className="mx-auto max-w-2xl text-center py-12" data-testid="blog-empty-state">
               <p className="label-eyebrow text-nature-mid mb-4">{eyebrow}</p>
@@ -83,7 +87,7 @@ export default function Blog() {
             <>
               <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-3">
                 {shown.map((p) => (
-                  <BlogCard key={p.id} post={p} />
+                  <BlogCard key={p.id} post={p} readMoreLabel={cardReadMore} />
                 ))}
               </div>
               {hasMore && (
@@ -94,7 +98,7 @@ export default function Blog() {
                     className="inline-flex items-center gap-2 rounded-full border border-nature-deep px-7 py-3 text-sm tracking-widest uppercase text-nature-deep hover:bg-nature-deep hover:text-cream transition-colors"
                     data-testid="blog-load-more"
                   >
-                    Read more posts
+                    {loadMoreLabel}
                   </button>
                 </div>
               )}
@@ -106,7 +110,7 @@ export default function Blog() {
   );
 }
 
-function BlogCard({ post }) {
+function BlogCard({ post, readMoreLabel }) {
   return (
     <Link
       to={`/blog/${post.slug || post.id}`}
@@ -141,7 +145,7 @@ function BlogCard({ post }) {
           <p className="text-ink-soft text-base leading-relaxed line-clamp-3">{post.excerpt}</p>
         )}
         <span className="mt-5 inline-flex items-center gap-1 text-xs tracking-widest uppercase text-nature-deep">
-          Read more
+          {readMoreLabel}
           <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
         </span>
       </div>

@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import axios from "axios";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useText } from "@/context/ContentContext";
 
 import { BACKEND_URL as API_BASE } from "@/lib/backendUrl";
 
@@ -15,6 +16,9 @@ export function ToursDropdown({ solid, currentPath, parentLabel, parentTo }) {
   const [tours, setTours] = useState([]);
   const closeTimer = useRef(null);
   const location = useLocation();
+  // AF - the footer "View all tours" link inside the dropdown shares the
+  // same admin-editable label as the back-link on /tours/<slug>.
+  const viewAllLabel = useText("tour_detail.back_to_tours", "View all tours");
 
   useEffect(() => {
     // B2: server-side filter to type=tour so retreats (e.g. Maleny) never
@@ -85,7 +89,7 @@ export function ToursDropdown({ solid, currentPath, parentLabel, parentTo }) {
               className="block px-5 py-3 text-sm font-accent uppercase tracking-[0.08em] text-nature-mid hover:bg-cream/60 hover:text-nature-deep transition-colors"
               data-testid="nav-tours-dropdown-view-all"
             >
-              View all tours
+              {viewAllLabel}
             </Link>
           </div>
         </div>

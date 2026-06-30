@@ -4,6 +4,7 @@ import api from "@/lib/api";
 import { Seo } from "@/components/seo/Seo";
 import { FadeImg } from "@/components/ui/FadeImg";
 import { SwipeableMedia } from "@/components/media/SwipeableMedia";
+import { useText } from "@/context/ContentContext";
 import { ArrowLeft } from "lucide-react";
 
 import { BACKEND_URL as API_BASE } from "@/lib/backendUrl";
@@ -26,6 +27,15 @@ export default function BlogPost() {
   const [post, setPost] = useState(null);
   const [mediaMap, setMediaMap] = useState({});
   const [status, setStatus] = useState("loading");
+  // AF - admin-editable labels for all visible strings on this page.
+  const loadingLabel = useText("blog.post.loading", "Loading...");
+  const notFoundTitle = useText("blog.post.not_found_title", "Post not found");
+  const notFoundBody = useText(
+    "blog.post.not_found_body",
+    "This post may have been removed or is still being drafted. The journal index has every published story."
+  );
+  const notFoundCta = useText("blog.post.not_found_cta", "Back to journal");
+  const backToJournal = useText("blog.post.back_to_journal", "Back to the journal");
 
   useEffect(() => {
     setStatus("loading");
@@ -79,7 +89,7 @@ export default function BlogPost() {
   if (status === "loading") {
     return (
       <div className="min-h-[60vh] flex items-center justify-center bg-cream">
-        <div className="text-nature-deep text-sm tracking-widest uppercase opacity-60">Loading...</div>
+        <div className="text-nature-deep text-sm tracking-widest uppercase opacity-60">{loadingLabel}</div>
       </div>
     );
   }
@@ -87,13 +97,13 @@ export default function BlogPost() {
   if (status === "not-found") {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-5 bg-cream px-6 py-20 text-center" data-testid="blog-post-not-found">
-        <h1 className="font-display font-light text-ink text-3xl sm:text-4xl">Post not found</h1>
-        <p className="text-ink-soft max-w-md">This post may have been removed or is still being drafted. The journal index has every published story.</p>
+        <h1 className="font-display font-light text-ink text-3xl sm:text-4xl">{notFoundTitle}</h1>
+        <p className="text-ink-soft max-w-md">{notFoundBody}</p>
         <button
           onClick={() => navigate("/blog")}
           className="inline-flex items-center gap-2 rounded-full border border-nature-deep px-6 py-2.5 text-xs tracking-widest uppercase text-nature-deep hover:bg-nature-deep hover:text-cream transition-colors"
         >
-          <ArrowLeft className="h-4 w-4" /> Back to journal
+          <ArrowLeft className="h-4 w-4" /> {notFoundCta}
         </button>
       </div>
     );
@@ -118,7 +128,7 @@ export default function BlogPost() {
             className="inline-flex items-center gap-1 text-xs tracking-widest uppercase text-nature-mid hover:text-nature-deep mb-8"
             data-testid="blog-post-back-link"
           >
-            <ArrowLeft className="h-4 w-4" /> Back to the journal
+            <ArrowLeft className="h-4 w-4" /> {backToJournal}
           </Link>
           <p className="text-xs tracking-widest uppercase text-nature-mid mb-4">
             {formatPublishedDate(post.published_date)}

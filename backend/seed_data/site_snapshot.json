@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-06-30T08:59:57.528723+00:00",
+  "generated_at": "2026-06-30T10:10:50.249353+00:00",
   "media": [
     {
       "file_url": "/api/uploads/contact-bg/c6213da9b39140b19135fb900221e491.webp",
@@ -6114,571 +6114,713 @@
   "content": [
     {
       "key": "brand.name",
-      "value": "Once Were Wild"
+      "value": "Once Were Wild",
+      "label": "Brand name"
     },
     {
       "key": "brand.sub",
-      "value": "Travel"
+      "value": "Travel",
+      "label": "Brand suffix"
     },
     {
       "key": "brand.tagline",
-      "value": "Rediscover the woman who was always wild at heart."
+      "value": "Rediscover the woman who was always wild at heart.",
+      "label": "Brand tagline (hero)"
     },
     {
       "key": "nav.0.label",
-      "value": "Home"
+      "value": "Home",
+      "label": "Nav 1 label"
     },
     {
       "key": "nav.0.to",
-      "value": "/"
+      "value": "/",
+      "label": "Nav 1 link"
     },
     {
       "key": "nav.1.label",
-      "value": "Tours"
+      "value": "Tours",
+      "label": "Nav 2 label"
     },
     {
       "key": "nav.1.to",
-      "value": "/pricing"
+      "value": "/pricing",
+      "label": "Nav 2 link"
     },
     {
       "key": "nav.2.label",
-      "value": "Gallery"
+      "value": "Gallery",
+      "label": "Nav 3 label"
     },
     {
       "key": "nav.2.to",
-      "value": "/gallery"
+      "value": "/gallery",
+      "label": "Nav 3 link"
     },
     {
       "key": "nav.3.label",
-      "value": "About Us"
+      "value": "About Us",
+      "label": "Nav 4 label"
     },
     {
       "key": "nav.3.to",
-      "value": "/about"
+      "value": "/about",
+      "label": "Nav 4 link"
     },
     {
       "key": "nav.cta",
-      "value": "Get In Touch"
+      "value": "Get In Touch",
+      "label": "Header CTA label"
     },
     {
       "key": "home.hero.cta_primary",
-      "value": "Explore Experiences"
+      "value": "Explore Experiences",
+      "label": "Hero primary button"
     },
     {
       "key": "home.hero.cta_secondary",
-      "value": "Join a Retreat"
+      "value": "Join a Retreat",
+      "label": "Hero secondary button"
     },
     {
       "key": "home.manifesto.eyebrow",
-      "value": "Our Belief"
+      "value": "Our Belief",
+      "label": "Manifesto eyebrow"
     },
     {
       "key": "home.manifesto.heading",
-      "value": "There is a version of you who has been waiting."
+      "value": "There is a version of you who has been waiting.",
+      "label": "Manifesto heading"
     },
     {
       "key": "home.manifesto.body.0",
-      "value": "She has earned every grey hair, every passport stamp, every hard won lesson. She is ready to move."
+      "value": "She has earned every grey hair, every passport stamp, every hard won lesson. She is ready to move.",
+      "label": "Manifesto paragraph 1"
     },
     {
       "key": "home.manifesto.body.1",
-      "value": "We design personal, unprocessed and unrushed journeys that invite you to rediscover your inner wild. Grounded in connection and shaped by untamed roads and shared tables, we turn a lifetime of lived travel into your next unforgettable story."
+      "value": "We design personal, unprocessed and unrushed journeys that invite you to rediscover your inner wild. Grounded in connection and shaped by untamed roads and shared tables, we turn a lifetime of lived travel into your next unforgettable story.",
+      "label": "Manifesto paragraph 2"
     },
     {
       "key": "home.manifesto.body.2",
-      "value": "We do not do tourist tracks or checkbox travel. We curate intimate, small group journeys for women ready to step out of their comfort zones and dive into the world."
+      "value": "We do not do tourist tracks or checkbox travel. We curate intimate, small group journeys for women ready to step out of their comfort zones and dive into the world.",
+      "label": "Manifesto paragraph 3"
     },
     {
       "key": "home.manifesto.pullQuote",
-      "value": "This is travel lived, and life truly loved."
+      "value": "This is travel lived, and life truly loved.",
+      "label": "Manifesto pull quote"
     },
     {
       "key": "home.pillars.eyebrow",
-      "value": "How We Travel"
+      "value": "How We Travel",
+      "label": "Pillars eyebrow"
     },
     {
       "key": "home.pillars.title",
-      "value": "Three ways to step *beyond the familiar.*"
+      "value": "Three ways to step *beyond the familiar.*",
+      "label": "Pillars title"
     },
     {
       "key": "pillars.0.title",
-      "value": "Small Group Journeys"
+      "value": "Small Group Journeys",
+      "label": "Pillar 1 title"
     },
     {
       "key": "pillars.0.desc",
-      "value": "Carefully curated adventures for women who want depth over distance, and meaning over mere sightseeing."
+      "value": "Carefully curated adventures for women who want depth over distance, and meaning over mere sightseeing.",
+      "label": "Pillar 1 description"
     },
     {
       "key": "pillars.0.cta",
-      "value": "View journeys"
+      "value": "View journeys",
+      "label": "Pillar 1 CTA"
     },
     {
       "key": "pillars.0.to",
-      "value": "/pricing"
+      "value": "/pricing",
+      "label": "Pillar 1 link"
     },
     {
       "key": "pillars.1.title",
-      "value": "Maleny Retreats"
+      "value": "Maleny Retreats",
+      "label": "Pillar 2 title"
     },
     {
       "key": "pillars.1.desc",
-      "value": "Nestled in the Sunshine Coast hinterland, our Maleny retreats are spaces to breathe, to create, and to return to yourself."
+      "value": "Nestled in the Sunshine Coast hinterland, our Maleny retreats are spaces to breathe, to create, and to return to yourself.",
+      "label": "Pillar 2 description"
     },
     {
       "key": "pillars.1.cta",
-      "value": "Discover the retreat"
+      "value": "Discover the retreat",
+      "label": "Pillar 2 CTA"
     },
     {
       "key": "pillars.1.to",
-      "value": "/pricing"
+      "value": "/pricing",
+      "label": "Pillar 2 link"
     },
     {
       "key": "pillars.2.title",
-      "value": "Corporate and Custom"
+      "value": "Corporate and Custom",
+      "label": "Pillar 3 title"
     },
     {
       "key": "pillars.2.desc",
-      "value": "Your team, your story, your experience. We build journeys from scratch around what matters to your people."
+      "value": "Your team, your story, your experience. We build journeys from scratch around what matters to your people.",
+      "label": "Pillar 3 description"
     },
     {
       "key": "pillars.2.cta",
-      "value": "Start a conversation"
+      "value": "Start a conversation",
+      "label": "Pillar 3 CTA"
     },
     {
       "key": "pillars.2.to",
-      "value": "/contact"
+      "value": "/contact",
+      "label": "Pillar 3 link"
     },
     {
       "key": "home.immersive.eyebrow",
-      "value": "Featured Journey"
+      "value": "Featured Journey",
+      "label": "Immersive eyebrow"
     },
     {
       "key": "home.immersive.heading",
-      "value": "Slow and Soulful Tasmania"
+      "value": "Slow and Soulful Tasmania",
+      "label": "Immersive heading"
     },
     {
       "key": "home.immersive.body",
-      "value": "Twenty three nights of untamed coastline, pristine wilderness and farm to table flavour, shared with a small circle of like minded women."
+      "value": "Twenty three nights of untamed coastline, pristine wilderness and farm to table flavour, shared with a small circle of like minded women.",
+      "label": "Immersive body"
     },
     {
       "key": "home.immersive.cta",
-      "value": "Discover More"
+      "value": "Discover More",
+      "label": "Immersive CTA"
     },
     {
       "key": "home.maleny.eyebrow",
-      "value": "Immersion Retreats"
+      "value": "Immersion Retreats",
+      "label": "Maleny eyebrow"
     },
     {
       "key": "home.maleny.heading",
-      "value": "Maleny, where you arrive and exhale."
+      "value": "Maleny, where you arrive and exhale.",
+      "label": "Maleny heading"
     },
     {
       "key": "home.maleny.body",
-      "value": "Tucked behind the Sunshine Coast and rising 425 metres above the sea, Maleny and Montville are the calm behind the coast, the green behind the gold. A six night immersion of making, moving and nourishing, never rushed, always intentional. You simply arrive, and breathe out."
+      "value": "Tucked behind the Sunshine Coast and rising 425 metres above the sea, Maleny and Montville are the calm behind the coast, the green behind the gold. A six night immersion of making, moving and nourishing, never rushed, always intentional. You simply arrive, and breathe out.",
+      "label": "Maleny body"
     },
     {
       "key": "home.maleny.tags",
-      "value": "create,explore,feel,taste,transform"
+      "value": "create,explore,feel,taste,transform",
+      "label": "Maleny tags (comma separated)"
     },
     {
       "key": "home.maleny.cta",
-      "value": "Explore the retreat"
+      "value": "Explore the retreat",
+      "label": "Maleny CTA"
     },
     {
       "key": "home.testimonials.eyebrow",
-      "value": "In Their Words"
+      "value": "In Their Words",
+      "label": "Testimonials eyebrow"
     },
     {
       "key": "home.testimonials.title",
-      "value": "Stories that linger long *after the road.*"
+      "value": "Stories that linger long *after the road.*",
+      "label": "Testimonials title"
     },
     {
       "key": "testimonials.0.quote",
-      "value": "Awesomely guided by Barbara and Adele, who are effervescent and meticulous in equal measure."
+      "value": "Awesomely guided by Barbara and Adele, who are effervescent and meticulous in equal measure.",
+      "label": "Testimonial 1 quote"
     },
     {
       "key": "testimonials.0.author",
-      "value": "Amy "
+      "value": "Amy ",
+      "label": "Testimonial 1 author"
     },
     {
       "key": "testimonials.1.quote",
-      "value": "Adele and Barbara are exceptional guides, combining lively energy with a meticulous approach to travel."
+      "value": "Adele and Barbara are exceptional guides, combining lively energy with a meticulous approach to travel.",
+      "label": "Testimonial 2 quote"
     },
     {
       "key": "testimonials.1.author",
-      "value": "Sue"
+      "value": "Sue",
+      "label": "Testimonial 2 author"
     },
     {
       "key": "testimonials.2.quote",
-      "value": "I came to wander and I left changed. The pace, the women, the land. All of it stayed with me."
+      "value": "I came to wander and I left changed. The pace, the women, the land. All of it stayed with me.",
+      "label": "Testimonial 3 quote"
     },
     {
       "key": "testimonials.2.author",
-      "value": "Jasmine"
+      "value": "Jasmine",
+      "label": "Testimonial 3 author"
     },
     {
       "key": "testimonials.3.quote",
-      "value": "Nothing to organise, nothing to prove. Just space to feel like myself again."
+      "value": "Nothing to organise, nothing to prove. Just space to feel like myself again.",
+      "label": "Testimonial 4 quote"
     },
     {
       "key": "testimonials.3.author",
-      "value": "Johanna"
+      "value": "Johanna",
+      "label": "Testimonial 4 author"
     },
     {
       "key": "pricing.hero.eyebrow",
-      "value": "Journeys and Investment"
+      "value": "Journeys and Investment",
+      "label": "Pricing eyebrow"
     },
     {
       "key": "pricing.hero.title",
-      "value": "Where will you *go next?*"
+      "value": "Where will you *go next?*",
+      "label": "Pricing title"
     },
     {
       "key": "pricing.hero.intro",
-      "value": "Every journey is all inclusive, intimate and thoughtfully paced. Here is what it takes to join us."
+      "value": "Every journey is all inclusive, intimate and thoughtfully paced. Here is what it takes to join us.",
+      "label": "Pricing intro"
     },
     {
       "key": "pricing.popular_label",
-      "value": "Most Popular"
+      "value": "Most Popular",
+      "label": "Most popular ribbon"
     },
     {
       "key": "pricing.fine_print_title",
-      "value": "The fine print"
+      "value": "The fine print",
+      "label": "Fine print eyebrow"
     },
     {
       "key": "pricing.fine_print",
-      "value": "A 20 percent deposit secures your place. The balance is due 60 days prior to departure. Cancellations from booking to 60 days prior incur a $500 fee. Cancellations within 60 days are non refundable unless we are able to rebook your place, where a $500 fee applies. Travel insurance is strongly advised."
+      "value": "A 20 percent deposit secures your place. The balance is due 60 days prior to departure. Cancellations from booking to 60 days prior incur a $500 fee. Cancellations within 60 days are non refundable unless we are able to rebook your place, where a $500 fee applies. Travel insurance is strongly advised.",
+      "label": "Fine print body"
     },
     {
       "key": "pricing.faq.eyebrow",
-      "value": "Good to Know"
+      "value": "Good to Know",
+      "label": "FAQ eyebrow"
     },
     {
       "key": "pricing.faq.title",
-      "value": "Questions, *gently answered.*"
+      "value": "Questions, *gently answered.*",
+      "label": "FAQ title"
     },
     {
       "key": "pricing.faq.footer_note",
-      "value": "Still wondering if this is for you? It probably is."
+      "value": "Still wondering if this is for you? It probably is.",
+      "label": "FAQ closing line"
     },
     {
       "key": "pricing.faq.cta",
-      "value": "Book a discovery call"
+      "value": "Book a discovery call",
+      "label": "FAQ CTA"
     },
     {
       "key": "journeys.maleny.name",
-      "value": "Maleny Creative Immersion Retreat"
+      "value": "Maleny Creative Immersion Retreat",
+      "label": "Maleny — name"
     },
     {
       "key": "journeys.maleny.region",
-      "value": "Sunshine Coast Hinterland"
+      "value": "Sunshine Coast Hinterland",
+      "label": "Maleny — region"
     },
     {
       "key": "journeys.maleny.nights",
-      "value": "6 nights"
+      "value": "6 nights",
+      "label": "Maleny — nights"
     },
     {
       "key": "journeys.maleny.dates",
-      "value": "22 to 28 November 2026, or 28 November to 4 December 2026"
+      "value": "22 to 28 November 2026, or 28 November to 4 December 2026",
+      "label": "Maleny — dates"
     },
     {
       "key": "journeys.maleny.priceFrom",
-      "value": "From $4,200"
+      "value": "From $4,200",
+      "label": "Maleny — price from"
     },
     {
       "key": "journeys.maleny.priceUnit",
-      "value": "per person, twin share"
+      "value": "per person, twin share",
+      "label": "Maleny — price unit"
     },
     {
       "key": "journeys.maleny.priceNote",
-      "value": "Single from $4,750 per person"
+      "value": "Single from $4,750 per person",
+      "label": "Maleny — price note"
     },
     {
       "key": "journeys.maleny.summary",
-      "value": "A curated small group immersion blending art, nature, rest and shared experience."
+      "value": "A curated small group immersion blending art, nature, rest and shared experience.",
+      "label": "Maleny — summary"
     },
     {
       "key": "journeys.maleny.cta",
-      "value": "Enquire about Maleny"
+      "value": "Enquire about Maleny",
+      "label": "Maleny — CTA"
     },
     {
       "key": "journeys.maleny.includes",
-      "value": "Premium, peaceful accommodation|Bespoke dining by an accomplished chef|Australian wines paired with dinner|Master artisan creative workshops|Guided hinterland walks and experiences|All transportation and daily flow"
+      "value": "Premium, peaceful accommodation|Bespoke dining by an accomplished chef|Australian wines paired with dinner|Master artisan creative workshops|Guided hinterland walks and experiences|All transportation and daily flow",
+      "label": "Maleny — includes (one per line, use | to separate)"
     },
     {
       "key": "journeys.small-group.name",
-      "value": "Slow and Soulful Journeys"
+      "value": "Slow and Soulful Journeys",
+      "label": "Slow & Soulful — name"
     },
     {
       "key": "journeys.small-group.region",
-      "value": "Tasmania and Western Australia"
+      "value": "Tasmania and Western Australia",
+      "label": "Slow & Soulful — region"
     },
     {
       "key": "journeys.small-group.nights",
-      "value": "12 to 23 nights"
+      "value": "12 to 23 nights",
+      "label": "Slow & Soulful — nights"
     },
     {
       "key": "journeys.small-group.dates",
-      "value": "January and February 2027"
+      "value": "January and February 2027",
+      "label": "Slow & Soulful — dates"
     },
     {
       "key": "journeys.small-group.priceFrom",
-      "value": "From $7,950"
+      "value": "From $7,950",
+      "label": "Slow & Soulful — price from"
     },
     {
       "key": "journeys.small-group.priceUnit",
-      "value": "per person, 12 night tours"
+      "value": "per person, 12 night tours",
+      "label": "Slow & Soulful — price unit"
     },
     {
       "key": "journeys.small-group.priceNote",
-      "value": "Full 23 night odyssey from $15,200, GST included"
+      "value": "Full 23 night odyssey from $15,200, GST included",
+      "label": "Slow & Soulful — price note"
     },
     {
       "key": "journeys.small-group.summary",
-      "value": "Intimate small group odysseys across Australia's most breathtaking states, six to eight women."
+      "value": "Intimate small group odysseys across Australia's most breathtaking states, six to eight women.",
+      "label": "Slow & Soulful — summary"
     },
     {
       "key": "journeys.small-group.cta",
-      "value": "Enquire about a journey"
+      "value": "Enquire about a journey",
+      "label": "Slow & Soulful — CTA"
     },
     {
       "key": "journeys.small-group.includes",
-      "value": "Twin share accommodation throughout|Meals as specified, wine with dinner|All experiences unless marked optional|Farm to table cuisine and local wines|Wildlife, wilderness and cultural discovery|Effervescent, meticulous hosting"
+      "value": "Twin share accommodation throughout|Meals as specified, wine with dinner|All experiences unless marked optional|Farm to table cuisine and local wines|Wildlife, wilderness and cultural discovery|Effervescent, meticulous hosting",
+      "label": "Slow & Soulful — includes (use | to separate)"
     },
     {
       "key": "journeys.corporate.name",
-      "value": "Corporate and Custom"
+      "value": "Corporate and Custom",
+      "label": "Corporate — name"
     },
     {
       "key": "journeys.corporate.region",
-      "value": "Designed around your people"
+      "value": "Designed around your people",
+      "label": "Corporate — region"
     },
     {
       "key": "journeys.corporate.nights",
-      "value": "Tailored"
+      "value": "Tailored",
+      "label": "Corporate — nights"
     },
     {
       "key": "journeys.corporate.dates",
-      "value": "By arrangement"
+      "value": "By arrangement",
+      "label": "Corporate — dates"
     },
     {
       "key": "journeys.corporate.priceFrom",
-      "value": "Enquire"
+      "value": "Enquire",
+      "label": "Corporate — price from"
     },
     {
       "key": "journeys.corporate.priceUnit",
-      "value": "bespoke quotation"
+      "value": "bespoke quotation",
+      "label": "Corporate — price unit"
     },
     {
       "key": "journeys.corporate.priceNote",
-      "value": "Custom small group Australian journeys, minimum 7 nights"
+      "value": "Custom small group Australian journeys, minimum 7 nights",
+      "label": "Corporate — price note"
     },
     {
       "key": "journeys.corporate.summary",
-      "value": "Step out of the noise and into the rainforest. All inclusive retreats built for your team."
+      "value": "Step out of the noise and into the rainforest. All inclusive retreats built for your team.",
+      "label": "Corporate — summary"
     },
     {
       "key": "journeys.corporate.cta",
-      "value": "Start a conversation"
+      "value": "Start a conversation",
+      "label": "Corporate — CTA"
     },
     {
       "key": "journeys.corporate.includes",
-      "value": "Fully hosted, seamless planning|Custom itinerary from scratch|Private group, families or teams|Maleny corporate rainforest retreats|Celebrations and milestone journeys|Flexible dates and group sizes"
+      "value": "Fully hosted, seamless planning|Custom itinerary from scratch|Private group, families or teams|Maleny corporate rainforest retreats|Celebrations and milestone journeys|Flexible dates and group sizes",
+      "label": "Corporate — includes (use | to separate)"
     },
     {
       "key": "faqs.0.q",
-      "value": "Who travels with Once Were Wild?"
+      "value": "Who travels with Once Were Wild?",
+      "label": "FAQ 1 — question"
     },
     {
       "key": "faqs.0.a",
-      "value": "Our journeys are designed for women, often 45 and beyond, who are curious, independent and ready to step gently out of the everyday. Groups stay small, usually six to eight, so connection comes easily."
+      "value": "Our journeys are designed for women, often 45 and beyond, who are curious, independent and ready to step gently out of the everyday. Groups stay small, usually six to eight, so connection comes easily.",
+      "label": "FAQ 1 — answer"
     },
     {
       "key": "faqs.1.q",
-      "value": "What is included in the price?"
+      "value": "What is included in the price?",
+      "label": "FAQ 2 — question"
     },
     {
       "key": "faqs.1.a",
-      "value": "Most journeys are all inclusive of accommodation, meals as specified, wine with dinner, guided experiences and transport. Each journey page lists exactly what is covered so there are no surprises."
+      "value": "Most journeys are all inclusive of accommodation, meals as specified, wine with dinner, guided experiences and transport. Each journey page lists exactly what is covered so there are no surprises.",
+      "label": "FAQ 2 — answer"
     },
     {
       "key": "faqs.2.q",
-      "value": "How do I secure my place?"
+      "value": "How do I secure my place?",
+      "label": "FAQ 3 — question"
     },
     {
       "key": "faqs.2.a",
-      "value": "A 20 percent deposit reserves your spot. The balance is due 60 days before departure. We will guide you gently through every step once you register your interest."
+      "value": "A 20 percent deposit reserves your spot. The balance is due 60 days before departure. We will guide you gently through every step once you register your interest.",
+      "label": "FAQ 3 — answer"
     },
     {
       "key": "faqs.3.q",
-      "value": "Can you cater for dietary needs?"
+      "value": "Can you cater for dietary needs?",
+      "label": "FAQ 4 — question"
     },
     {
       "key": "faqs.3.a",
-      "value": "We thoughtfully accommodate most dietary needs. As our shared menus include animal proteins we cannot cater for vegan diets on the standard retreat, though a dedicated vegan retreat can be arranged with enough interest."
+      "value": "We thoughtfully accommodate most dietary needs. As our shared menus include animal proteins we cannot cater for vegan diets on the standard retreat, though a dedicated vegan retreat can be arranged with enough interest.",
+      "label": "FAQ 4 — answer"
     },
     {
       "key": "faqs.4.q",
-      "value": "Do you arrange corporate and private journeys?"
+      "value": "Do you arrange corporate and private journeys?",
+      "label": "FAQ 5 — question"
     },
     {
       "key": "faqs.4.a",
-      "value": "Yes. We build custom small group journeys and corporate retreats from scratch, designed entirely around your people, your story and your dates."
+      "value": "Yes. We build custom small group journeys and corporate retreats from scratch, designed entirely around your people, your story and your dates.",
+      "label": "FAQ 5 — answer"
     },
     {
       "key": "faqs.5.q",
-      "value": "Is travel insurance required?"
+      "value": "Is travel insurance required?",
+      "label": "FAQ 6 — question"
     },
     {
       "key": "faqs.5.a",
-      "value": "Travel insurance is strongly advised for every guest, to protect you from unexpected situations that may require a change of plans at short notice."
+      "value": "Travel insurance is strongly advised for every guest, to protect you from unexpected situations that may require a change of plans at short notice.",
+      "label": "FAQ 6 — answer"
     },
     {
       "key": "gallery.hero.eyebrow",
-      "value": "The Gallery"
+      "value": "The Gallery",
+      "label": "Gallery eyebrow"
     },
     {
       "key": "gallery.hero.title",
-      "value": "Moments that linger *long after.*"
+      "value": "Moments that linger *long after.*",
+      "label": "Gallery title"
     },
     {
       "key": "gallery.hero.intro",
-      "value": "A gathering of light, landscape and laughter from the road. Wander through, and imagine yourself among them."
+      "value": "A gathering of light, landscape and laughter from the road. Wander through, and imagine yourself among them.",
+      "label": "Gallery intro"
     },
     {
       "key": "contact.hero.eyebrow",
-      "value": "Say Hello"
+      "value": "Say Hello",
+      "label": "Contact eyebrow"
     },
     {
       "key": "contact.hero.title",
-      "value": "Let us begin *a conversation.*"
+      "value": "Let us begin *a conversation.*",
+      "label": "Contact title"
     },
     {
       "key": "contact.hero.intro",
-      "value": "\"Take a breath. Your journey starts here, and your seat at our table is waiting. We are so glad you found your way to “once were wild.” Ready to rediscovery your wild?\""
+      "value": "\"Take a breath. Your journey starts here, and your seat at our table is waiting. We are so glad you found your way to “once were wild.” Ready to rediscovery your wild?\"",
+      "label": "Contact intro"
     },
     {
       "key": "contact.info.eyebrow",
-      "value": "Reach us directly"
+      "value": "Reach us directly",
+      "label": "Contact info eyebrow"
     },
     {
       "key": "contact.form.submit_idle",
-      "value": "Lets start your journey!"
+      "value": "Lets start your journey!",
+      "label": "Form submit button (idle)"
     },
     {
       "key": "contact.form.submit_sending",
-      "value": "Sending your message"
+      "value": "Sending your message",
+      "label": "Form submit button (sending)"
     },
     {
       "key": "contact.success.heading",
-      "value": "Thank you."
+      "value": "Thank you.",
+      "label": "Success heading"
     },
     {
       "key": "contact.success.send_another",
-      "value": "Lets start your journey!"
+      "value": "Lets start your journey!",
+      "label": "Success CTA"
     },
     {
       "key": "contact.directions.label",
-      "value": "Get Directions"
+      "value": "Get Directions",
+      "label": "Directions button"
     },
     {
       "key": "footer.explore_label",
-      "value": "Explore"
+      "value": "Explore",
+      "label": "Footer explore heading"
     },
     {
       "key": "footer.reach_label",
-      "value": "Reach us"
+      "value": "Reach us",
+      "label": "Footer reach heading"
     },
     {
       "key": "footer.enquiry_label",
-      "value": "Quick enquiry"
+      "value": "Quick enquiry",
+      "label": "Footer enquiry heading"
     },
     {
       "key": "footer.enquiry_name_placeholder",
-      "value": "Your name"
+      "value": "Your name",
+      "label": "Footer name placeholder"
     },
     {
       "key": "footer.enquiry_email_placeholder",
-      "value": "Your email"
+      "value": "Your email",
+      "label": "Footer email placeholder"
     },
     {
       "key": "footer.enquiry_submit",
-      "value": "Send enquiry"
+      "value": "Send enquiry",
+      "label": "Footer submit"
     },
     {
       "key": "footer.copyright_suffix",
-      "value": "Slow journeys, wild hearts"
+      "value": "Slow journeys, wild hearts",
+      "label": "Footer right-side tagline"
     },
     {
       "key": "seo.home.title",
-      "value": "Women only travel Australia | Slow group tours & Maleny retreat"
+      "value": "Women only travel Australia | Slow group tours & Maleny retreat",
+      "label": "Home — browser tab title (under 60 characters)"
     },
     {
       "key": "seo.home.description",
-      "value": "Once Were Wild, small group, women-only journeys across Tasmania, Western Australia and beyond, plus a creative Maleny retreat in the Sunshine Coast hinterland. Slow travel for women 45+."
+      "value": "Once Were Wild, small group, women-only journeys across Tasmania, Western Australia and beyond, plus a creative Maleny retreat in the Sunshine Coast hinterland. Slow travel for women 45+.",
+      "label": "Home — meta description (140–160 characters)"
     },
     {
       "key": "seo.home.keywords",
-      "value": "women only travel Australia, women's small group tours, slow travel for women, Maleny retreat, Sunshine Coast hinterland retreat, women's wellness retreat Queensland, Tasmania women's tour, Western Australia women's tour, midlife travel women"
+      "value": "women only travel Australia, women's small group tours, slow travel for women, Maleny retreat, Sunshine Coast hinterland retreat, women's wellness retreat Queensland, Tasmania women's tour, Western Australia women's tour, midlife travel women",
+      "label": "Home — meta keywords (comma separated)"
     },
     {
       "key": "seo.pricing.title",
-      "value": "Women's small group tours Australia | Tasmania, WA & Maleny pricing"
+      "value": "Women's small group tours Australia | Tasmania, WA & Maleny pricing",
+      "label": "Pricing — browser tab title"
     },
     {
       "key": "seo.pricing.description",
-      "value": "All Once Were Wild journeys for women: 12–23 night small group odysseys through Tasmania and Western Australia, plus the 6 night Maleny creative retreat. Inclusions, dates, prices and FAQs in one place."
+      "value": "All Once Were Wild journeys for women: 12–23 night small group odysseys through Tasmania and Western Australia, plus the 6 night Maleny creative retreat. Inclusions, dates, prices and FAQs in one place.",
+      "label": "Pricing — meta description"
     },
     {
       "key": "seo.pricing.keywords",
-      "value": "women's small group tour Australia pricing, Tasmania women's tour cost, Western Australia women's tour, Maleny creative retreat price, all inclusive women's tour Australia, slow travel pricing"
+      "value": "women's small group tour Australia pricing, Tasmania women's tour cost, Western Australia women's tour, Maleny creative retreat price, all inclusive women's tour Australia, slow travel pricing",
+      "label": "Pricing — meta keywords"
     },
     {
       "key": "seo.gallery.title",
-      "value": "Once Were Wild Travel gallery | Women's tours of Australia & Maleny"
+      "value": "Once Were Wild Travel gallery | Women's tours of Australia & Maleny",
+      "label": "Gallery — browser tab title"
     },
     {
       "key": "seo.gallery.description",
-      "value": "Photographs and short clips from past Once Were Wild journeys, Tasmania, Western Australia, Sunshine Coast hinterland and beyond. A glimpse of slow, soulful small group travel for women."
+      "value": "Photographs and short clips from past Once Were Wild journeys, Tasmania, Western Australia, Sunshine Coast hinterland and beyond. A glimpse of slow, soulful small group travel for women.",
+      "label": "Gallery — meta description"
     },
     {
       "key": "seo.gallery.keywords",
-      "value": "women's tour photography Australia, Tasmania women's tour gallery, Maleny retreat photos, slow travel gallery, women's small group travel images"
+      "value": "women's tour photography Australia, Tasmania women's tour gallery, Maleny retreat photos, slow travel gallery, women's small group travel images",
+      "label": "Gallery — meta keywords"
     },
     {
       "key": "seo.contact.title",
-      "value": "Contact Once Were Wild Travel | Women's tour and Maleny retreat enquiries"
+      "value": "Contact Once Were Wild Travel | Women's tour and Maleny retreat enquiries",
+      "label": "Contact — browser tab title"
     },
     {
       "key": "seo.contact.description",
-      "value": "Speak to the team behind Once Were Wild Travel. Email, phone, the Maleny office address and a quick enquiry form for women considering a small group journey or hinterland retreat."
+      "value": "Speak to the team behind Once Were Wild Travel. Email, phone, the Maleny office address and a quick enquiry form for women considering a small group journey or hinterland retreat.",
+      "label": "Contact — meta description"
     },
     {
       "key": "seo.contact.keywords",
-      "value": "Once Were Wild contact, women's tour enquiry Australia, Maleny retreat enquiry, book women's small group tour, Sunshine Coast hinterland retreat booking"
+      "value": "Once Were Wild contact, women's tour enquiry Australia, Maleny retreat enquiry, book women's small group tour, Sunshine Coast hinterland retreat booking",
+      "label": "Contact — meta keywords"
     },
     {
       "key": "seo.home.og_image",
-      "value": ""
+      "value": "",
+      "label": "Home — Open Graph image URL"
     },
     {
       "key": "seo.pricing.og_image",
-      "value": ""
+      "value": "",
+      "label": "Pricing — Open Graph image URL"
     },
     {
       "key": "seo.gallery.og_image",
-      "value": ""
+      "value": "",
+      "label": "Gallery — Open Graph image URL"
     },
     {
       "key": "seo.contact.og_image",
-      "value": ""
+      "value": "",
+      "label": "Contact — Open Graph image URL"
     },
     {
       "key": "nav.4.label",
-      "value": "Blog"
+      "value": "Blog",
+      "label": "Nav 5 label"
     },
     {
       "key": "nav.4.to",
-      "value": "/blog"
+      "value": "/blog",
+      "label": "Nav 5 link"
     },
     {
       "key": "contact.info.email_label",
@@ -6762,19 +6904,23 @@
     },
     {
       "key": "home.journal.eyebrow",
-      "value": "From the Journal"
+      "value": "From the Journal",
+      "label": "Journal strip eyebrow"
     },
     {
       "key": "home.journal.title",
-      "value": "Stories from *the road less travelled.*"
+      "value": "Stories from *the road less travelled.*",
+      "label": "Journal strip title (italic part wrapped in asterisks)"
     },
     {
       "key": "home.journal.intro",
-      "value": "Field notes and slow reflections from our journeys"
+      "value": "Field notes and slow reflections from our journeys",
+      "label": "Journal strip intro"
     },
     {
       "key": "home.journal.cta",
-      "value": "Read the journal"
+      "value": "Read the journal",
+      "label": "Journal strip CTA button label"
     },
     {
       "key": "nav.5.label",
@@ -6786,95 +6932,118 @@
     },
     {
       "key": "home.faq.eyebrow",
-      "value": "Common Questions"
+      "value": "Common Questions",
+      "label": "Home FAQ eyebrow"
     },
     {
       "key": "home.faq.heading",
-      "value": "Questions Gently Answered"
+      "value": "Questions Gently Answered",
+      "label": "Home FAQ section heading (above the accordion)"
     },
     {
       "key": "home.faq.intro",
-      "value": "Quiet answers to the things most often asked before stepping into a journey with us."
+      "value": "Quiet answers to the things most often asked before stepping into a journey with us.",
+      "label": "Home FAQ intro paragraph"
     },
     {
       "key": "home.content.eyebrow",
-      "value": "More to know"
+      "value": "More to know",
+      "label": "Home content sections eyebrow"
     },
     {
       "key": "home.content.title",
-      "value": "Slow stories, *gently shared.*"
+      "value": "Slow stories, *gently shared.*",
+      "label": "Home content sections title (italic part wrapped in asterisks)"
     },
     {
       "key": "home.tours_cta.eyebrow",
-      "value": "Our Journeys"
+      "value": "Our Journeys",
+      "label": "Tours CTA card eyebrow"
     },
     {
       "key": "home.tours_cta.title",
-      "value": "Slow tours, *soulful retreats.*"
+      "value": "Slow tours, *soulful retreats.*",
+      "label": "Tours CTA card title (italic part wrapped in asterisks)"
     },
     {
       "key": "home.tours_cta.body",
-      "value": "We host intimate small-group journeys across Australia and beyond, alongside soulful retreats right here in the stunning Maleny hills of the Sunshine Coast hinterland."
+      "value": "We host intimate small-group journeys across Australia and beyond, alongside soulful retreats right here in the stunning Maleny hills of the Sunshine Coast hinterland.",
+      "label": "Tours CTA card body"
     },
     {
       "key": "home.tours_cta.button",
-      "value": "Explore all tours"
+      "value": "Explore all tours",
+      "label": "Tours CTA card button label"
     },
     {
       "key": "home.hero.tagline",
-      "value": ""
+      "value": "",
+      "label": "Optional hero overlay text (leave blank for pure photo carousel)"
     },
     {
       "key": "tour_detail.highlights.heading",
-      "value": "Tour highlights"
+      "value": "Tour highlights",
+      "label": "Sidebar - Tour highlights heading"
     },
     {
       "key": "tour_detail.small_group.heading",
-      "value": "Small group tours"
+      "value": "Small group tours",
+      "label": "Sidebar - Small group heading"
     },
     {
       "key": "tour_detail.small_group.body",
-      "value": "For a more private experience and a better quality of service, our small groups are limited to twelve travellers."
+      "value": "For a more private experience and a better quality of service, our small groups are limited to twelve travellers.",
+      "label": "Sidebar - Small group body (site-wide default; per-tour copy in JourneysManager overrides this)"
     },
     {
       "key": "tour_detail.testimonials.heading",
-      "value": "Testimonials"
+      "value": "Testimonials",
+      "label": "Sidebar - Testimonials heading"
     },
     {
       "key": "tour_detail.tab.details",
-      "value": "Details"
+      "value": "Details",
+      "label": "Tab strip - Details label"
     },
     {
       "key": "tour_detail.tab.includes",
-      "value": "Inclusions"
+      "value": "Inclusions",
+      "label": "Tab strip - Inclusions label (renamed from 'What's Included')"
     },
     {
       "key": "tour_detail.tab.prices",
-      "value": "Prices & Dates"
+      "value": "Prices & Dates",
+      "label": "Tab strip - Prices & Dates label"
     },
     {
       "key": "tour_detail.download_pdf",
-      "value": "Download Full Itinerary (PDF)"
+      "value": "Download Full Itinerary (PDF)",
+      "label": "Download PDF button label"
     },
     {
       "key": "blog.hero.eyebrow",
-      "value": "From the Road"
+      "value": "From the Road",
+      "label": "Blog eyebrow"
     },
     {
       "key": "blog.hero.title",
-      "value": "The *Once Were Wild* journal."
+      "value": "The *Once Were Wild* journal.",
+      "label": "Blog title"
     },
     {
       "key": "blog.hero.intro",
-      "value": "Field notes, slow reflections and stories from our journeys."
+      "value": "Field notes, slow reflections and stories from our journeys.",
+      "label": "Blog intro"
     },
     {
       "key": "blog.empty.heading",
-      "value": "Stories are on their way."
+      "value": "Stories are on their way.",
+      "label": "Empty-state heading"
     },
     {
       "key": "blog.empty.body",
-      "value": "Our first journal entries are being written between trips. Check back soon, or follow the road with us on Instagram."
+      "value": "Our first journal entries are being written between trips. Check back soon, or follow the road with us on Instagram.",
+      "label": "Empty-state body"
     },
     {
       "key": "about.sister.eyebrow",
@@ -6955,6 +7124,208 @@
       "label": "Sister brand 2 - website URL",
       "type": "text",
       "value": "https://momentsbycottageinthewoods.com"
+    },
+    {
+      "key": "tour_detail.enquire",
+      "created_at": "2026-06-30T09:47:47.024592+00:00",
+      "group": "tour_detail",
+      "label": "Enquire button label (bottom of page and inside Prices tab)",
+      "type": "text",
+      "value": "Enquire Now"
+    },
+    {
+      "key": "tour_detail.loading",
+      "created_at": "2026-06-30T09:47:47.024884+00:00",
+      "group": "tour_detail",
+      "label": "Loading state while a tour is being fetched",
+      "type": "text",
+      "value": "Loading..."
+    },
+    {
+      "key": "tour_detail.not_found_title",
+      "created_at": "2026-06-30T09:47:47.025167+00:00",
+      "group": "tour_detail",
+      "label": "404 - title shown when a tour slug doesn't exist",
+      "type": "text",
+      "value": "Tour not found"
+    },
+    {
+      "key": "tour_detail.not_found_body",
+      "created_at": "2026-06-30T09:47:47.025594+00:00",
+      "group": "tour_detail",
+      "label": "404 - body text shown under the title",
+      "type": "richtext",
+      "value": "This tour may have been moved or is no longer published. View our current journeys instead."
+    },
+    {
+      "key": "tour_detail.kind.tour",
+      "created_at": "2026-06-30T09:47:47.025896+00:00",
+      "group": "tour_detail",
+      "label": "Sub-title text under the tour name (e.g. '7 nights / Small Group Tour - Sunshine Coast')",
+      "type": "text",
+      "value": "Small Group Tour",
+      "updated_at": "2026-06-30T10:10:48.240589+00:00"
+    },
+    {
+      "key": "tour_detail.pdf_only_note",
+      "created_at": "2026-06-30T09:47:47.026192+00:00",
+      "group": "tour_detail",
+      "label": "Details tab - text shown when there's no inline itinerary but the PDF is uploaded",
+      "type": "text",
+      "value": "A full day-by-day itinerary is available in the PDF below."
+    },
+    {
+      "key": "tour_detail.empty_message",
+      "created_at": "2026-06-30T09:47:47.026656+00:00",
+      "group": "tour_detail",
+      "label": "Details tab - text shown when no itinerary content is set",
+      "type": "text",
+      "value": "Full itinerary coming soon. Enquire below and we'll send you the day-by-day plan."
+    },
+    {
+      "key": "tour_detail.back_to_tours",
+      "created_at": "2026-06-30T09:47:47.027136+00:00",
+      "group": "tour_detail",
+      "label": "Back-link label (top of page, bottom of page, and the Tours-dropdown footer link in the nav)",
+      "type": "text",
+      "value": "View all tours"
+    },
+    {
+      "key": "about.blocks.empty",
+      "created_at": "2026-06-30T09:47:58.654499+00:00",
+      "group": "about",
+      "label": "Our Story column - placeholder shown when no story paragraphs are added yet",
+      "type": "text",
+      "value": "More about us, coming soon."
+    },
+    {
+      "key": "about.stories.empty",
+      "created_at": "2026-06-30T09:47:58.654894+00:00",
+      "group": "about",
+      "label": "Field Notes column - placeholder shown when no stories have been written yet",
+      "type": "text",
+      "value": "New stories are being written. Check back soon."
+    },
+    {
+      "key": "about.stories.read_cta",
+      "created_at": "2026-06-30T09:47:58.655318+00:00",
+      "group": "about",
+      "label": "Field Notes story card - 'Read story' toggle label",
+      "type": "text",
+      "value": "Read story",
+      "updated_at": "2026-06-30T10:10:48.240096+00:00"
+    },
+    {
+      "key": "about.travel.eyebrow",
+      "created_at": "2026-06-30T09:47:58.655709+00:00",
+      "group": "about",
+      "label": "Travel gallery - eyebrow above the carousel",
+      "type": "text",
+      "value": "From the road"
+    },
+    {
+      "key": "about.travel.title",
+      "created_at": "2026-06-30T09:47:58.656116+00:00",
+      "group": "about",
+      "label": "Travel gallery - heading above the carousel",
+      "type": "text",
+      "value": "Travel notes in photos and video"
+    },
+    {
+      "key": "blog.loading",
+      "created_at": "2026-06-30T09:48:09.283333+00:00",
+      "group": "blog",
+      "label": "Loading message shown while the post list is fetched",
+      "type": "text",
+      "value": "Loading the journal..."
+    },
+    {
+      "key": "blog.load_more",
+      "created_at": "2026-06-30T09:48:09.283636+00:00",
+      "group": "blog",
+      "label": "'Read more posts' button at the bottom of the blog index",
+      "type": "text",
+      "value": "Read more posts"
+    },
+    {
+      "key": "blog.card.read_more",
+      "created_at": "2026-06-30T09:48:09.283913+00:00",
+      "group": "blog",
+      "label": "Card hover label at the bottom of each blog card on the index",
+      "type": "text",
+      "value": "Read more"
+    },
+    {
+      "key": "blog.post.loading",
+      "created_at": "2026-06-30T09:48:09.284224+00:00",
+      "group": "blog",
+      "label": "Loading message shown while a single blog post is fetched",
+      "type": "text",
+      "value": "Loading..."
+    },
+    {
+      "key": "blog.post.not_found_title",
+      "created_at": "2026-06-30T09:48:09.284521+00:00",
+      "group": "blog",
+      "label": "404 - title shown when a blog slug does not exist",
+      "type": "text",
+      "value": "Post not found"
+    },
+    {
+      "key": "blog.post.not_found_body",
+      "created_at": "2026-06-30T09:48:09.284790+00:00",
+      "group": "blog",
+      "label": "404 - body text",
+      "type": "richtext",
+      "value": "This post may have been removed or is still being drafted. The journal index has every published story."
+    },
+    {
+      "key": "blog.post.not_found_cta",
+      "created_at": "2026-06-30T09:48:09.285064+00:00",
+      "group": "blog",
+      "label": "404 - back-link button label",
+      "type": "text",
+      "value": "Back to journal"
+    },
+    {
+      "key": "blog.post.back_to_journal",
+      "created_at": "2026-06-30T09:48:09.285329+00:00",
+      "group": "blog",
+      "label": "Back-link label at the top and bottom of a published blog post",
+      "type": "text",
+      "value": "Back to the journal"
+    },
+    {
+      "key": "home.journal.card_read_more",
+      "created_at": "2026-06-30T09:48:14.975038+00:00",
+      "group": "home",
+      "label": "Journal strip - 'Read more' label inside each card",
+      "type": "text",
+      "value": "Read more"
+    },
+    {
+      "key": "footer.copyright_rights_text",
+      "created_at": "2026-06-30T09:48:25.188426+00:00",
+      "group": "footer",
+      "label": "Copyright row - text after the brand name (e.g. '© 2026 Once Were Wild Travel. All rights reserved.')",
+      "type": "text",
+      "value": "All rights reserved."
+    },
+    {
+      "key": "footer.cookies_link",
+      "created_at": "2026-06-30T09:48:25.188717+00:00",
+      "group": "footer",
+      "label": "Bottom-row link to the Cookies policy",
+      "type": "text",
+      "value": "Cookies"
+    },
+    {
+      "key": "footer.enquiry_sending",
+      "created_at": "2026-06-30T09:48:25.188990+00:00",
+      "group": "footer",
+      "label": "Quick enquiry form - submit button label while the request is in flight",
+      "type": "text",
+      "value": "Sending"
     }
   ],
   "site_settings": [
