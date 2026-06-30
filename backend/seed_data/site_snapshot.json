@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-06-30T06:27:34.194839+00:00",
+  "generated_at": "2026-06-30T07:05:41.595024+00:00",
   "media": [
     {
       "file_url": "/api/uploads/contact-bg/c6213da9b39140b19135fb900221e491.webp",
@@ -522,6 +522,534 @@
       "is_active": true,
       "lqip": "data:image/webp;base64,UklGRp4AAABXRUJQVlA4IJIAAABwBACdASoYABAAPu1iqU2ppaQiMAgBMB2JQBOkEUk/wHmvsE0s7NXfCZGUAAD+1P5mFRu1nL9oCh7PKtOMaCARuRpx3CTn6eyVHQANyUS+zKRlRTFd7bfQrj+/Djq+t1Ufy8zV57+b1kkU8oV/RptCd6QqP/lBtjKrgLMx+X4YB/Afq8SbitTYAcMDjb+ps4AAAA==",
       "created_at": "2026-06-30T05:57:20.492919+00:00"
+    },
+    {
+      "id": "5c456df8-159b-4524-b504-fe631253e08a",
+      "section": "tour-gallery",
+      "file_url": "/api/uploads/tour-gallery/abd6e24eeb5348eca0e86d94980df473.webp",
+      "srcset": {
+        "1600w": "/api/uploads/tour-gallery/abd6e24eeb5348eca0e86d94980df473.webp",
+        "1200w": "/api/uploads/tour-gallery/abd6e24eeb5348eca0e86d94980df473-md.webp",
+        "800w": "/api/uploads/tour-gallery/abd6e24eeb5348eca0e86d94980df473-sm.webp"
+      },
+      "avif_srcset": {
+        "1600w": "/api/uploads/tour-gallery/abd6e24eeb5348eca0e86d94980df473.avif",
+        "1200w": "/api/uploads/tour-gallery/abd6e24eeb5348eca0e86d94980df473-md.avif",
+        "800w": "/api/uploads/tour-gallery/abd6e24eeb5348eca0e86d94980df473-sm.avif"
+      },
+      "thumb_url": "",
+      "file_type": "image",
+      "caption": "",
+      "alt_text": "",
+      "category": "",
+      "sort_order": 0,
+      "is_active": true,
+      "lqip": "data:image/webp;base64,UklGRowAAABXRUJQVlA4IIAAAADwAwCdASoYABAAPu1mqk2ppaQiMAgBMB2JbACdH8ADAoUXAyGgRRMAAN19R12I4cfMYdcmeGcS8uQs9jc+JQS7kB/i2Xf2HurNsX6+8HuNO/J867VgqT17G+DdFpUddHJ1a1FRKD6p9Xxt79RQ00K2L+Lt+u4Dj0gC4U8sVwAAAA==",
+      "created_at": "2026-06-30T06:32:28.523501+00:00"
+    },
+    {
+      "id": "4a937801-9d53-44a3-8a09-128595112f47",
+      "section": "tour-gallery",
+      "file_url": "/api/uploads/tour-gallery/b805ff24793549b49ff305980add48ef.webp",
+      "srcset": {
+        "1600w": "/api/uploads/tour-gallery/b805ff24793549b49ff305980add48ef.webp",
+        "1200w": "/api/uploads/tour-gallery/b805ff24793549b49ff305980add48ef-md.webp",
+        "800w": "/api/uploads/tour-gallery/b805ff24793549b49ff305980add48ef-sm.webp"
+      },
+      "avif_srcset": {
+        "1600w": "/api/uploads/tour-gallery/b805ff24793549b49ff305980add48ef.avif",
+        "1200w": "/api/uploads/tour-gallery/b805ff24793549b49ff305980add48ef-md.avif",
+        "800w": "/api/uploads/tour-gallery/b805ff24793549b49ff305980add48ef-sm.avif"
+      },
+      "thumb_url": "",
+      "file_type": "image",
+      "caption": "",
+      "alt_text": "",
+      "category": "",
+      "sort_order": 0,
+      "is_active": true,
+      "lqip": "data:image/webp;base64,UklGRooAAABXRUJQVlA4IH4AAAAQBACdASoYABIAPu1irVAppSQisBgIATAdiWMAwoAPRBW5oQijeOcF8AD+q9DymdIzyVHlHXp1/xJQm7g7ZxzuAnjYmieETbpix8/kCg56mJ+Eb6H1E5m0zQbciP9fVXDJY2YUXePeYQCJYI9Y5cvJSdYwJ35NSbkNJskQAAA=",
+      "created_at": "2026-06-30T06:34:37.232164+00:00"
+    },
+    {
+      "id": "e06458ae-0509-4ffe-a4b3-b101ad1faa5c",
+      "section": "tour-gallery",
+      "file_url": "/api/uploads/tour-gallery/3b582027c2dd401aa0cafe94c618ab7b.webp",
+      "srcset": {
+        "1600w": "/api/uploads/tour-gallery/3b582027c2dd401aa0cafe94c618ab7b.webp",
+        "1200w": "/api/uploads/tour-gallery/3b582027c2dd401aa0cafe94c618ab7b-md.webp",
+        "800w": "/api/uploads/tour-gallery/3b582027c2dd401aa0cafe94c618ab7b-sm.webp"
+      },
+      "avif_srcset": {
+        "1600w": "/api/uploads/tour-gallery/3b582027c2dd401aa0cafe94c618ab7b.avif",
+        "1200w": "/api/uploads/tour-gallery/3b582027c2dd401aa0cafe94c618ab7b-md.avif",
+        "800w": "/api/uploads/tour-gallery/3b582027c2dd401aa0cafe94c618ab7b-sm.avif"
+      },
+      "thumb_url": "",
+      "file_type": "image",
+      "caption": "",
+      "alt_text": "",
+      "category": "",
+      "sort_order": 0,
+      "is_active": true,
+      "lqip": "data:image/webp;base64,UklGRrIAAABXRUJQVlA4IKYAAADwBACdASoYABIAPu1ur1IppiQiqAgBMB2JYwCo9y6Am5eaqOwYyKsZYp3DAs954wAA/rqWHDKn3J2Cn0EYcRxrCWptkc6CiYSSXrG2VKtiZKcyQSFJ35BtlmOR8zcrbKWH3Wh/dL/chggOIrF+Ls/u5rHr/TuVAQzOML6WTttgbHt1o0+685X6Me9kXDn2/yAJEutbC3Z2yYW4U7CMVsz22qz5PAAA",
+      "created_at": "2026-06-30T06:34:59.545424+00:00"
+    },
+    {
+      "id": "df818286-d030-4cdc-b623-61730ade4e11",
+      "section": "tour-gallery",
+      "file_url": "/api/uploads/tour-gallery/f85001db8b2f478a88648685141ea431.webp",
+      "srcset": {
+        "1600w": "/api/uploads/tour-gallery/f85001db8b2f478a88648685141ea431.webp",
+        "1200w": "/api/uploads/tour-gallery/f85001db8b2f478a88648685141ea431-md.webp",
+        "800w": "/api/uploads/tour-gallery/f85001db8b2f478a88648685141ea431-sm.webp"
+      },
+      "avif_srcset": {
+        "1600w": "/api/uploads/tour-gallery/f85001db8b2f478a88648685141ea431.avif",
+        "1200w": "/api/uploads/tour-gallery/f85001db8b2f478a88648685141ea431-md.avif",
+        "800w": "/api/uploads/tour-gallery/f85001db8b2f478a88648685141ea431-sm.avif"
+      },
+      "thumb_url": "",
+      "file_type": "image",
+      "caption": "",
+      "alt_text": "",
+      "category": "",
+      "sort_order": 0,
+      "is_active": true,
+      "lqip": "data:image/webp;base64,UklGRpQAAABXRUJQVlA4IIgAAADwBACdASoYABUAPu1wsFIppiSiqAgBMB2JQBb3AiORui1KiQ5GtGrwNG98g4k2v5AA+ixS/YclzEc42OHPRtkHCCLt1igyYteUbC0NbSOE+7NB647gGsZtMvrMmXNbrQeOdoc7lQqf0STFtI9CLI52cfxlR8YiVB+I+so7zfjQ+dICVVc2AAAA",
+      "created_at": "2026-06-30T06:35:17.903696+00:00"
+    },
+    {
+      "id": "dd32e68e-014a-48cb-9bc6-8e3e4d575d89",
+      "section": "tour-gallery",
+      "file_url": "/api/uploads/tour-gallery/252ea19b8ef041ae9c6939cebc74c9d6.webp",
+      "srcset": {
+        "1600w": "/api/uploads/tour-gallery/252ea19b8ef041ae9c6939cebc74c9d6.webp",
+        "1200w": "/api/uploads/tour-gallery/252ea19b8ef041ae9c6939cebc74c9d6-md.webp",
+        "800w": "/api/uploads/tour-gallery/252ea19b8ef041ae9c6939cebc74c9d6-sm.webp"
+      },
+      "avif_srcset": {
+        "1600w": "/api/uploads/tour-gallery/252ea19b8ef041ae9c6939cebc74c9d6.avif",
+        "1200w": "/api/uploads/tour-gallery/252ea19b8ef041ae9c6939cebc74c9d6-md.avif",
+        "800w": "/api/uploads/tour-gallery/252ea19b8ef041ae9c6939cebc74c9d6-sm.avif"
+      },
+      "thumb_url": "",
+      "file_type": "image",
+      "caption": "",
+      "alt_text": "",
+      "category": "",
+      "sort_order": 0,
+      "is_active": true,
+      "lqip": "data:image/webp;base64,UklGRqAAAABXRUJQVlA4IJQAAADwBACdASoYABIAPu1or1CppaQiqAqpMB2JYwCB4QIw5T89zpfgFeP/K2qui70OkgAA/rPxAkMnpggu8e8ciU6lx6yFO8Cuxv0+3o30ECrPg5kzMX+qn2yRAY7QzLpF0QXy+68J1HGp3AF1pwDg/r9ajNf0hGUhGAgQ4qgAKvfyLIF4+94n+KU+y6B7Qi6+9BaYQAAA",
+      "created_at": "2026-06-30T06:35:39.317844+00:00"
+    },
+    {
+      "id": "a6eccdc0-cd4e-4448-ac00-6ba4f9b4dadb",
+      "section": "tour-gallery",
+      "file_url": "/api/uploads/tour-gallery/49013155f7fa4126b8f81622dd2e9fc6.webp",
+      "srcset": {
+        "1600w": "/api/uploads/tour-gallery/49013155f7fa4126b8f81622dd2e9fc6.webp",
+        "1200w": "/api/uploads/tour-gallery/49013155f7fa4126b8f81622dd2e9fc6-md.webp",
+        "800w": "/api/uploads/tour-gallery/49013155f7fa4126b8f81622dd2e9fc6-sm.webp"
+      },
+      "avif_srcset": {
+        "1600w": "/api/uploads/tour-gallery/49013155f7fa4126b8f81622dd2e9fc6.avif",
+        "1200w": "/api/uploads/tour-gallery/49013155f7fa4126b8f81622dd2e9fc6-md.avif",
+        "800w": "/api/uploads/tour-gallery/49013155f7fa4126b8f81622dd2e9fc6-sm.avif"
+      },
+      "thumb_url": "",
+      "file_type": "image",
+      "caption": "",
+      "alt_text": "",
+      "category": "",
+      "sort_order": 0,
+      "is_active": true,
+      "lqip": "data:image/webp;base64,UklGRooAAABXRUJQVlA4IH4AAABQBACdASoYABIAPu1gqlAppSOisBgIATAdiWIAABuhaMApu7P3xYXxTmGQAPxNullxsMwdq1dLKRDDUTkY6EdV9dnrX/5N9slHUH8/4NyFRKrJvs0ryOk+kpnzJJsh/qEThuyBaiiUuXRakkrvii7iHoWtA2RZPISP+iPAAAA=",
+      "created_at": "2026-06-30T06:36:58.928169+00:00"
+    },
+    {
+      "id": "b7b05c6c-28cc-4e41-95e8-eaf40830df18",
+      "section": "tour-gallery",
+      "file_url": "/api/uploads/tour-gallery/e133219991a447e18ca13000dfa2adfe.webp",
+      "srcset": {
+        "1600w": "/api/uploads/tour-gallery/e133219991a447e18ca13000dfa2adfe.webp",
+        "1200w": "/api/uploads/tour-gallery/e133219991a447e18ca13000dfa2adfe-md.webp",
+        "800w": "/api/uploads/tour-gallery/e133219991a447e18ca13000dfa2adfe-sm.webp"
+      },
+      "avif_srcset": {
+        "1600w": "/api/uploads/tour-gallery/e133219991a447e18ca13000dfa2adfe.avif",
+        "1200w": "/api/uploads/tour-gallery/e133219991a447e18ca13000dfa2adfe-md.avif",
+        "800w": "/api/uploads/tour-gallery/e133219991a447e18ca13000dfa2adfe-sm.avif"
+      },
+      "thumb_url": "",
+      "file_type": "image",
+      "caption": "",
+      "alt_text": "",
+      "category": "",
+      "sort_order": 0,
+      "is_active": true,
+      "lqip": "data:image/webp;base64,UklGRiwBAABXRUJQVlA4ICABAAAwBwCdASoYACsAPu1mqU8ppaOiKrgN+TAdiWYAyiEgeUOymYTN8JmgITdnoAYaj7hu5X6zgmdA6XcNaZhnenNFzIAA/T75/IZm10mrWBVi/8BhawLX+UN4HYspg2iLAcDJnAudVuM6U+zPOA/61eRXUm2Prtf//C5bmjNfB2wm+VpNFyO1V1HIihuIOy7Y+w0W5jyNshWNtObaLLhOx+VgPeb4avIBmBt3M4pP9wqei1WzfG1WpaZ9JqQueoeZrlH4ADLWM/e2KFu8x6TElBAlFWOp5oGlOQ1Det/Tpihb2bO1Cg5slKdkn5+vDmMksiUufkaEtO9PuKVxBMiC4ByS187e5ZdtJXRm/a20oqyXf8UpC8sO/DVhYAj1qgRCgAA=",
+      "created_at": "2026-06-30T06:40:12.818789+00:00"
+    },
+    {
+      "id": "1ecbd98b-d0f6-4ef7-b5e5-5f78a6a6ae97",
+      "section": "tour-gallery",
+      "file_url": "/api/uploads/tour-gallery/664f693915474306936bd8503c460653.webp",
+      "srcset": {
+        "1600w": "/api/uploads/tour-gallery/664f693915474306936bd8503c460653.webp",
+        "1200w": "/api/uploads/tour-gallery/664f693915474306936bd8503c460653-md.webp",
+        "800w": "/api/uploads/tour-gallery/664f693915474306936bd8503c460653-sm.webp"
+      },
+      "avif_srcset": {
+        "1600w": "/api/uploads/tour-gallery/664f693915474306936bd8503c460653.avif",
+        "1200w": "/api/uploads/tour-gallery/664f693915474306936bd8503c460653-md.avif",
+        "800w": "/api/uploads/tour-gallery/664f693915474306936bd8503c460653-sm.avif"
+      },
+      "thumb_url": "",
+      "file_type": "image",
+      "caption": "",
+      "alt_text": "",
+      "category": "",
+      "sort_order": 0,
+      "is_active": true,
+      "lqip": "data:image/webp;base64,UklGRngAAABXRUJQVlA4IGwAAADwAwCdASoYABAAPu1iqU2ppaOiMAgBMB2JagCdABoJHfuXT8JeHKAAAP7vS3oPJF30nP2715QVJcSjpx3fmwcZD3jlHskzBdk2HJykTUzkQqo+w7NlHijHW0IrG/WT6EpAA5kE5rp9XuaYAAA=",
+      "created_at": "2026-06-30T06:41:08.857347+00:00"
+    },
+    {
+      "id": "1d382020-22c9-4268-beda-eccad4f6716f",
+      "section": "tour-gallery",
+      "file_url": "/api/uploads/tour-gallery/b120cf5175e04449b009583fdd0ae4cc.webp",
+      "srcset": {
+        "1600w": "/api/uploads/tour-gallery/b120cf5175e04449b009583fdd0ae4cc.webp",
+        "1200w": "/api/uploads/tour-gallery/b120cf5175e04449b009583fdd0ae4cc-md.webp",
+        "800w": "/api/uploads/tour-gallery/b120cf5175e04449b009583fdd0ae4cc-sm.webp"
+      },
+      "avif_srcset": {
+        "1600w": "/api/uploads/tour-gallery/b120cf5175e04449b009583fdd0ae4cc.avif",
+        "1200w": "/api/uploads/tour-gallery/b120cf5175e04449b009583fdd0ae4cc-md.avif",
+        "800w": "/api/uploads/tour-gallery/b120cf5175e04449b009583fdd0ae4cc-sm.avif"
+      },
+      "thumb_url": "",
+      "file_type": "image",
+      "caption": "",
+      "alt_text": "",
+      "category": "",
+      "sort_order": 0,
+      "is_active": true,
+      "lqip": "data:image/webp;base64,UklGRp4AAABXRUJQVlA4IJIAAACQBACdASoYABAAPu1iqU2ppaOiMAgBMB2JbACdMoGv/gPGRdoDFNBLM2VHC/AA/pSuh2BJpCo1czFD/hgDQ0IWIrfzGD6yqc5k6QuXprQEdBF5Do/7UwI/XMSORKj7QBxaNB4/VkJHFFTlX/hvCcdfNl5aK4oOaj/zmIMF93ePTmylKZX4hqVoX9z66xahRwgAAA==",
+      "created_at": "2026-06-30T06:41:40.943192+00:00"
+    },
+    {
+      "id": "653b3b50-8f40-4b0e-a4af-1231269f2808",
+      "section": "tour-gallery",
+      "file_url": "/api/uploads/tour-gallery/daceaaeb174244ff891257f498d031dc.webp",
+      "srcset": {
+        "1600w": "/api/uploads/tour-gallery/daceaaeb174244ff891257f498d031dc.webp",
+        "1200w": "/api/uploads/tour-gallery/daceaaeb174244ff891257f498d031dc-md.webp",
+        "800w": "/api/uploads/tour-gallery/daceaaeb174244ff891257f498d031dc-sm.webp"
+      },
+      "avif_srcset": {
+        "1600w": "/api/uploads/tour-gallery/daceaaeb174244ff891257f498d031dc.avif",
+        "1200w": "/api/uploads/tour-gallery/daceaaeb174244ff891257f498d031dc-md.avif",
+        "800w": "/api/uploads/tour-gallery/daceaaeb174244ff891257f498d031dc-sm.avif"
+      },
+      "thumb_url": "",
+      "file_type": "image",
+      "caption": "",
+      "alt_text": "",
+      "category": "",
+      "sort_order": 0,
+      "is_active": true,
+      "lqip": "data:image/webp;base64,UklGRr4AAABXRUJQVlA4ILIAAABQBQCdASoYABEAPu1oq08ppiOiMBgIATAdiWgArBH/4B8/OGw/hvPVgfWIYRqm0pRz7MAA9YlYQyENMurDwpyKONLRqSNkJwLZVrr+id8KIo6douUz68m7SyFa3OBszoP905hrsR/PSbXKrdEINaVk+gx6cHXGjM3fWTcFLeRPzyk90EjM/aKCEyhjjJSS2etQOw5CPWXnMeVjK5BTCwELWKnDwgQyw9y+dpIAD8DR/IAA",
+      "created_at": "2026-06-30T06:49:05.001054+00:00"
+    },
+    {
+      "id": "d00d1ddd-6667-4000-a031-1404fc9351c4",
+      "section": "tour-gallery",
+      "file_url": "/api/uploads/tour-gallery/5d90fe9d39a64636beb06a3de0a03778.webp",
+      "srcset": {
+        "1600w": "/api/uploads/tour-gallery/5d90fe9d39a64636beb06a3de0a03778.webp",
+        "1200w": "/api/uploads/tour-gallery/5d90fe9d39a64636beb06a3de0a03778-md.webp",
+        "800w": "/api/uploads/tour-gallery/5d90fe9d39a64636beb06a3de0a03778-sm.webp"
+      },
+      "avif_srcset": {
+        "1600w": "/api/uploads/tour-gallery/5d90fe9d39a64636beb06a3de0a03778.avif",
+        "1200w": "/api/uploads/tour-gallery/5d90fe9d39a64636beb06a3de0a03778-md.avif",
+        "800w": "/api/uploads/tour-gallery/5d90fe9d39a64636beb06a3de0a03778-sm.avif"
+      },
+      "thumb_url": "",
+      "file_type": "image",
+      "caption": "",
+      "alt_text": "",
+      "category": "",
+      "sort_order": 0,
+      "is_active": true,
+      "lqip": "data:image/webp;base64,UklGRnYAAABXRUJQVlA4IGoAAAAQBACdASoYAAwAPu1mqk4ppaOiMAgBMB2JZACdACHeiCHddRNVS2LDAAD+Jo8HYyoOdUohgjMYjsPpnS9YzEN4mvuM6RGGd0UpzkfIPcKZikfml1wgVNg7NdGLhRJXKJrnenKLc6DHoAAA",
+      "created_at": "2026-06-30T06:49:27.616434+00:00"
+    },
+    {
+      "id": "5a1e7fc5-93ba-4615-bd8a-b62eb2f4cc07",
+      "section": "tour-gallery",
+      "file_url": "/api/uploads/tour-gallery/9af8f64cabaf441380d3b25470d2a89a.webp",
+      "srcset": {
+        "1600w": "/api/uploads/tour-gallery/9af8f64cabaf441380d3b25470d2a89a.webp",
+        "1200w": "/api/uploads/tour-gallery/9af8f64cabaf441380d3b25470d2a89a-md.webp",
+        "800w": "/api/uploads/tour-gallery/9af8f64cabaf441380d3b25470d2a89a-sm.webp"
+      },
+      "avif_srcset": {
+        "1600w": "/api/uploads/tour-gallery/9af8f64cabaf441380d3b25470d2a89a.avif",
+        "1200w": "/api/uploads/tour-gallery/9af8f64cabaf441380d3b25470d2a89a-md.avif",
+        "800w": "/api/uploads/tour-gallery/9af8f64cabaf441380d3b25470d2a89a-sm.avif"
+      },
+      "thumb_url": "",
+      "file_type": "image",
+      "caption": "",
+      "alt_text": "",
+      "category": "",
+      "sort_order": 0,
+      "is_active": true,
+      "lqip": "data:image/webp;base64,UklGRpwAAABXRUJQVlA4IJAAAADQBACdASoYABAAPu1iqU2ppaOiMAgBMB2JagCdMoGv/gNs+rlXT/mbxyn+3MkdmAD7shGrt3+51doDOx7rj5QwkGfqGfBdUvbHKIGzV3iH3M64+y+CQmPzKpN13gb7YYcishgwmeRT+N5mgXcyEPTT839rBLXBKK9CzAco30v39uXpZ2MaN23t9ChypmQ+oAA=",
+      "created_at": "2026-06-30T06:49:37.849714+00:00"
+    },
+    {
+      "id": "ec297331-5ca3-491e-a1c9-2df15c511ef0",
+      "section": "tour-gallery",
+      "file_url": "/api/uploads/tour-gallery/7c0221ab464e4e7f955fd5d7878f0289.webp",
+      "srcset": {
+        "1600w": "/api/uploads/tour-gallery/7c0221ab464e4e7f955fd5d7878f0289.webp",
+        "1200w": "/api/uploads/tour-gallery/7c0221ab464e4e7f955fd5d7878f0289-md.webp",
+        "800w": "/api/uploads/tour-gallery/7c0221ab464e4e7f955fd5d7878f0289-sm.webp"
+      },
+      "avif_srcset": {
+        "1600w": "/api/uploads/tour-gallery/7c0221ab464e4e7f955fd5d7878f0289.avif",
+        "1200w": "/api/uploads/tour-gallery/7c0221ab464e4e7f955fd5d7878f0289-md.avif",
+        "800w": "/api/uploads/tour-gallery/7c0221ab464e4e7f955fd5d7878f0289-sm.avif"
+      },
+      "thumb_url": "",
+      "file_type": "image",
+      "caption": "",
+      "alt_text": "",
+      "category": "",
+      "sort_order": 0,
+      "is_active": true,
+      "lqip": "data:image/webp;base64,UklGRrgAAABXRUJQVlA4IKwAAADQBQCdASoYACAAPu1srVCppaQiqAqpMB2JZQDFEb+CxWdwp2k4hdGFFS4sJu5ZdaMUW4RmMYKwAP7720gjbeRyTxzbIkrXcqbpOZWQ4dpsSCf7G1FfuGSkN7BVPqtGQXPRJKh7VOiIr9DSKTVBt4mPuCvE3sT4rHWYjvTQtkjvWBTQqOlUQp03T8ar1Ec14lWH/eCW1aTTV9Haa24vdVlX6ybQ8lTRAXG5cgAA",
+      "created_at": "2026-06-30T06:49:47.203683+00:00"
+    },
+    {
+      "id": "bda8e151-f9f7-4746-ad1e-afd5147a5f0e",
+      "section": "tour-gallery",
+      "file_url": "/api/uploads/tour-gallery/4dfae5736c2a49729b1302dde8643a42.webp",
+      "srcset": {
+        "1600w": "/api/uploads/tour-gallery/4dfae5736c2a49729b1302dde8643a42.webp",
+        "1200w": "/api/uploads/tour-gallery/4dfae5736c2a49729b1302dde8643a42-md.webp",
+        "800w": "/api/uploads/tour-gallery/4dfae5736c2a49729b1302dde8643a42-sm.webp"
+      },
+      "avif_srcset": {
+        "1600w": "/api/uploads/tour-gallery/4dfae5736c2a49729b1302dde8643a42.avif",
+        "1200w": "/api/uploads/tour-gallery/4dfae5736c2a49729b1302dde8643a42-md.avif",
+        "800w": "/api/uploads/tour-gallery/4dfae5736c2a49729b1302dde8643a42-sm.avif"
+      },
+      "thumb_url": "",
+      "file_type": "image",
+      "caption": "",
+      "alt_text": "",
+      "category": "",
+      "sort_order": 0,
+      "is_active": true,
+      "lqip": "data:image/webp;base64,UklGRqAAAABXRUJQVlA4IJQAAADQBACdASoYABIAPu1kq06ppaQiKA1RMB2JYgAAJcIgUsiBntw4CazQO3yGGMVrPAD+WZx3OqrCA9tCGP4LST4pGshuE49bT5C53ooJVMrtku/K/3ey7+G7/sF6D5vU9ifWO9m59CfCdSA1p5d3SC3MiyTchj9wT9+JXug/w4W68DYwxDwHlYJPv20MwTGtj0AAAAAA",
+      "created_at": "2026-06-30T06:50:02.984746+00:00"
+    },
+    {
+      "id": "52134e15-07e7-471b-a5ed-47e0982453fe",
+      "section": "tour-gallery",
+      "file_url": "/api/uploads/tour-gallery/9605ff894a0844b89b454d5e077c5153.webp",
+      "srcset": {
+        "1600w": "/api/uploads/tour-gallery/9605ff894a0844b89b454d5e077c5153.webp",
+        "1200w": "/api/uploads/tour-gallery/9605ff894a0844b89b454d5e077c5153-md.webp",
+        "800w": "/api/uploads/tour-gallery/9605ff894a0844b89b454d5e077c5153-sm.webp"
+      },
+      "avif_srcset": {
+        "1600w": "/api/uploads/tour-gallery/9605ff894a0844b89b454d5e077c5153.avif",
+        "1200w": "/api/uploads/tour-gallery/9605ff894a0844b89b454d5e077c5153-md.avif",
+        "800w": "/api/uploads/tour-gallery/9605ff894a0844b89b454d5e077c5153-sm.avif"
+      },
+      "thumb_url": "",
+      "file_type": "image",
+      "caption": "",
+      "alt_text": "",
+      "category": "",
+      "sort_order": 0,
+      "is_active": true,
+      "lqip": "data:image/webp;base64,UklGRoQAAABXRUJQVlA4IHgAAACQBACdASoYAAsAPu1kq04ppaQiMAgBMB2JQBOmUGRyT/gPCUANpLG3cJQM7AAA/lnprNABEbY00ho7lA7LspHt55M4J62mtPgsOiaARh2BfyEvu/a6m/3oHNPb1bRuFutP9QgDPqwGoooZFr2i4NJAWqwJwWEwAAA=",
+      "created_at": "2026-06-30T06:50:13.481044+00:00"
+    },
+    {
+      "id": "b6c021bf-9a80-4962-8a6a-5514711ebf33",
+      "section": "tour-gallery",
+      "file_url": "/api/uploads/tour-gallery/90165a23d3864a97a416f8322cc3b88f.webp",
+      "srcset": {
+        "1600w": "/api/uploads/tour-gallery/90165a23d3864a97a416f8322cc3b88f.webp",
+        "1200w": "/api/uploads/tour-gallery/90165a23d3864a97a416f8322cc3b88f-md.webp",
+        "800w": "/api/uploads/tour-gallery/90165a23d3864a97a416f8322cc3b88f-sm.webp"
+      },
+      "avif_srcset": {
+        "1600w": "/api/uploads/tour-gallery/90165a23d3864a97a416f8322cc3b88f.avif",
+        "1200w": "/api/uploads/tour-gallery/90165a23d3864a97a416f8322cc3b88f-md.avif",
+        "800w": "/api/uploads/tour-gallery/90165a23d3864a97a416f8322cc3b88f-sm.avif"
+      },
+      "thumb_url": "",
+      "file_type": "image",
+      "caption": "",
+      "alt_text": "",
+      "category": "",
+      "sort_order": 0,
+      "is_active": true,
+      "lqip": "data:image/webp;base64,UklGRlQAAABXRUJQVlA4IEgAAACQAwCdASoYAA0APu1iqU2ppaOiMAgBMB2JYgC06BedClE2BA0AAF+K7jiRbFQJcnN64W1x/wyO/BzpcqRVRtdzYYGu9WUAAAA=",
+      "created_at": "2026-06-30T06:50:25.148981+00:00"
+    },
+    {
+      "id": "e47f7cc8-bc76-48c6-93bc-16769855d897",
+      "section": "tour-gallery",
+      "file_url": "/api/uploads/tour-gallery/464c87dd03a04aa3a25f68659960aada.webp",
+      "srcset": {
+        "1600w": "/api/uploads/tour-gallery/464c87dd03a04aa3a25f68659960aada.webp",
+        "1200w": "/api/uploads/tour-gallery/464c87dd03a04aa3a25f68659960aada-md.webp",
+        "800w": "/api/uploads/tour-gallery/464c87dd03a04aa3a25f68659960aada-sm.webp"
+      },
+      "avif_srcset": {
+        "1600w": "/api/uploads/tour-gallery/464c87dd03a04aa3a25f68659960aada.avif",
+        "1200w": "/api/uploads/tour-gallery/464c87dd03a04aa3a25f68659960aada-md.avif",
+        "800w": "/api/uploads/tour-gallery/464c87dd03a04aa3a25f68659960aada-sm.avif"
+      },
+      "thumb_url": "",
+      "file_type": "image",
+      "caption": "",
+      "alt_text": "",
+      "category": "",
+      "sort_order": 0,
+      "is_active": true,
+      "lqip": "data:image/webp;base64,UklGRrYAAABXRUJQVlA4IKoAAADQBACdASoYAB0APu1wsFIppiSiqAgBMB2JQBUeil13TD8BnvgouAMQJH694GbMQAD90UOZqqf1FQ7HC6ZIpWkvHBgYsLHjZP8sMFrk/NXWVbPAx+nENo/CGMhm6iTvrkItzo2q0S+fVjq6Psrqwyxll+fIK5KuszLZpAcUoBFmdPg158wiaPalI2A6HxyL0PoGbmYDEBAS1MOATnoT8c5mnTrPWI0iDoSQAA==",
+      "created_at": "2026-06-30T06:50:33.558749+00:00"
+    },
+    {
+      "id": "23ea2ccb-dd48-4067-b965-c98c2d914878",
+      "section": "tour-gallery",
+      "file_url": "/api/uploads/tour-gallery/fa658e5389ec4e1a93febadc10375a67.webp",
+      "srcset": {
+        "1600w": "/api/uploads/tour-gallery/fa658e5389ec4e1a93febadc10375a67.webp",
+        "1200w": "/api/uploads/tour-gallery/fa658e5389ec4e1a93febadc10375a67-md.webp",
+        "800w": "/api/uploads/tour-gallery/fa658e5389ec4e1a93febadc10375a67-sm.webp"
+      },
+      "avif_srcset": {
+        "1600w": "/api/uploads/tour-gallery/fa658e5389ec4e1a93febadc10375a67.avif",
+        "1200w": "/api/uploads/tour-gallery/fa658e5389ec4e1a93febadc10375a67-md.avif",
+        "800w": "/api/uploads/tour-gallery/fa658e5389ec4e1a93febadc10375a67-sm.avif"
+      },
+      "thumb_url": "",
+      "file_type": "image",
+      "caption": "",
+      "alt_text": "",
+      "category": "",
+      "sort_order": 0,
+      "is_active": true,
+      "lqip": "data:image/webp;base64,UklGRtYAAABXRUJQVlA4IMoAAACQBQCdASoYACAAPu1mqk2ppaQiMAgBMB2JQBfnAyM+nHP50fuiMcp8r4hhCmXsTSc1uEikSAD3zQ9Uk05th8kazBwbkUEVKhESIlpQLSNHqJM5XrswQaqP+VebcoXHLEBfJMmSRJxvDyzPe8E896eRS2weCjdZ0aBimzHekVKSGn5ZA0kyskIZCFqblTZE1u1Y6xa6PMvIzxhraYA1HhpBHEJ/uhWMkiQUks9HHDAtIWGncImclgC5NZqBcKTVzBk9h9t7f+dZwAAA",
+      "created_at": "2026-06-30T06:50:48.362822+00:00"
+    },
+    {
+      "id": "97221cf2-6ab1-41b4-97f1-7d987d231871",
+      "section": "tour-gallery",
+      "file_url": "/api/uploads/tour-gallery/2bf9125c88654433b7c703140c5031a3.webp",
+      "srcset": {
+        "1600w": "/api/uploads/tour-gallery/2bf9125c88654433b7c703140c5031a3.webp",
+        "1200w": "/api/uploads/tour-gallery/2bf9125c88654433b7c703140c5031a3-md.webp",
+        "800w": "/api/uploads/tour-gallery/2bf9125c88654433b7c703140c5031a3-sm.webp"
+      },
+      "avif_srcset": {
+        "1600w": "/api/uploads/tour-gallery/2bf9125c88654433b7c703140c5031a3.avif",
+        "1200w": "/api/uploads/tour-gallery/2bf9125c88654433b7c703140c5031a3-md.avif",
+        "800w": "/api/uploads/tour-gallery/2bf9125c88654433b7c703140c5031a3-sm.avif"
+      },
+      "thumb_url": "",
+      "file_type": "image",
+      "caption": "",
+      "alt_text": "",
+      "category": "",
+      "sort_order": 0,
+      "is_active": true,
+      "lqip": "data:image/webp;base64,UklGRhwBAABXRUJQVlA4IBABAABQBgCdASoYAB8APu1wsFKppiSiqAgBMB2JYgC2+uuuunjZoDGoBzyqBJiZifBcgtKrva0icDeWUEyjoAD+9xALyLXAP+n/DcE3unrDJ/eZL3b4wRZ8pJTbrDFzwT4xcZJjOc0nyB885e+XfPCpTf9np1fWSxUWP8zevwAt/eoO4Hng0ZRVJvqux7RrJ3G+kLDeIRfOwMfxRB88hBRpSuEQvHXp5N+5wXO/xqEMFF7wcvrBo4B2Dc874ZmLnBK+Gzxb4HGuKfkdex4OqREoLfvwlxrMogWugHn1bJToFIqPc7mosDLs8aXLuDkMcAjD0HhYybcOdTqHAdEZm/Z7O8V59SknB9IUx5arUUiOeMAAAA==",
+      "created_at": "2026-06-30T06:51:06.015100+00:00"
+    },
+    {
+      "id": "92b5a089-ab18-4ba3-b089-f6622cdb71e2",
+      "section": "tour-gallery",
+      "file_url": "/api/uploads/tour-gallery/8f6ddc1e6ca2424099609709dd69687d.webp",
+      "srcset": {
+        "1600w": "/api/uploads/tour-gallery/8f6ddc1e6ca2424099609709dd69687d.webp",
+        "1200w": "/api/uploads/tour-gallery/8f6ddc1e6ca2424099609709dd69687d-md.webp",
+        "800w": "/api/uploads/tour-gallery/8f6ddc1e6ca2424099609709dd69687d-sm.webp"
+      },
+      "avif_srcset": {
+        "1600w": "/api/uploads/tour-gallery/8f6ddc1e6ca2424099609709dd69687d.avif",
+        "1200w": "/api/uploads/tour-gallery/8f6ddc1e6ca2424099609709dd69687d-md.avif",
+        "800w": "/api/uploads/tour-gallery/8f6ddc1e6ca2424099609709dd69687d-sm.avif"
+      },
+      "thumb_url": "",
+      "file_type": "image",
+      "caption": "",
+      "alt_text": "",
+      "category": "",
+      "sort_order": 0,
+      "is_active": true,
+      "lqip": "data:image/webp;base64,UklGRsAAAABXRUJQVlA4ILQAAABQBQCdASoYAB4APu1orlCppaQiqAqpMB2JYwCnFBEdZdU9EL/bizKhovDRBTYiux8IuoAA/ucTD3asmRR43iyU0/6DQbV9oYHxJ6tAfLbf3YQvfXLuZztHh93p1Wo/lddmUOUIlnktubFEXR8VwA1eC3EghhH9JlHF8W1G+qTGz1w1Y/EkLHB6nGyAmKpNr/UtGOsbRfImAQ/AHdKtkL+Z4UKDjiMAvUVsKzcuvu9opImQ0AA=",
+      "created_at": "2026-06-30T06:51:17.788412+00:00"
+    },
+    {
+      "id": "4cb1fe52-30ed-4752-8277-9e4144472ab3",
+      "section": "tour-gallery",
+      "file_url": "/api/uploads/tour-gallery/5368face0e1f4ecfa7d54734e889e09f.webp",
+      "srcset": {
+        "1600w": "/api/uploads/tour-gallery/5368face0e1f4ecfa7d54734e889e09f.webp",
+        "1200w": "/api/uploads/tour-gallery/5368face0e1f4ecfa7d54734e889e09f-md.webp",
+        "800w": "/api/uploads/tour-gallery/5368face0e1f4ecfa7d54734e889e09f-sm.webp"
+      },
+      "avif_srcset": {
+        "1600w": "/api/uploads/tour-gallery/5368face0e1f4ecfa7d54734e889e09f.avif",
+        "1200w": "/api/uploads/tour-gallery/5368face0e1f4ecfa7d54734e889e09f-md.avif",
+        "800w": "/api/uploads/tour-gallery/5368face0e1f4ecfa7d54734e889e09f-sm.avif"
+      },
+      "thumb_url": "",
+      "file_type": "image",
+      "caption": "",
+      "alt_text": "",
+      "category": "",
+      "sort_order": 0,
+      "is_active": true,
+      "lqip": "data:image/webp;base64,UklGRo4AAABXRUJQVlA4IIIAAAAQBACdASoYAA4APu1iqU2ppaOiMAgBMB2JQBOgBEFneavhXGHOdZWQAADxQspUXsp+4abSNoIjb7aZlAd+v2tT+ir33Y4BhR4+wbd9M7HU5C0XCcuV7+Aqyri5ytz/aQElt6owoy11xYzoLSQf/g/3P5haYFCYr2/WslsvNluzOAAA",
+      "created_at": "2026-06-30T06:51:40.265957+00:00"
+    },
+    {
+      "id": "f884f2db-8236-4ef9-87ed-2825ab2c8d15",
+      "section": "tour-gallery",
+      "file_url": "/api/uploads/tour-gallery/8bd58efe890e4ba681213277d5233d4f.webp",
+      "srcset": {
+        "1600w": "/api/uploads/tour-gallery/8bd58efe890e4ba681213277d5233d4f.webp",
+        "1200w": "/api/uploads/tour-gallery/8bd58efe890e4ba681213277d5233d4f-md.webp",
+        "800w": "/api/uploads/tour-gallery/8bd58efe890e4ba681213277d5233d4f-sm.webp"
+      },
+      "avif_srcset": {
+        "1600w": "/api/uploads/tour-gallery/8bd58efe890e4ba681213277d5233d4f.avif",
+        "1200w": "/api/uploads/tour-gallery/8bd58efe890e4ba681213277d5233d4f-md.avif",
+        "800w": "/api/uploads/tour-gallery/8bd58efe890e4ba681213277d5233d4f-sm.avif"
+      },
+      "thumb_url": "",
+      "file_type": "image",
+      "caption": "",
+      "alt_text": "",
+      "category": "",
+      "sort_order": 0,
+      "is_active": true,
+      "lqip": "data:image/webp;base64,UklGRgQBAABXRUJQVlA4IPgAAABQBgCdASoYABsAPu1srFEppaQiqAqpMB2JQBOmary4QYKdufnfdsRrlFWDf7LjLDARGonfNtEeAyJVQAD+3Veyxc1bJycmFfHMD4fODTda4LYq9joau/zOZlhli+d3g6wXo9DQXKeSAwdGJScRs8568e7dJuZkivvpMzanG1wHnnT1sDO+SLlnDsz3cXJz1vCj90ZsP1l+B/fPWOQN88XF4/EpAjX718Zhidr0Ey6KN8QcdFLQVHfrCvh+AsDB9D6jWVI0EFkxIdFK1S2Bp24fuPWEjdb3eHtjwEXSEY+IsyDdiS828zTtXstCwMVUy13aAWFniYlcAA==",
+      "created_at": "2026-06-30T06:52:39.768539+00:00"
     },
     {
       "id": "0719c58d-120d-4640-b7e0-1debbef2c298",
@@ -6298,7 +6826,7 @@
     },
     {
       "key": "tour_detail.highlights.heading",
-      "created_at": "2026-06-30T06:21:11.818819+00:00",
+      "created_at": "2026-06-30T07:05:01.996954+00:00",
       "group": "pricing",
       "label": "Tour detail - highlights heading",
       "type": "text",
@@ -6306,7 +6834,7 @@
     },
     {
       "key": "tour_detail.small_group.heading",
-      "created_at": "2026-06-30T06:21:11.819306+00:00",
+      "created_at": "2026-06-30T07:05:01.997256+00:00",
       "group": "pricing",
       "label": "Tour detail - small group heading",
       "type": "text",
@@ -6314,7 +6842,7 @@
     },
     {
       "key": "tour_detail.small_group.body",
-      "created_at": "2026-06-30T06:21:11.819711+00:00",
+      "created_at": "2026-06-30T07:05:01.997526+00:00",
       "group": "pricing",
       "label": "Tour detail - small group body (site-wide default; per-tour copy in JourneysManager overrides this)",
       "type": "richtext",
@@ -6322,7 +6850,7 @@
     },
     {
       "key": "tour_detail.testimonials.heading",
-      "created_at": "2026-06-30T06:21:11.820124+00:00",
+      "created_at": "2026-06-30T07:05:01.997785+00:00",
       "group": "pricing",
       "label": "Tour detail - testimonials heading",
       "type": "text",
@@ -6330,7 +6858,7 @@
     },
     {
       "key": "tour_detail.tab.details",
-      "created_at": "2026-06-30T06:21:11.820637+00:00",
+      "created_at": "2026-06-30T07:05:01.998032+00:00",
       "group": "pricing",
       "label": "Tour detail - Details tab label",
       "type": "text",
@@ -6338,16 +6866,15 @@
     },
     {
       "key": "tour_detail.tab.includes",
-      "created_at": "2026-06-30T06:21:11.821123+00:00",
+      "created_at": "2026-06-30T07:05:01.998277+00:00",
       "group": "pricing",
       "label": "Tour detail - Inclusions tab label (AD3 renamed from 'What's Included')",
       "type": "text",
-      "value": "Inclusions",
-      "updated_at": "2026-06-30T06:27:32.183523+00:00"
+      "value": "Inclusions"
     },
     {
       "key": "tour_detail.tab.prices",
-      "created_at": "2026-06-30T06:21:11.821612+00:00",
+      "created_at": "2026-06-30T07:05:01.998518+00:00",
       "group": "pricing",
       "label": "Tour detail - Prices and Dates tab label",
       "type": "text",
@@ -6355,7 +6882,7 @@
     },
     {
       "key": "tour_detail.download_pdf",
-      "created_at": "2026-06-30T06:21:11.822147+00:00",
+      "created_at": "2026-06-30T07:05:01.998771+00:00",
       "group": "pricing",
       "label": "Tour detail - download PDF button label",
       "type": "text",
@@ -6363,7 +6890,7 @@
     },
     {
       "key": "blog.hero.eyebrow",
-      "created_at": "2026-06-30T06:21:11.842422+00:00",
+      "created_at": "2026-06-30T07:05:02.011734+00:00",
       "group": "blog",
       "label": "Blog eyebrow",
       "type": "text",
@@ -6371,7 +6898,7 @@
     },
     {
       "key": "blog.hero.title",
-      "created_at": "2026-06-30T06:21:11.842985+00:00",
+      "created_at": "2026-06-30T07:05:02.012021+00:00",
       "group": "blog",
       "label": "Blog title",
       "type": "richtext",
@@ -6379,7 +6906,7 @@
     },
     {
       "key": "blog.hero.intro",
-      "created_at": "2026-06-30T06:21:11.843451+00:00",
+      "created_at": "2026-06-30T07:05:02.012318+00:00",
       "group": "blog",
       "label": "Blog intro",
       "type": "richtext",
@@ -6387,7 +6914,7 @@
     },
     {
       "key": "blog.empty.heading",
-      "created_at": "2026-06-30T06:21:11.843866+00:00",
+      "created_at": "2026-06-30T07:05:02.012660+00:00",
       "group": "blog",
       "label": "Empty-state heading",
       "type": "text",
@@ -6395,7 +6922,7 @@
     },
     {
       "key": "blog.empty.body",
-      "created_at": "2026-06-30T06:21:11.844252+00:00",
+      "created_at": "2026-06-30T07:05:02.013018+00:00",
       "group": "blog",
       "label": "Empty-state body",
       "type": "richtext",
@@ -6475,12 +7002,12 @@
       "itinerary_filename": "",
       "sort_order": 0,
       "created_at": "2026-06-24T07:30:57.634047+00:00",
-      "updated_at": "2026-06-30T05:59:32.175642+00:00",
+      "updated_at": "2026-06-30T06:46:23.747206+00:00",
       "slug": "maleny-creative-immersion-retreat",
       "status": "published",
       "type": "tour",
       "gallery_media_ids": [
-        "4edd0238-06b8-4458-9786-fc55100c6ca4",
+        "7cbdd3a6-40ba-4e4e-95c0-0fc38f64414d",
         "d26c0efc-a5b2-463e-be75-237488b93a7f",
         "500bb85d-5526-4120-b3d2-152809c5c072",
         "34965c89-81f4-4127-9435-96f71d43fdbc",
@@ -6493,7 +7020,6 @@
         "beb399be-4e8c-4a3d-853b-0ee3c4a3d902",
         "557efb44-3949-4ae8-b5c7-6247ed485da2",
         "117ae11d-6c9b-4e82-83b0-7815a9a8e918",
-        "7cbdd3a6-40ba-4e4e-95c0-0fc38f64414d",
         "a7a32411-2861-414f-bae7-2bbb108ed796",
         "ea72b47b-a16d-4c41-9313-ba782b1327e6",
         "1dbad6f8-f22d-4168-a15f-c00ec4694e87",
@@ -6501,8 +7027,8 @@
         "dd243059-73f7-4ac2-a8f0-16677e6b9ebc",
         "990bcbb1-55a1-4dad-96b7-a39ba75122d1",
         "8c8ca611-58af-44a9-a677-14d82b8f5a24",
+        "4edd0238-06b8-4458-9786-fc55100c6ca4",
         "8c2c438d-6a27-4b13-a674-0ba9ea3ac375",
-        "a968b5c0-ff32-45f7-abdd-455b0382472a",
         "c5127755-d7da-402f-afa4-0c0871229133",
         "f8ff8a72-5796-4b98-812b-434e10c33e80"
       ],
@@ -6545,23 +7071,44 @@
         "Twin share accommodation throughout",
         "Meals as specified, wine with dinner",
         "All experiences unless marked optional",
-        "Farm to table cuisine and local wines",
         "Wildlife, wilderness and cultural discovery",
-        "Effervescent, meticulous hosting"
+        "National Park Fees",
+        "All transportation during the tour"
       ],
       "cta": "Enquire about a Tasmanian Odessey",
       "is_active": true,
-      "itinerary_url": "",
-      "itinerary_filename": "",
+      "itinerary_url": "/api/uploads/itineraries/f64b20521a404a1bbe0587aff54055a5.pdf",
+      "itinerary_filename": "Tasmania 2027.pdf",
       "sort_order": 1,
       "created_at": "2026-06-24T07:30:57.644975+00:00",
-      "updated_at": "2026-06-30T05:55:28.618106+00:00",
+      "updated_at": "2026-06-30T06:54:24.760274+00:00",
       "slug": "tasmanian-slow-and-soulful-journeys",
       "status": "published",
       "type": "tour",
-      "gallery_media_ids": [],
+      "gallery_media_ids": [
+        "97221cf2-6ab1-41b4-97f1-7d987d231871",
+        "a6eccdc0-cd4e-4448-ac00-6ba4f9b4dadb",
+        "b8c58775-473b-4911-bff3-4bb0c269138d",
+        "a2522f08-ac33-4e12-b146-c5cd906b646c",
+        "91c7336b-269f-4cf1-9ebc-f184fefa5581",
+        "743fa97e-07be-4a36-a6b1-9b0adb553ef5",
+        "e578d173-4624-4920-91c3-4ceb60061550",
+        "16d72512-ad35-47eb-ace0-32aa3cb19203",
+        "d136b8fd-652c-4a7d-b228-49c23d0a5eca",
+        "4a937801-9d53-44a3-8a09-128595112f47",
+        "e06458ae-0509-4ffe-a4b3-b101ad1faa5c",
+        "df818286-d030-4cdc-b623-61730ade4e11",
+        "dd32e68e-014a-48cb-9bc6-8e3e4d575d89",
+        "23ea2ccb-dd48-4067-b965-c98c2d914878",
+        "bda8e151-f9f7-4746-ad1e-afd5147a5f0e",
+        "ec297331-5ca3-491e-a1c9-2df15c511ef0",
+        "92b5a089-ab18-4ba3-b089-f6622cdb71e2",
+        "653b3b50-8f40-4b0e-a4af-1231269f2808",
+        "e47f7cc8-bc76-48c6-93bc-16769855d897",
+        "5a1e7fc5-93ba-4615-bd8a-b62eb2f4cc07"
+      ],
       "description_html": "<blockquote><p><em>This experience is designed for women with a love of nature, great food, and cultural discovery. This inspired adventure blends Tasmania’s breathtaking wilderness, fascinating history, and exquisite local flavours into one seamless experience.</em></p></blockquote><p></p><p></p>",
-      "itinerary_html": "",
+      "itinerary_html": "<p>Starting in Hobart, we’ll wander the waterfront and historic Battery Point, take in sweeping views from kunanyi/Mt Wellington, cruise to Iron Pot Lighthouse, and enjoy a private whisky and chocolate tasting. Heading south, there’s an option to hike Hartz Peak before visiting the Tahune AirWalk and The Lost Captain for a late lunch, then settling into our base for three nights.</p><p>Bruny Island brings artisan local produce, coastal walks, the Pennicott Wilderness Cruise, watching our friend Matt spearfish for crayfish and cook them on the beach, and spotting fairy penguins after dark. From here, we continue to historic Port Arthur, with time for excellent coastal hikes, a deep dive into colonial history, viewing Tasmanian devils, and (at additional cost) snorkelling, scuba diving, or kayaking with seals.</p><p>On our way to Bicheno, we stop at Maria Island to cycle quiet roads, spot wombats, and soak up the scenery. A day in Freycinet National Park includes the classic hike to the Wineglass Bay lookout, plus a picnic lunch and beach swim. From Bicheno we explore Governor Island Marine Reserve, Whalers Lookout and the Blowhole, and enjoy lunch at the famed Lobster Shack, with an optional scenic flight over Wineglass Bay (additional cost).</p><p>Travelling north, we pause at the Bay of Fires and Bridestowe Lavender Farm before reaching Launceston. From our Launceston base, we visit the Tamar Valley for a private tasting with a Swiss winemaker, then Deloraine for a truffle hunt, Mole Creek Caves tour, and an evening platypus spotting experience.</p><p>Continuing west, we tour a private flower farm near Burnie before arriving in Stanley, home of the iconic Nut and sweeping coastal views. We then follow the Tarkine’s rainforest and wild coastline en route to Cradle Mountain–Lake St Clair National Park, where we hike the Dove Lake circuit (weather permitting). In Strahan, we relax on a Gordon River Cruise, then circle back via Lake St Clair to finish in Richmond, a charming village of vineyards, artisan produce, and colonial heritage.</p>",
       "practical_html": "",
       "preview_token": "oGFgQw9z-gSDROofjXdUGg",
       "excludes": [
@@ -6569,7 +7116,7 @@
         "Travel insurance",
         "Visa fees (if applicable)",
         "Personal expenses",
-        "Optional activities not listed in the itinerary"
+        "Optional activities, as listed in the itinerary"
       ],
       "more_details_html": "<p>From untamed coastlines and pristine national parks to charming towns and vineyards, immerse yourself in Tasmania’s unique beauty and character. Indulge in farm-to-table cuisine and world-class wines, encounter remarkable wildlife, and trace the island’s rich colonial heritage – all while enjoying the comfort, connection, and care of a thoughtfully curated small-group experience.</p>",
       "highlights": [
@@ -6587,7 +7134,10 @@
         "A deloraine truffle hunt, mole caves, and platypus viewing",
         "A private visit to Burnie flower farm",
         "A full day excursion exploring the Tarkine Rainforest and Rugged Coastline loop",
-        "Cradle Mountain with dove lake hike (weather permitting)"
+        "Cradle Mountain with dove lake hike (weather permitting)",
+        "Strahan and a Gordon River Cruise",
+        "Lake St Clair walk",
+        "Historical Richmond, wineries, artisan providores, colonial history"
       ],
       "hero_media_id": "",
       "seo_description": "",
@@ -6619,11 +7169,17 @@
       "itinerary_filename": "",
       "sort_order": 2,
       "created_at": "2026-06-24T10:28:01.511628+00:00",
-      "updated_at": "2026-06-30T05:31:38.761630+00:00",
+      "updated_at": "2026-06-30T06:56:53.136433+00:00",
       "slug": "western-australian-slow-and-soulful-journeys",
       "status": "published",
       "type": "tour",
-      "gallery_media_ids": [],
+      "gallery_media_ids": [
+        "dc8d3965-76de-4dad-8480-6207b371ec86",
+        "8c2d413f-d73b-4256-8482-a6fe2627a908",
+        "e77247cc-de5a-4a27-9d88-44820b950c95",
+        "b6c021bf-9a80-4962-8a6a-5514711ebf33",
+        "4cb1fe52-30ed-4752-8277-9e4144472ab3"
+      ],
       "description_html": "",
       "itinerary_html": "",
       "practical_html": "",
