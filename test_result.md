@@ -108,6 +108,126 @@ user_problem_statement: |
   and (b) reflect on the public site immediately (on next reload, no stale cache).
 
 backend:
+  - task: "AC1 — Blog content keys seeded so /admin/website-text shows the Blog group"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: |
+            CLIENT FEEDBACK: "the option to edit the Blog page header and all is not in
+            the Website Text section." Root cause confirmed via DB inspection: 0
+            content keys with the `blog.*` prefix exist in /api/content. The public
+            Blog.jsx page reads 5 keys via useText/useRichText with hard-coded
+            defaults (blog.hero.eyebrow, blog.hero.title, blog.hero.intro,
+            blog.empty.heading, blog.empty.body) — so the public site renders the
+            defaults but the admin /admin/website-text has no rows to render
+            (it shows whichever groups have rows; empty groups don't appear).
+
+            FIX: Added 5 entries to DEFAULT_CONTENT in backend/server.py (right
+            after the gallery block) with group="blog":
+              blog.hero.eyebrow     -> "From the Road"
+              blog.hero.title       -> "The *Once Were Wild* journal."  (richtext)
+              blog.hero.intro       -> "Field notes, slow reflections and
+                                       stories from journeys taken outside the
+                                       scheduled calendar." (richtext)
+              blog.empty.heading    -> "Stories are on their way."
+              blog.empty.body       -> "Our first journal entries are being
+                                       written between trips. Check back soon,
+                                       or follow the road with us on Instagram."
+                                       (richtext)
+            The existing idempotent seed loop ($setOnInsert in startup_event,
+            around line 3270) automatically inserts them on the next backend
+            boot. Since the LIVE Bluehost backend doesn't have these either,
+            the same seed will fire on deploy and the keys will appear there
+            too with the same defaults.
+
+            Frontend admin WebsiteText.jsx was also updated:
+              - GROUP_LABELS gained `blog: "Blog page"`
+              - GROUP_ORDER inserts `"blog"` between "gallery" and "contact"
+              - GROUP_PREVIEW_TARGETS gained `blog: { path: "/blog", label:
+                "Preview Blog page" }` so the "Preview on site" pill appears.
+
+            CRITICAL TEST REQUIREMENTS
+              1. GET /api/admin/content (Bearer auth) must include a "blog" group
+                 with EXACTLY 5 items: blog.hero.eyebrow, blog.hero.title,
+                 blog.hero.intro, blog.empty.heading, blog.empty.body. All values
+                 are non-empty strings.
+              2. Public GET /api/content (no auth) must also include all 5
+                 blog.* keys.
+              3. PUT /api/admin/content with one of the blog keys set to a new
+                 value must persist + round-trip + flow into the public /api/content
+                 response. Specifically PATCH blog.hero.eyebrow to "Test 2026",
+                 GET, confirm the new value. Restore the original.
+              4. Idempotent seed: the keys exist NOW (after the fix). Restart
+                 backend (sudo supervisorctl restart backend). GET /api/content
+                 again — the 5 keys MUST still be present with the SAME values
+                 (the $setOnInsert guard must not overwrite existing rows).
+              5. Re-confirm none of the other 12 groups (brand, nav, home,
+                 pricing, journeys, faqs, gallery, contact, pillars,
+                 testimonials, footer, seo) lost any keys.
+        - working: true
+          agent: "testing"
+          comment: |
+            VERIFIED: All AC1 backend features working correctly. Comprehensive testing completed with 5/5 critical tests passed.
+            
+            TEST 1 - PRESENCE (admin endpoint): ✓ PASSED
+            - GET /api/admin/content returns 200 with Bearer auth
+            - Response includes a "blog" group with EXACTLY 5 items
+            - All 5 expected keys present: blog.hero.eyebrow, blog.hero.title, blog.hero.intro, blog.empty.heading, blog.empty.body
+            - Each item has non-empty value, label, and type (text or richtext)
+            - All items correctly grouped under "blog" in the response dict
+            
+            TEST 2 - PRESENCE (public endpoint): ✓ PASSED
+            - GET /api/content (no auth) returns 200
+            - Total keys: 183 (expected >= 183)
+            - All 5 blog.* keys present with expected default values:
+              • blog.hero.eyebrow: "From the Road"
+              • blog.hero.title: "The *Once Were Wild* journal."
+              • blog.hero.intro: "Field notes, slow reflections and stories from journeys taken outside the scheduled calendar."
+              • blog.empty.heading: "Stories are on their way."
+              • blog.empty.body: "Our first journal entries are being written between trips. Check back soon, or follow the road with us on Instagram."
+            
+            TEST 3 - ROUND-TRIP UPDATE + ISOLATION: ✓ PASSED
+            - Baseline snapshot: 183 total keys, 5 blog keys, 12 non-blog groups
+            - PUT /api/admin/content with {"key":"blog.hero.eyebrow","value":"Test 2026"} returned 200
+            - Re-GET /api/content confirmed:
+              • blog.hero.eyebrow == "Test 2026" (updated correctly)
+              • Other 4 blog keys unchanged (bit-for-bit identical to snapshot)
+              • All 12 non-blog group counts unchanged (brand, nav, home, pricing, journeys, faqs, gallery, contact, pillars, testimonials, footer, seo)
+              • NO COLLATERAL DAMAGE to other content keys
+            - Restore PUT returned 200, blog.hero.eyebrow restored to "From the Road"
+            
+            TEST 4 - IDEMPOTENT SEED: ✓ PASSED
+            - Snapshotted 5 blog key values before restart
+            - sudo supervisorctl restart backend successful
+            - Backend came back up in ~6 seconds
+            - Re-GET /api/admin/content after restart confirmed:
+              • blog group still exists
+              • All 5 blog keys still present
+              • All 5 values BIT-FOR-BIT identical to pre-restart snapshot
+              • $setOnInsert guard working correctly (did not overwrite existing rows)
+            
+            TEST 5 - REGRESSION: ✓ PASSED
+            - GET /api/journeys returns 4 rows (expected 4)
+            - All 4 journeys have small_group_text field (AB1 feature intact)
+            - GET /api/media returns 286 items (expected >= 280)
+            - GET /api/admin/journeys (Bearer) returns 200
+            - No 500 errors anywhere
+            
+            ALL CRITICAL TESTS PASSED:
+            ✓ Admin endpoint has blog group with 5 valid items
+            ✓ Public endpoint has all 5 blog.* keys with correct default values
+            ✓ Round-trip update + isolation working correctly (no collateral damage)
+            ✓ Idempotent seed working correctly (values survived restart)
+            ✓ No regression in existing endpoints (journeys, media, admin)
+            
+            AC1 Blog content seed is PRODUCTION-READY.
+
   - task: "AB1 — small_group_text field on Journey model + migration"
     implemented: true
     working: true
@@ -678,12 +798,50 @@ metadata:
   run_ui: true
 
 test_plan:
-  current_focus: []
+  current_focus:
+    - "AC1 — Blog content keys seeded so /admin/website-text shows the Blog group"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
 agent_communication:
+    - agent: "main"
+      message: |
+        AC1 — please verify the new Blog content seed. Admin login:
+        POST /api/auth/login {"email":"info@oncewerewild.com","password":"ChangeMe-OWW-2026!"} → Bearer token.
+
+        Test plan:
+        1. GET /api/admin/content (Bearer) → response is a dict keyed by group.
+           Confirm a `blog` group exists with exactly these 5 keys:
+             - blog.hero.eyebrow      (value = "From the Road")
+             - blog.hero.title        (value = "The *Once Were Wild* journal.")
+             - blog.hero.intro        (value starts with "Field notes")
+             - blog.empty.heading     (value = "Stories are on their way.")
+             - blog.empty.body        (value starts with "Our first journal entries")
+           Each item must have non-empty value, group=="blog", label present.
+        2. GET /api/content (PUBLIC, no auth) → flat dict — confirm all 5
+           blog.* keys are also present here so the public Blog.jsx page can
+           consume them.
+        3. PUT /api/admin/content (Bearer) with items=[{"key":"blog.hero.eyebrow","value":"Test 2026"}].
+           Re-GET /api/content. Confirm:
+             - blog.hero.eyebrow == "Test 2026"
+             - All 4 OTHER blog keys are UNCHANGED.
+             - All 12 non-blog groups (brand, nav, home, pricing, journeys,
+               faqs, gallery, contact, pillars, testimonials, footer, seo)
+               are unchanged in key count vs baseline.
+           Restore by PUTting {"key":"blog.hero.eyebrow","value":"From the Road"}.
+        4. Idempotent seed: sudo supervisorctl restart backend. Wait ~6s.
+           Re-GET /api/admin/content. Confirm:
+             - The 5 blog keys are STILL there with the SAME values
+               (the $setOnInsert guard must not overwrite existing rows).
+             - Total content count is at least 178 + 5 = 183 keys.
+        5. Regression: GET /api/journeys still returns 4 rows, each with the
+           AB1 small_group_text key. GET /api/media still returns 286 rows.
+           No 500s.
+
+        Do NOT auto-fix anything you find — flag back here so I can triage.
+        Use the existing admin credentials in /app/memory/test_credentials.md.
+
     - agent: "main"
       message: |
         AB1 — please test the new `small_group_text` field on the Journey model.
@@ -890,6 +1048,55 @@ agent_communication:
         ALL PUBLIC-FACING B2 FEATURES VERIFIED AND WORKING.
         Admin UI accessible and correctly configured for B2 features.
         
+    - agent: "testing"
+      message: |
+        ✅ AC1 BACKEND TESTING COMPLETE - ALL 5 CRITICAL TESTS PASSED
+        
+        Completed comprehensive testing of AC1 Blog content seed. All critical scenarios verified:
+        
+        TEST 1 - PRESENCE (admin endpoint): ✓ PASSED
+        - GET /api/admin/content returns 200 with Bearer auth
+        - Response includes a "blog" group with EXACTLY 5 items
+        - All 5 expected keys present: blog.hero.eyebrow, blog.hero.title, blog.hero.intro, blog.empty.heading, blog.empty.body
+        - Each item has non-empty value, label, and type (text or richtext)
+        
+        TEST 2 - PRESENCE (public endpoint): ✓ PASSED
+        - GET /api/content (no auth) returns 200
+        - Total keys: 183 (expected >= 183)
+        - All 5 blog.* keys present with correct default values
+        
+        TEST 3 - ROUND-TRIP UPDATE + ISOLATION: ✓ PASSED
+        - PUT /api/admin/content with {"key":"blog.hero.eyebrow","value":"Test 2026"} successful
+        - blog.hero.eyebrow updated correctly to "Test 2026"
+        - Other 4 blog keys unchanged (bit-for-bit identical)
+        - All 12 non-blog group counts unchanged (NO COLLATERAL DAMAGE)
+        - Restore successful, blog.hero.eyebrow back to "From the Road"
+        
+        TEST 4 - IDEMPOTENT SEED: ✓ PASSED
+        - Snapshotted 5 blog key values before restart
+        - sudo supervisorctl restart backend successful
+        - Backend came back up in ~6 seconds
+        - All 5 blog keys still present after restart
+        - All 5 values BIT-FOR-BIT identical to pre-restart snapshot
+        - $setOnInsert guard working correctly (did not overwrite existing rows)
+        
+        TEST 5 - REGRESSION: ✓ PASSED
+        - GET /api/journeys returns 4 rows (expected 4)
+        - All 4 journeys have small_group_text field (AB1 feature intact)
+        - GET /api/media returns 286 items (expected >= 280)
+        - GET /api/admin/journeys (Bearer) returns 200
+        - No 500 errors anywhere
+        
+        ALL CRITICAL REQUIREMENTS MET:
+        ✓ Admin endpoint has blog group with 5 valid items
+        ✓ Public endpoint has all 5 blog.* keys with correct default values
+        ✓ Round-trip update + isolation working correctly (no collateral damage)
+        ✓ Idempotent seed working correctly (values survived restart)
+        ✓ No regression in existing endpoints (journeys, media, admin)
+        
+        AC1 Blog content seed is PRODUCTION-READY.
+        No action items for main agent - please summarize and finish.
+
         No action items for main agent. B2 public features are production-ready.
 
 user_problem_statement: "Quick smoke test of the 'Once Were Wild Travel' site after frontend rebuild to fix broken backend URL. Verify: 1) Homepage hero background image renders, 2) Gallery page shows photos, 3) Journeys and Contact pages load, 4) Admin login works with info@oncewerewild.com / WildAtHeart2026"

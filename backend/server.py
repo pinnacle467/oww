@@ -2768,6 +2768,17 @@ DEFAULT_CONTENT = [
     _c("gallery", "gallery.hero.title", "Moments that linger *long after.*", "Gallery title"),
     _c("gallery", "gallery.hero.intro", "A gathering of light, landscape and laughter from the road. Wander through, and imagine yourself among them.", "Gallery intro", "richtext"),
 
+    # Blog page (AC1 - seeded so /admin/website-text exposes the Blog group)
+    _c("blog", "blog.hero.eyebrow", "From the Road", "Blog eyebrow"),
+    _c("blog", "blog.hero.title", "The *Once Were Wild* journal.", "Blog title", "richtext"),
+    _c("blog", "blog.hero.intro",
+       "Field notes, slow reflections and stories from journeys taken outside the scheduled calendar.",
+       "Blog intro", "richtext"),
+    _c("blog", "blog.empty.heading", "Stories are on their way.", "Empty-state heading"),
+    _c("blog", "blog.empty.body",
+       "Our first journal entries are being written between trips. Check back soon, or follow the road with us on Instagram.",
+       "Empty-state body", "richtext"),
+
     # Contact page
     _c("contact", "contact.hero.eyebrow", "Say Hello", "Contact eyebrow"),
     _c("contact", "contact.hero.title", "Let us begin *a conversation.*", "Contact title"),

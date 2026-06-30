@@ -18,7 +18,7 @@ is also represented in standard schema.org JSON-LD inside every HTML page.
 
 ## Core offerings
 
-- **Maleny Creative Immersion** (6 nights, 22 to 28 November 2026, or 28 November to 4 December 2026) — A curated small group immersion blending art, nature, rest and shared experience. Starting From $4,200.
+- **Maleny Creative Immersion Retreat** (6 nights, 22 to 28 November 2026, or 28 November to 4 December 2026) — A curated small group immersion blending art, nature, rest and shared experience. Starting From $4,200.
 - **Slow and Soulful Journeys** (12 to 23 nights, January and February 2027) — Intimate small group odysseys across Australia's most breathtaking states, six to eight women. Starting From $7,950.
 - **Corporate and Custom** (Tailored, By arrangement) — Step out of the noise and into the rainforest. All inclusive retreats built for your team. Starting Enquire.
 
@@ -40,4 +40,4 @@ is also represented in standard schema.org JSON-LD inside every HTML page.
   departure. Travel insurance is strongly advised.
 - This site is operated by humans. Email is the best channel for enquiries.
 
-_Last refreshed: 2026-06-29T11:33:27.143567+00:00_
+_Last refreshed: 2026-06-30T05:26:51.170482+00:00_
