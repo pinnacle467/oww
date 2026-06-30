@@ -5,7 +5,15 @@ import { Loader2, Save, Check } from "lucide-react";
 
 const FIELDS = [
   { key: "contact_email", label: "Email address" },
-  { key: "contact_phone", label: "Phone number" },
+  // AE1 - two separate phone rows. Each has its own label (e.g. "Adele:")
+  // and number. Both render on the public Contact page + footer in
+  // stacked rows. Empty rows are hidden, so the client can ship just one.
+  // The legacy `contact_phone` below is kept as a hidden fallback only
+  // when BOTH phone_1_number and phone_2_number are blank.
+  { key: "contact_phone_1_label", label: "Phone 1 - label (e.g. Adele:)" },
+  { key: "contact_phone_1_number", label: "Phone 1 - number" },
+  { key: "contact_phone_2_label", label: "Phone 2 - label (e.g. Barbara:)" },
+  { key: "contact_phone_2_number", label: "Phone 2 - number" },
   { key: "contact_address", label: "Office or mailing address" },
   { key: "contact_hours", label: "Office hours" },
   { key: "footer_tagline", label: "Footer tagline" },

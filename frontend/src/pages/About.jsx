@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import { PageHero } from "@/components/layout/PageHero";
-import { useText, useRichText } from "@/context/ContentContext";
+import { useText, useRichText, useContent } from "@/context/ContentContext";
 import { useMediaSlot } from "@/hooks/useMediaSlot";
 import { Seo } from "@/components/seo/Seo";
 import { FadeImg } from "@/components/ui/FadeImg";
 import { TravelGallery } from "@/components/about/TravelGallery";
+import { ArrowUpRight } from "lucide-react";
 
 // Public About page. Content blocks + cover stories are entirely admin-driven.
 export default function About() {
@@ -149,6 +150,107 @@ export default function About() {
 
       {/* Phase 2 (Change 5) - travel photos and videos in a swipeable strip. */}
       <TravelGallery />
+
+      {/* AE - Sister Brands. Two other businesses Adele operates, both in
+          Maleny. All copy + URLs editable from /admin/website-text > About
+          page. A brand row with both URL fields empty is hidden, so the
+          client can drop one of the two without code changes. */}
+      <SisterBrands />
     </div>
+  );
+}
+
+// =====================================================================
+// AE - Sister Brands section. Dark accent card row that sits at the very
+// bottom of the About page, just below the TravelGallery. Every string is
+// admin-editable via /admin/website-text > About page.
+// =====================================================================
+function SisterBrands() {
+  const { content } = useContent();
+  const eyebrow = useText("about.sister.eyebrow", "Also by Adele");
+  const titleNode = useRichText("about.sister.title", "Two more places to *stay and gather.*");
+  const introNode = useRichText(
+    "about.sister.intro",
+    "Discover the boutique hinterland hospitality and intimate elopement experiences that Adele also curates in Maleny."
+  );
+  const introRaw = useText("about.sister.intro", "");
+  const ctaLabel = useText("about.sister.cta", "Visit website");
+
+  // Build the brand list from indexed content keys. A brand is rendered
+  // only when it has a non-empty URL. Easy to extend to a 3rd brand
+  // later: just add `about.sister.2.*` keys via admin.
+  const brands = [];
+  for (let i = 0; i < 4; i++) {
+    const url = (content[`about.sister.${i}.url`] || "").trim();
+    const name = (content[`about.sister.${i}.name`] || "").trim();
+    const tagline = (content[`about.sister.${i}.tagline`] || "").trim();
+    if (url && name) brands.push({ url, name, tagline, i });
+  }
+  if (brands.length === 0) return null;
+
+  return (
+    <section className="bg-nature-deep text-cream py-20 sm:py-28" data-testid="about-sister-brands">
+      <div className="mx-auto max-w-6xl px-5 sm:px-8">
+        <div className="text-center mb-12 sm:mb-14 max-w-3xl mx-auto">
+          <p className="label-eyebrow text-gold mb-3" data-testid="sister-eyebrow">{eyebrow}</p>
+          <h2
+            className="font-display font-light text-cream text-3xl sm:text-4xl lg:text-5xl leading-tight tracking-tight"
+            data-testid="sister-title"
+          >
+            {titleNode}
+          </h2>
+          {introRaw && (
+            <p
+              className="editorial text-cream/80 text-base sm:text-lg leading-relaxed mt-5"
+              data-testid="sister-intro"
+            >
+              {introNode}
+            </p>
+          )}
+        </div>
+
+        <div className="grid gap-6 sm:gap-8 md:grid-cols-2">
+          {brands.map((b) => (
+            <a
+              key={b.i}
+              href={b.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group relative flex flex-col p-7 sm:p-9 rounded-sm bg-cream/[0.04] border border-cream/15 hover:bg-cream/[0.08] hover:border-gold/60 transition-all duration-300"
+              data-testid={`sister-card-${b.i}`}
+            >
+              <span className="absolute top-5 right-5 inline-flex h-9 w-9 items-center justify-center rounded-full border border-cream/25 text-cream/70 group-hover:bg-gold group-hover:text-ink group-hover:border-gold transition-all duration-300">
+                <ArrowUpRight className="h-4 w-4" />
+              </span>
+
+              <p className="label-eyebrow text-gold/90 mb-3 text-[10px]">Sister brand</p>
+              <h3
+                className="font-display font-light text-cream text-2xl sm:text-3xl leading-tight tracking-tight pr-12"
+                data-testid={`sister-name-${b.i}`}
+              >
+                {b.name}
+              </h3>
+              {b.tagline && (
+                <p
+                  className="editorial italic text-cream/75 text-base leading-relaxed mt-4"
+                  data-testid={`sister-tagline-${b.i}`}
+                >
+                  {b.tagline}
+                </p>
+              )}
+
+              <span className="mt-7 inline-flex items-center gap-2 font-accent text-[11px] uppercase tracking-label text-gold group-hover:text-cream transition-colors duration-300">
+                {ctaLabel}
+                <ArrowUpRight className="h-3.5 w-3.5" />
+              </span>
+
+              <span className="mt-3 text-[11px] font-accent uppercase tracking-label text-cream/40 truncate">
+                {b.url.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+              </span>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }

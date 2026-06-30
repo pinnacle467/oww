@@ -98,7 +98,32 @@ export function Footer() {
               <p className="label-eyebrow text-gold mb-5">{reachLabel}</p>
               <ul className="space-y-3.5 text-cream/75 text-sm">
                 <li className="flex items-start gap-2.5"><Mail className="h-4 w-4 mt-0.5 text-gold shrink-0" /><span>{settings.contact_email}</span></li>
-                <li className="flex items-start gap-2.5"><Phone className="h-4 w-4 mt-0.5 text-gold shrink-0" /><span>{settings.contact_phone}</span></li>
+                {/* AE1 - footer phone rows. Same fallback chain as the
+                    Contact page: phone_1 + phone_2 if filled, else the
+                    legacy contact_phone, else nothing. tel: links strip
+                    spaces and punctuation so iOS / Android dial them
+                    cleanly. */}
+                {(() => {
+                  const phones = [];
+                  if (settings.contact_phone_1_number) phones.push({ label: settings.contact_phone_1_label || "", number: settings.contact_phone_1_number });
+                  if (settings.contact_phone_2_number) phones.push({ label: settings.contact_phone_2_label || "", number: settings.contact_phone_2_number });
+                  if (phones.length === 0 && settings.contact_phone) phones.push({ label: "", number: settings.contact_phone });
+                  return phones.map((p, idx) => (
+                    <li key={idx} className="flex items-start gap-2.5" data-testid={`footer-phone-row-${idx}`}>
+                      <Phone className="h-4 w-4 mt-0.5 text-gold shrink-0" />
+                      <span className="flex items-baseline gap-1.5 flex-wrap">
+                        {p.label && <span className="text-cream/55">{p.label}</span>}
+                        <a
+                          href={`tel:${p.number.replace(/[\s()-]/g, "")}`}
+                          className="text-cream/75 hover:text-gold transition-colors"
+                          data-testid={`footer-phone-link-${idx}`}
+                        >
+                          {p.number}
+                        </a>
+                      </span>
+                    </li>
+                  ));
+                })()}
                 <li className="flex items-start gap-2.5"><MapPin className="h-4 w-4 mt-0.5 text-gold shrink-0" /><span>{settings.contact_address}</span></li>
               </ul>
             </div>

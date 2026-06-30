@@ -147,13 +147,39 @@ export default function Contact() {
                     <a href={mailHref} className="text-cream hover:text-gold transition-colors" data-testid="contact-email-link">{settings.contact_email}</a>
                   </div>
                 </li>
-                <li className="flex items-start gap-4" data-testid="contact-phone">
-                  <span className="glass rounded-full p-3 text-gold"><Phone className="h-5 w-5" /></span>
-                  <div>
-                    <p className="font-accent text-[11px] uppercase tracking-label text-cream/90 mb-1">{infoPhoneLabel}</p>
-                    <a href={`tel:${settings.contact_phone}`} className="text-cream hover:text-gold transition-colors">{settings.contact_phone}</a>
-                  </div>
-                </li>
+                {/* AE1 - two stacked phone rows. Each row has a custom
+                    label + clickable tel link. Empty rows are hidden, so
+                    the client can ship just one phone if she wants. The
+                    legacy `contact_phone` is a fallback shown only when
+                    both phone_1_number and phone_2_number are blank, so
+                    the public site never goes phoneless mid-migration. */}
+                {(() => {
+                  const phones = [];
+                  if (settings.contact_phone_1_number) phones.push({ label: settings.contact_phone_1_label || "Phone:", number: settings.contact_phone_1_number });
+                  if (settings.contact_phone_2_number) phones.push({ label: settings.contact_phone_2_label || "Phone:", number: settings.contact_phone_2_number });
+                  if (phones.length === 0 && settings.contact_phone) phones.push({ label: infoPhoneLabel, number: settings.contact_phone });
+                  if (phones.length === 0) return null;
+                  return (
+                    <li className="flex items-start gap-4" data-testid="contact-phone">
+                      <span className="glass rounded-full p-3 text-gold"><Phone className="h-5 w-5" /></span>
+                      <div className="space-y-2">
+                        <p className="font-accent text-[11px] uppercase tracking-label text-cream/90 mb-1">{infoPhoneLabel}</p>
+                        {phones.map((p, idx) => (
+                          <div key={idx} className="flex items-baseline gap-2 flex-wrap" data-testid={`contact-phone-row-${idx}`}>
+                            <span className="text-cream/70 text-sm">{p.label}</span>
+                            <a
+                              href={`tel:${p.number.replace(/[\s()-]/g, "")}`}
+                              className="text-cream hover:text-gold transition-colors"
+                              data-testid={`contact-phone-link-${idx}`}
+                            >
+                              {p.number}
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    </li>
+                  );
+                })()}
                 <li className="flex items-start gap-4" data-testid="contact-address">
                   <span className="glass rounded-full p-3 text-gold"><MapPin className="h-5 w-5" /></span>
                   <div>

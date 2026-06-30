@@ -2356,7 +2356,18 @@ async def _build_llms_short() -> str:
     manifesto = _strip_md_markers(c.get("home.manifesto.body.1", ""))
 
     contact_email = s.get("contact_email", "info@oncewerewild.com")
-    contact_phone = s.get("contact_phone", "+61 457 999 411")
+    # AE1 - llms.txt shows whichever phone numbers are filled in. Falls
+    # back to the legacy single field if both new fields are blank.
+    p1l = (s.get("contact_phone_1_label") or "").strip()
+    p1n = (s.get("contact_phone_1_number") or "").strip()
+    p2l = (s.get("contact_phone_2_label") or "").strip()
+    p2n = (s.get("contact_phone_2_number") or "").strip()
+    phone_lines = []
+    if p1n: phone_lines.append(f"- Phone {p1l + ' ' if p1l else ''}{p1n}".rstrip())
+    if p2n: phone_lines.append(f"- Phone {p2l + ' ' if p2l else ''}{p2n}".rstrip())
+    if not phone_lines and s.get("contact_phone"):
+        phone_lines.append(f"- Phone: {s['contact_phone']}")
+    phone_block = "\n".join(phone_lines) if phone_lines else "- Phone: (see contact page)"
     contact_address = s.get("contact_address", "584 Maleny-Montville Rd, Balmoral Ridge QLD 4552")
     contact_hours = s.get("contact_hours", "Monday to Friday, 9am to 5pm AEST")
 
@@ -2399,7 +2410,7 @@ is also represented in standard schema.org JSON-LD inside every HTML page.
 ## Contact
 
 - Email: {contact_email}
-- Phone: {contact_phone}
+{phone_block}
 - Address: {contact_address}
 - Hours: {contact_hours}
 
@@ -2569,6 +2580,17 @@ async def regenerate_hero_preload() -> None:
 DEFAULT_SETTINGS = {
     "contact_email": "info@oncewerewild.com",
     "contact_phone": "+61 457 999 411",
+    # AE1 - two separate phone fields. Each has its own label + number so
+    # the client can edit both from /admin/settings. Labels render to the
+    # LEFT of the clickable tel link on Contact + Footer. Empty rows are
+    # hidden so the client can ship just one if she wants. The legacy
+    # `contact_phone` above is now considered DEPRECATED and is only kept
+    # as a fallback when both phone_1_number and phone_2_number are blank
+    # (during the gap between deploy and the client filling in admin).
+    "contact_phone_1_label": "Adele:",
+    "contact_phone_1_number": "",
+    "contact_phone_2_label": "Barbara:",
+    "contact_phone_2_number": "",
     "contact_address": "584 Maleny-Montville Rd, Balmoral Ridge QLD 4552",
     "contact_hours": "Monday to Friday, 9am to 5pm AEST",
     "footer_tagline": "Slow journeys for women ready to rediscover their wild.",
@@ -2723,6 +2745,31 @@ DEFAULT_CONTENT = [
     _c("pricing", "tour_detail.tab.includes", "Inclusions", "Tour detail - Inclusions tab label (AD3 renamed from 'What's Included')"),
     _c("pricing", "tour_detail.tab.prices", "Prices & Dates", "Tour detail - Prices and Dates tab label"),
     _c("pricing", "tour_detail.download_pdf", "Download Full Itinerary (PDF)", "Tour detail - download PDF button label"),
+
+    # About page - sister-brands section (AE). Two linked brands the
+    # client also operates: Lillypillys Country Cottages and Moments by
+    # Cottage in the Woods. All 10 keys live in the `about` group so the
+    # client can edit copy + URLs from /admin/website-text > About page.
+    _c("about", "about.sister.eyebrow", "Also by Adele", "About sister brands - eyebrow"),
+    _c("about", "about.sister.title",
+       "Two more places to *stay and gather.*",
+       "About sister brands - title (use *italic* for emphasis)",
+       "richtext"),
+    _c("about", "about.sister.intro",
+       "Discover the boutique hinterland hospitality and intimate elopement experiences that Adele also curates in Maleny.",
+       "About sister brands - intro paragraph",
+       "richtext"),
+    _c("about", "about.sister.cta", "Visit website", "About sister brands - shared CTA label"),
+    _c("about", "about.sister.0.name", "Lillypillys Country Cottages", "Sister brand 1 - name"),
+    _c("about", "about.sister.0.tagline",
+       "Boutique private cottages in Maleny, with in-cottage dining, day spa, and dog-friendly luxury.",
+       "Sister brand 1 - tagline"),
+    _c("about", "about.sister.0.url", "https://lillypillys.com.au", "Sister brand 1 - website URL"),
+    _c("about", "about.sister.1.name", "Moments by Cottage in the Woods", "Sister brand 2 - name"),
+    _c("about", "about.sister.1.tagline",
+       "Elopement specialists curating intimate weddings, proposals and secluded stays in the hinterland.",
+       "Sister brand 2 - tagline"),
+    _c("about", "about.sister.1.url", "https://momentsbycottageinthewoods.com", "Sister brand 2 - website URL"),
 
     # Journeys (3)
     _c("journeys", "journeys.maleny.name", "Maleny Creative Immersion", "Maleny — name"),

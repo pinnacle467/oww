@@ -5687,3 +5687,323 @@ agent_communication:
       
       No action items for main agent - please summarize and finish.
 
+
+# ============================================================================
+# Session AE — About sister-brands section + dual phone numbers
+# ============================================================================
+
+backend:
+  - task: "AE - About sister-brands (10 about.* content keys) + dual phone number settings"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: |
+          Two distinct backend changes shipped under Session AE:
+
+          (1) Sister-brands on About page. 10 new content keys added to
+              DEFAULT_CONTENT under the `about` group so /admin/website-text
+              now lists an "About page" section. The keys are:
+                - about.sister.eyebrow
+                - about.sister.title          (richtext, *italic* honoured)
+                - about.sister.intro          (richtext)
+                - about.sister.cta            (shared "Visit website" label)
+                - about.sister.0.name         (Lillypillys Country Cottages)
+                - about.sister.0.tagline
+                - about.sister.0.url          (https://lillypillys.com.au)
+                - about.sister.1.name         (Moments by Cottage in the Woods)
+                - about.sister.1.tagline
+                - about.sister.1.url          (https://momentsbycottageinthewoods.com)
+              The frontend SisterBrands component renders 0-4 indexed
+              cards based on which sister.N.url + sister.N.name pairs
+              are non-empty, so adding a 3rd brand later only needs new
+              about.sister.2.* content rows (no code change).
+
+          (2) Dual phone numbers. 4 new site_settings keys added to
+              DEFAULT_SETTINGS:
+                - contact_phone_1_label     (default "Adele:")
+                - contact_phone_1_number    (default "" — client fills in)
+                - contact_phone_2_label     (default "Barbara:")
+                - contact_phone_2_number    (default "")
+              Per the user's spec ("wipe and start fresh") these are seeded
+              empty. The legacy contact_phone key is preserved and acts as
+              a fallback only when both new number fields are empty — so
+              the public site never goes phoneless during the deploy gap.
+              The /admin/settings page exposes all 4 new fields (label +
+              number for each phone) in a logical group order.
+              The llms.txt generator (line ~2360) was updated to render
+              both phones with their labels when populated, falling back
+              to the legacy single line otherwise.
+
+          POST-RESTART VERIFICATION (smoke, via curl):
+            • GET /api/content returns 201 keys (was 191).
+            • All 10 about.sister.* keys present with correct defaults.
+            • GET /api/settings returns the 4 new phone fields.
+            • PUT /api/admin/settings with new phone values succeeds.
+            • Snapshot regenerated (378,185 bytes).
+
+          Needs deep_testing_backend_v2 to confirm:
+            1. SEED — GET /api/content has the 10 about.sister.* keys
+               with the documented defaults. GET /api/settings has the
+               4 new phone keys.
+            2. ROUND-TRIP — admin PUT /api/admin/content for the 4 visible
+               sister.0 + sister.1 fields, then GET /api/content reflects
+               the change. Same for the 4 phone settings via
+               /api/admin/settings.
+            3. IDEMPOTENCE — after a `supervisorctl restart backend`,
+               any custom values from step 2 SURVIVE. No migration code
+               clobbers them.
+            4. REGRESSION — total content keys >= 201, /api/journeys still
+               4 rows, /api/media still >= 309, /api/auth/login still works,
+               /api/llms.txt still returns 200 (the phone-block refactor
+               is the most likely regression point).
+      - working: true
+        agent: "testing"
+        comment: |
+          ✓ ALL SESSION AE BACKEND TESTS PASSED (5/5)
+          
+          Completed comprehensive testing of Session AE backend features:
+          (1) Sister-brands content keys (10 about.sister.* keys)
+          (2) Dual phone number settings (4 contact_phone_* keys)
+          
+          TEST 1 - SEED CHECK: ✓ PASSED
+          - GET /api/content returns 201 total keys (expected >= 201)
+          - All 10 about.sister.* keys present with correct defaults:
+            • about.sister.eyebrow = "Also by Adele"
+            • about.sister.title = "Two more places to *stay and gather.*"
+            • about.sister.intro contains "boutique hinterland hospitality"
+            • about.sister.cta = "Visit website"
+            • about.sister.0.name = "Lillypillys Country Cottages"
+            • about.sister.0.tagline contains "in-cottage dining"
+            • about.sister.0.url = "https://lillypillys.com.au"
+            • about.sister.1.name = "Moments by Cottage in the Woods"
+            • about.sister.1.tagline contains "Elopement specialists"
+            • about.sister.1.url = "https://momentsbycottageinthewoods.com"
+          - GET /api/settings returns all 4 phone keys:
+            • contact_phone_1_label = "Adele:"
+            • contact_phone_1_number = "+61 408 943 002"
+            • contact_phone_2_label = "Barbara:"
+            • contact_phone_2_number = "+61 457 999 411"
+          
+          TEST 2 - CONTENT ROUND-TRIP: ✓ PASSED
+          - PUT /api/admin/content with {"items":[{"key":"about.sister.0.name","value":"Test Brand A"}]} successful
+          - GET /api/content confirmed about.sister.0.name = "Test Brand A"
+          - Revert PUT successful
+          - GET /api/content confirmed about.sister.0.name restored to "Lillypillys Country Cottages"
+          
+          TEST 3 - SETTINGS ROUND-TRIP: ✓ PASSED
+          - PUT /api/admin/settings with {"settings":{"contact_phone_1_label":"Mum:","contact_phone_1_number":"+61 400 000 000"}} successful
+          - GET /api/settings confirmed both fields updated correctly
+          - Revert PUT successful
+          - GET /api/settings confirmed both fields restored to "Adele:" / "+61 408 943 002"
+          
+          TEST 4 - IDEMPOTENCE: ✓ PASSED
+          - Executed `sudo supervisorctl restart backend`
+          - Waited 6 seconds for backend to come back up
+          - GET /api/content after restart: All 10 about.sister.* keys present with unchanged values
+          - GET /api/settings after restart: All 4 phone keys present with unchanged values
+          - Idempotent seed working correctly (no overwrites)
+          
+          TEST 5 - REGRESSION: ✓ PASSED
+          - GET /api/journeys returns exactly 4 rows (expected 4)
+          - GET /api/media returns 309 items (expected >= 309)
+          - GET /api/blog returns 1 published post (expected >= 1)
+          - GET /llms.txt returns 200 OK (2309 bytes)
+          - Both phone numbers (+61 408 943 002 and +61 457 999 411) found in llms.txt content
+          - llms.txt phone rendering refactor working correctly
+          
+          ALL CRITICAL REQUIREMENTS MET:
+          ✓ 10 about.sister.* content keys seeded with correct defaults
+          ✓ 4 phone settings keys seeded with correct labels and numbers
+          ✓ Content round-trip working (update + revert)
+          ✓ Settings round-trip working (update + revert)
+          ✓ Idempotent seed preserves existing values after restart
+          ✓ No regression in existing endpoints (journeys, media, blog)
+          ✓ llms.txt renders both phone numbers correctly
+          
+          Session AE backend implementation is PRODUCTION-READY.
+
+frontend:
+  - task: "AE - About sister-brands section (UI)"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/About.jsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: |
+          New SisterBrands component appended to About.jsx (renders after
+          the existing TravelGallery). Dark nature-deep panel with gold
+          accents, 2-col responsive grid. Each card:
+            - Sister brand eyebrow
+            - Brand name (font-display, large)
+            - Italic tagline
+            - "Visit website" CTA with arrow icon
+            - URL pill at the bottom (humanized, no protocol)
+            - Whole card is an <a target="_blank" rel="noopener noreferrer">
+              with hover state (gold border + cream/[0.08] bg)
+          Uses useText / useRichText / useContent so the admin can edit
+          every string. Brand list is built defensively (iterates 0..3,
+          requires non-empty url + name) so the section auto-hides if
+          both brands are emptied.
+
+          Initial render bug FIXED: useRichText returns a React node array
+          (with <em> wrapping italic markers), not an HTML string, so the
+          dangerouslySetInnerHTML approach showed [object Object]. Code
+          now renders the node as children. Screenshot verified
+          "Two more places to *stay and gather.*" renders with italics.
+
+  - task: "AE - Dual phone number rendering on Contact + Footer"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/Contact.jsx, frontend/src/components/layout/Footer.jsx, frontend/src/context/SettingsContext.jsx, frontend/src/pages/admin/AdminSettings.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: |
+          Replaced the single `<a tel:>` block on Contact.jsx (line 150)
+          and the single `<span>` in Footer.jsx (line 101) with a
+          phone-row helper that:
+            1. Builds an array from contact_phone_1/2 number fields.
+            2. Falls back to legacy contact_phone if both are empty
+               (so the public site never goes phoneless mid-deploy).
+            3. Renders each row as `<label> <tel-link>` with the number
+               stripped of spaces/punctuation for the href.
+            4. Hides empty rows.
+
+          data-testids added:
+            - contact-phone-row-0, contact-phone-row-1
+            - contact-phone-link-0, contact-phone-link-1
+            - footer-phone-row-0, footer-phone-row-1
+            - footer-phone-link-0, footer-phone-link-1
+
+          SettingsContext.jsx FALLBACK extended so the first-render
+          (before /api/settings resolves) shows the default labels.
+          AdminSettings.jsx FIELDS list extended with 4 new rows so
+          the /admin/settings page exposes label + number for each phone.
+
+          Screenshot verified:
+            - Contact page: "Adele: +61 408 943 002" then
+              "Barbara: +61 457 999 411" — both clickable tel links,
+              correctly formatted hrefs.
+            - Footer (Reach Us column): same 2 rows render with phone
+              icon, stacked vertically inside the column. Labels on
+              cream/55, numbers on cream/75 with gold hover.
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 1
+  run_ui: false
+
+test_plan:
+  current_focus:
+    - "AE - About sister-brands (10 about.* content keys) + dual phone number settings"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: |
+      Session AE adds two features to the public site:
+      (1) "Also by Adele" sister-brands section at the bottom of /about
+          linking to Lillypillys + Moments by Cottage in the Woods.
+          10 about.sister.* content keys are now admin-editable from
+          /admin/website-text > About page.
+      (2) Dual phone numbers across the site. Contact page + Footer now
+          show "Adele: <number>" and "Barbara: <number>" as two stacked,
+          clickable rows. 4 site_settings (label + number x 2) are
+          admin-editable from /admin/settings.
+
+      Test plan (deep_testing_backend_v2):
+        1. SEED CHECK:
+           - GET /api/content -> >= 201 keys, including all 10
+             about.sister.* keys with documented defaults.
+           - GET /api/settings -> includes all 4 new phone fields
+             (labels = "Adele:" / "Barbara:", numbers may be the
+             pre-populated test values or empty).
+
+        2. CONTENT ROUND-TRIP:
+           - Login as admin (info@oncewerewild.com / ChangeMe-OWW-2026!).
+           - PUT /api/admin/content with body
+             [{"key":"about.sister.0.name","value":"Test Brand A"}]
+           - GET /api/content -> sister.0.name == "Test Brand A".
+           - Revert: PUT it back to "Lillypillys Country Cottages".
+
+        3. SETTINGS ROUND-TRIP:
+           - PUT /api/admin/settings with body
+             {"settings":{"contact_phone_1_label":"Mum:","contact_phone_1_number":"+61 400 000 000"}}
+           - GET /api/settings -> reflects the change.
+           - Revert to "Adele:" / "+61 408 943 002".
+
+        4. IDEMPOTENCE:
+           - `supervisorctl restart backend`, wait 6s.
+           - GET /api/content -> custom edits from steps 2 + 3 (if any
+             remain after the revert) MUST survive. Since we reverted,
+             expected values are the original defaults.
+           - All 10 about.sister.* keys still present.
+           - All 4 phone settings still present.
+
+        5. REGRESSION:
+           - GET /api/journeys returns exactly 4 rows.
+           - GET /api/media count >= 309.
+           - GET /api/blog returns at least 1 published post.
+           - GET /api/llms.txt returns 200 OK and the content includes
+             both phone numbers in the Contact section (assuming the
+             test settings haven't been wiped).
+
+      Do NOT touch frontend in this pass.
+
+  - agent: "testing"
+    message: |
+      ✅ SESSION AE BACKEND VERIFICATION COMPLETE - ALL TESTS PASSED (5/5)
+      
+      Executed comprehensive backend testing per the Session AE task block.
+      All critical scenarios verified successfully.
+      
+      STEP 1 - SEED CHECK: ✓ PASS
+      - Total content keys: 201 (expected >= 201)
+      - All 10 about.sister.* keys present with correct defaults
+      - All 4 phone settings keys present (labels: "Adele:" / "Barbara:", numbers: "+61 408 943 002" / "+61 457 999 411")
+      
+      STEP 2 - CONTENT ROUND-TRIP: ✓ PASS
+      - Updated about.sister.0.name to "Test Brand A" via PUT /api/admin/content
+      - Verified update reflected in GET /api/content
+      - Reverted to "Lillypillys Country Cottages"
+      - Verified revert successful
+      
+      STEP 3 - SETTINGS ROUND-TRIP: ✓ PASS
+      - Updated contact_phone_1_label to "Mum:" and contact_phone_1_number to "+61 400 000 000"
+      - Verified update reflected in GET /api/settings
+      - Reverted to "Adele:" / "+61 408 943 002"
+      - Verified revert successful
+      
+      STEP 4 - IDEMPOTENCE: ✓ PASS
+      - Executed `sudo supervisorctl restart backend`
+      - Waited 6 seconds for backend to stabilize
+      - All 10 about.sister.* keys survived restart with unchanged values
+      - All 4 phone settings keys survived restart with unchanged values
+      - Idempotent seed guard working correctly (no overwrites)
+      
+      STEP 5 - REGRESSION: ✓ PASS
+      - GET /api/journeys: exactly 4 rows (expected 4)
+      - GET /api/media: 309 items (expected >= 309)
+      - GET /api/blog: 1 published post (expected >= 1)
+      - GET /llms.txt: 200 OK, 2309 bytes
+      - Both phone numbers found in llms.txt content (AE1 refactor working)
+      
+      NO ISSUES FOUND. Session AE backend is production-ready.
+
+

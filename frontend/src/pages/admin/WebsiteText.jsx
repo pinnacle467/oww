@@ -13,13 +13,14 @@ const GROUP_LABELS = {
   faqs: "Frequently asked questions",
   gallery: "Gallery page",
   blog: "Blog page",
+  about: "About page",
   contact: "Contact page",
   pillars: "Experience pillars",
   testimonials: "Testimonials",
   footer: "Footer",
   seo: "SEO & search visibility",
 };
-const GROUP_ORDER = ["brand", "nav", "home", "pricing", "journeys", "faqs", "gallery", "blog", "contact", "pillars", "testimonials", "footer", "seo"];
+const GROUP_ORDER = ["brand", "nav", "home", "pricing", "journeys", "faqs", "gallery", "blog", "about", "contact", "pillars", "testimonials", "footer", "seo"];
 
 // Where each text group renders on the public site. Used by the
 // "Preview on site" pill in each group header.
@@ -32,6 +33,7 @@ const GROUP_PREVIEW_TARGETS = {
   faqs:     { path: "/pricing#faq-accordion", label: "Preview FAQs" },
   gallery:  { path: "/gallery",  label: "Preview Gallery page" },
   blog:     { path: "/blog",     label: "Preview Blog page" },
+  about:    { path: "/about",    label: "Preview About page" },
   pillars:  { path: "/",         label: "Preview on home" },
   testimonials: { path: "/",     label: "Preview on home" },
   contact:  { path: "/contact",  label: "Preview Contact page" },

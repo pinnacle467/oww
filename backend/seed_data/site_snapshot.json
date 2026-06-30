@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-06-30T07:05:41.595024+00:00",
+  "generated_at": "2026-06-30T08:14:45.824504+00:00",
   "media": [
     {
       "file_url": "/api/uploads/contact-bg/c6213da9b39140b19135fb900221e491.webp",
@@ -6927,6 +6927,87 @@
       "label": "Empty-state body",
       "type": "richtext",
       "value": "Our first journal entries are being written between trips. Check back soon, or follow the road with us on Instagram."
+    },
+    {
+      "key": "about.sister.eyebrow",
+      "created_at": "2026-06-30T07:35:28.758189+00:00",
+      "group": "about",
+      "label": "About sister brands - eyebrow",
+      "type": "text",
+      "value": "Also by Adele"
+    },
+    {
+      "key": "about.sister.title",
+      "created_at": "2026-06-30T07:35:28.758500+00:00",
+      "group": "about",
+      "label": "About sister brands - title (use *italic* for emphasis)",
+      "type": "richtext",
+      "value": "Two more places to *stay and gather.*"
+    },
+    {
+      "key": "about.sister.intro",
+      "created_at": "2026-06-30T07:35:28.758791+00:00",
+      "group": "about",
+      "label": "About sister brands - intro paragraph",
+      "type": "richtext",
+      "value": "Discover the boutique hinterland hospitality and intimate elopement experiences that Adele also curates in Maleny."
+    },
+    {
+      "key": "about.sister.cta",
+      "created_at": "2026-06-30T07:35:28.759059+00:00",
+      "group": "about",
+      "label": "About sister brands - shared CTA label",
+      "type": "text",
+      "value": "Visit website"
+    },
+    {
+      "key": "about.sister.0.name",
+      "created_at": "2026-06-30T07:35:28.759470+00:00",
+      "group": "about",
+      "label": "Sister brand 1 - name",
+      "type": "text",
+      "value": "Lillypillys Country Cottages",
+      "updated_at": "2026-06-30T08:14:43.333967+00:00"
+    },
+    {
+      "key": "about.sister.0.tagline",
+      "created_at": "2026-06-30T07:35:28.759888+00:00",
+      "group": "about",
+      "label": "Sister brand 1 - tagline",
+      "type": "text",
+      "value": "Boutique private cottages in Maleny, with in-cottage dining, day spa, and dog-friendly luxury."
+    },
+    {
+      "key": "about.sister.0.url",
+      "created_at": "2026-06-30T07:35:28.760239+00:00",
+      "group": "about",
+      "label": "Sister brand 1 - website URL",
+      "type": "text",
+      "value": "https://lillypillys.com.au"
+    },
+    {
+      "key": "about.sister.1.name",
+      "created_at": "2026-06-30T07:35:28.760564+00:00",
+      "group": "about",
+      "label": "Sister brand 2 - name",
+      "type": "text",
+      "value": "Moments by Cottage in the Woods"
+    },
+    {
+      "key": "about.sister.1.tagline",
+      "created_at": "2026-06-30T07:35:28.760831+00:00",
+      "group": "about",
+      "label": "Sister brand 2 - tagline",
+      "type": "text",
+      "value": "Elopement specialists curating intimate weddings, proposals and secluded stays in the hinterland."
+    },
+    {
+      "key": "about.sister.1.url",
+      "created_at": "2026-06-30T07:35:28.761089+00:00",
+      "group": "about",
+      "label": "Sister brand 2 - website URL",
+      "type": "text",
+      "value": "https://momentsbycottageinthewoods.com"
     }
   ],
   "site_settings": [
@@ -6974,6 +7055,26 @@
         "Across Australia",
         "GIving Back to the World"
       ]
+    },
+    {
+      "key": "contact_phone_1_label",
+      "value": "Adele:",
+      "updated_at": "2026-06-30T08:14:43.815517+00:00"
+    },
+    {
+      "key": "contact_phone_1_number",
+      "value": "+61 408 943 002",
+      "updated_at": "2026-06-30T08:14:43.816107+00:00"
+    },
+    {
+      "key": "contact_phone_2_label",
+      "value": "Barbara:",
+      "updated_at": "2026-06-30T08:09:07.526658+00:00"
+    },
+    {
+      "key": "contact_phone_2_number",
+      "value": "+61 457 999 411",
+      "updated_at": "2026-06-30T08:09:07.527133+00:00"
     }
   ],
   "journeys": [
