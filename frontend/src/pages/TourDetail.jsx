@@ -34,6 +34,11 @@ function buildMediaItems(ids, mediaMap) {
         url: abs(m.file_url),
         srcset: kind === "image" ? absMap(m.srcset) : null,
         avif_srcset: kind === "image" ? absMap(m.avif_srcset) : null,
+        // For video slides, `poster` is the still frame that renders
+        // instantly while the mp4 loads in the background - dramatically
+        // reduces perceived load time. Falls back to lqip (blurry base64)
+        // if a proper thumbnail isn't set.
+        poster: kind === "video" ? abs(m.thumb_url) : null,
         lqip: m.lqip || null,
         alt: m.alt_text || m.caption || m.alt || "",
         caption: m.caption || "",

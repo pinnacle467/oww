@@ -77,6 +77,7 @@ export default function BlogPost() {
           url: abs(m.file_url),
           srcset: kind === "image" ? absMap(m.srcset) : null,
           avif_srcset: kind === "image" ? absMap(m.avif_srcset) : null,
+          poster: kind === "video" ? abs(m.thumb_url) : null,
           lqip: m.lqip || null,
           alt: m.alt_text || m.caption || m.alt || post.title || "",
           caption: m.caption || "",

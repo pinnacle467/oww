@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-07-01T20:39:22.424503+00:00",
+  "generated_at": "2026-07-01T21:09:06.630899+00:00",
   "media": [
     {
       "file_url": "/api/uploads/contact-bg/c6213da9b39140b19135fb900221e491.webp",
@@ -7589,14 +7589,14 @@
       "file_url": "/api/uploads/tour-gallery/0c8a8b8dd7874b148f2ba743d54b95fb.mp4",
       "srcset": {},
       "avif_srcset": {},
-      "thumb_url": "",
+      "thumb_url": "/api/uploads/tour-gallery/8077a8eb75584a35b800ed0938751c59.webp",
       "file_type": "video",
       "caption": "",
       "alt_text": "",
       "category": "",
       "sort_order": 0,
       "is_active": true,
-      "lqip": "",
+      "lqip": "data:image/webp;base64,UklGRkwAAABXRUJQVlA4IEAAAAAwAwCdASoYAA4APu1iqU2ppaQiMAgBMB2JQBadBYwYHoqAAP7bkS+Bo2GuBOqqeatz4P5REXnmPkyZueQBTIAA",
       "created_at": "2026-07-01T20:39:21.873705+00:00"
     }
   ],

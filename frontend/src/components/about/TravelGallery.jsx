@@ -39,6 +39,7 @@ function mediaToItem(m) {
     url: abs(m.file_url),
     srcset: kind === "image" ? absolutise(m.srcset) : null,
     avif_srcset: kind === "image" ? absolutise(m.avif_srcset) : null,
+    poster: kind === "video" ? abs(m.thumb_url) : null,
     lqip: m.lqip || null,
     alt: m.alt_text || m.caption || "",
     caption: m.caption || "",

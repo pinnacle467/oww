@@ -80,7 +80,7 @@ function MediaSlide({ item, isActive, onOpenLightbox }) {
       <div className="relative h-full w-full bg-black flex items-center justify-center" data-testid="swipeable-slide-video">
         <video
           src={item.url}
-          poster={item.lqip || undefined}
+          poster={item.poster || item.lqip || undefined}
           controls
           playsInline
           preload={isActive ? "metadata" : "none"}
