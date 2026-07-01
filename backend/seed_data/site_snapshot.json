@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-07-01T20:25:58.100598+00:00",
+  "generated_at": "2026-07-01T20:39:22.424503+00:00",
   "media": [
     {
       "file_url": "/api/uploads/contact-bg/c6213da9b39140b19135fb900221e491.webp",
@@ -7582,6 +7582,22 @@
       "is_active": true,
       "lqip": "data:image/webp;base64,UklGRvAAAABXRUJQVlA4IOQAAACwBgCdASoYACcAPu1wsFKppiSipWmZMB2JQBftWLiLgfGUqLO2Q79vDSDpOmJZYsQkuhsTmQHnkZ0NfXMQAAD9pALgM88LzPnET/+P1oMdeKhQFtq6vJPVolgTK9U6MKXw4Vzuu+XdQjPeNf34O3UqfYBsBYmjoRGzpiN3LGUe3Z6zTXSu4HN6vGdXOxFbZoE3W8K9dleUgh+zikf0SD8xVuVSkA5IyBfZZO7MZjYrJ6Tp79jzrCDynysvbQx0DIqKNjtXMlNn7PvF30cIie/Dknc8eIUx1LDge7Qg2UESb8AAAAA=",
       "created_at": "2026-06-28T03:05:24.560109+00:00"
+    },
+    {
+      "id": "fb2f61cd-2677-484e-8b1a-60022d482174",
+      "section": "tour-gallery",
+      "file_url": "/api/uploads/tour-gallery/0c8a8b8dd7874b148f2ba743d54b95fb.mp4",
+      "srcset": {},
+      "avif_srcset": {},
+      "thumb_url": "",
+      "file_type": "video",
+      "caption": "",
+      "alt_text": "",
+      "category": "",
+      "sort_order": 0,
+      "is_active": true,
+      "lqip": "",
+      "created_at": "2026-07-01T20:39:21.873705+00:00"
     }
   ],
   "content": [
@@ -8810,7 +8826,8 @@
         "a8278c2e-ff91-4c99-a023-180854a83f66",
         "2e3d191a-4a3e-4d98-be1a-c3c9690bf501",
         "20fd755a-58bb-44ba-9442-a7eae45400d6",
-        "117ae11d-6c9b-4e82-83b0-7815a9a8e918"
+        "117ae11d-6c9b-4e82-83b0-7815a9a8e918",
+        "fb2f61cd-2677-484e-8b1a-60022d482174"
       ],
       "description_html": "<p>This all-inclusive experience is designed to unlock your inner artist. Every detail is meticulously handled, from gourmet meals and fine wine paired with dinner, to seamless workshop transfers, guided walks, and curated local sightseeing.</p><p><strong>Join us for a creative immersion retreat like no other ... for women ready to slow down, embrace their creativity, and let their hearts soar!</strong></p>",
       "itinerary_html": "<p><strong>Ignite Your Creativity: </strong>Your retreat begins the moment you arrive in Maleny. You will have plenty of time to unpack, and settle into your beautiful cottage accommodation. Once you are comfortable, you will join us to meet your fellow creators and new friends over a warm, relaxed welcome lunch. Later in the afternoon, we officially kick off our creative adventure!</p><ul><li><p><strong>The Golden Hour: Sunset, Wine, &amp; Photography at One Tree Hill: </strong>As the afternoon turns to gold, we embark on an exclusive excursion reserved for the true VIPs of the Hinterland. Your journey begins under the ancient rainforest canopy of Mary Cairncross Scenic Reserve for a hands-on smartphone photography lesson. You will learn professional framing and light manipulation tricks to ensure you can capture memories effortlessly on your device.</p><p>From there, we unlock the gates to the iconic, strictly private paddock of <strong>One Tree Hill.</strong> As the general public is left at the fence line, you will step inside this legendary landscape. We will set up beautifully styled, gourmet charcuterie platters paired with premium local wines. Relax into the ambience, sip wine, and watch the sun dip below the majestic silhouettes of the <strong>Glass House Mountains</strong>. Under the guidance of our photographer, you will use your new skills to capture flawless, postcard-perfect photos while soaking in the absolute peace of the Maleny hills.</p></li><li><p><strong>Masterclass Workshops: </strong>We are thrilled to present a spectacular lineup of creative experiences, including a rare opportunity you won’t want to miss.</p></li><li><p>Get your hands dirty at our vibrant <strong>Monte Lupo Bust Workshop. </strong>You will be guided step-by-step to sculpt and paint your own eclectic clay bust, taking home a gorgeous hand-made masterpiece.</p></li><li><p>We are incredibly honoured to host an exclusive <strong>Charcoal Drawing Masterclass with renowned Australian artist Peter Hudson.</strong> As an Archibald Prize finalist widely celebrated for his deep, evocative landscape and portrait work, Peter <em>never</em> teaches public classes. This is a genuinely rare, once-in-a-lifetime chance to learn the raw power of charcoal shading, form, and expression directly from a master.</p></li></ul><ul><li><p><strong>Glass Artistry &amp; Fire: </strong>You will be treated to a private, VIP viewing of the multi-award-winning <strong><em>Tina Cooper Art &amp; Glass Gallery</em></strong>, with breathtaking views overlooking Lake Baroon. Along with the gallery tour, you will have the opportunity to step into the fire of the Red Door Studio for a hands-on glassblowing session with international German artisan <strong>Wolfgang Engel.</strong> Turn molten glass into your own luminous souvenir under his expert eye.</p></li><li><p><strong>Bespoke Crafts:</strong> <strong>Botanical Wreath-Making with Viera (Retreat 1)</strong> – Immerse yourself in texture and scent as you learn the art of weaving a gorgeous, long-lasting botanical wreath. Using locally sourced flora, seed pods, and foliage, Viera will guide you in creating an organic masterpiece that brings the beauty of the Maleny landscape into your home.</p></li><li><p><strong>Eco-Printing on Silk Scarves with Kim Herringe (Retreat 2)</strong> – Discover the magical alchemy of botanical printing with acclaimed local printmaker Kim Herringe. You will harvest local leaves and eucalyptus bark, tightly binding them into luxurious silk. Through the ancient process of steaming, you will extract the plant's natural pigments, unfolding a completely unique, wearable piece of fine textile art.</p></li><li><p><strong>Artisanal Luxury: Your Private Fine Jewellery Consultation: </strong>Beyond the canvas and the furnace, this retreat offers a rare opportunity to create a wearable legacy. Throughout the 6 days, you will be treated to an exclusive, one-on-one custom consultation with <strong>German master jeweller Birgit Wasshausen. </strong>Birgit specializes in blending nature-inspired asymmetry with traditional handmade goldsmithing. Join with her to discuss sketching a completely custom silver or gold piece, or bring a treasured heirloom ring from home to be reimagined into a modern masterpiece. It is the ultimate luxury keepsake from your time in the Hinterland.</p></li></ul><ul><li><p><strong>Soulful Rhythm &amp; Expression: Recharge Your Creative Spirit: </strong>While our days are filled with hands-on creating, there is also time dedicated to freeing your spirit. We invite you to step away from the workbench and tap into pure, uninhibited joy through sound and movement:</p><ul><li><p><strong>Joyful Vocal Workshop with Cardie:</strong> Raise your voice in a soulful, uplifting singing session. Cardie creates a warm, judgment-free space where you will connect with others through the power of harmony, song, and shared vibration and no musical background is required!</p></li><li><p><strong>Dance Yoga &amp; Bongo Drums with Carolita:</strong> Release stagnant energy, stretch your body, and let loose. Carolita guides you through a liberating blend of expressive dance yoga, as well as the earthy, grounding pulse of live bongo drums. The ultimate way to shake off the day and ground yourself in the healing energy of the Maleny rainforest.</p></li></ul></li></ul><p></p>",
