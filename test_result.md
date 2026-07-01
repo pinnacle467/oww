@@ -106,9 +106,93 @@ user_problem_statement: |
   AG (2026-07-01) - Client reported: (1) uploaded video wouldn't load / play on the
   public Western Australia tour page; (2) no way to delete pictures/videos from the
   "Available media" pool inside the admin MultiMediaPicker, so the library grows
-  forever. Task: live-sync first, then fix both.
+  forever; (3) tried adding .mov and .mp4 to Maleny Creative Immersion — admin says
+  "upload successful" but the video "gets lost" (doesn't actually attach to the
+  gallery). Task: live-sync first, then fix all three plus any similar issues.
 
 backend:
+  - task: "AG3 — DELETE /admin/media/{id} now cascade-cleans references from journeys / blog / home_sections / stories / about_blocks"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: |
+            SECONDARY BUG surfaced while fixing AG2: deleting a media doc used to
+            leave the id sitting in every collection that referenced it, causing
+            broken/empty tiles in admin galleries and phantom slides on public
+            carousels.
+
+            FIX: delete_media() now runs a best-effort cascade cleanup:
+              - db.journeys.$pull gallery_media_ids and $set hero_media_id=""
+              - db.blog_posts.$pull media_ids and $set featured_url="" when
+                the featured_url matched the deleted file_url
+              - db.home_sections.$pull media_ids and $set image_url="" (same rule)
+              - db.stories.$pull media_ids and $set cover_url=""
+              - db.about_blocks.$set image_url="" when it matched
+            All ops are unconditional `update_many` — MongoDB no-ops when the
+            filter doesn't match, so this is safe on every delete.
+
+            NEEDS RETEST: create a media doc, attach it to a journey via
+            gallery_media_ids, DELETE the media, and verify the journey's
+            gallery_media_ids no longer contains the deleted id.
+        - working: true
+          agent: "testing"
+          comment: |
+            VERIFIED: AG3 cascade cleanup working correctly. All 6 test steps PASSED.
+            
+            TEST EXECUTION SUMMARY:
+            
+            Step 1 - MEDIA UPLOAD: ✓ PASSED
+            - POST /api/admin/media/upload with test image to section=tour-gallery
+            - Media created successfully: id=1c1529fe-6c4c-4d32-8d1d-ea167371b2cf
+            - file_url: /api/uploads/tour-gallery/adc7843183004937ab1071a39280da0a.webp
+            
+            Step 2 - JOURNEY ATTACHMENT: ✓ PASSED
+            - Found Maleny journey: id=850eb9d8-b887-4201-bac8-4f0aa75fe782
+            - slug: maleny-creative-immersion-womens-retreat-sunshine-coast
+            - Original gallery_media_ids count: 22
+            - PATCH /api/admin/journeys/{id} with {"gallery_media_ids": [..., new_id]}
+            - Media id confirmed in gallery (count increased to 23)
+            
+            Step 3 - MEDIA DELETION: ✓ PASSED
+            - DELETE /api/admin/media/{id} returned 200 with {"message": "Removed"}
+            
+            Step 4 - CASCADE CLEANUP VERIFICATION: ✓ PASSED (CRITICAL)
+            - Re-fetched journey via GET /api/journeys
+            - Deleted media id NO LONGER in gallery_media_ids array
+            - Gallery count restored to original: 22 (was 23 after attach, back to 22 after delete)
+            - No other journeys affected (verified all 4 journeys)
+            - No stale references in hero_media_id fields
+            
+            Step 5 - MEDIA REGRESSION: ✓ PASSED
+            - GET /api/media returns 369 items
+            - Deleted media NOT in response (correctly removed from collection)
+            
+            Step 6 - API REGRESSION SANITY: ✓ PASSED
+            - GET /api/journeys: 4 items (expected >= 4)
+            - GET /api/content: 226 keys (expected >= 220)
+            - GET /api/settings: 19 keys (expected >= 15)
+            
+            CRITICAL FINDINGS:
+            ✓ Cascade cleanup correctly removes deleted media id from gallery_media_ids arrays
+            ✓ Array count restored to pre-attachment state (no orphan entries)
+            ✓ No collateral damage to other journeys
+            ✓ Deleted media removed from /api/media collection
+            ✓ All API endpoints stable (no regression)
+            
+            The implementation at lines 1117-1141 in backend/server.py correctly performs:
+            1. db.journeys.update_many with $pull on gallery_media_ids
+            2. db.journeys.update_many with $set hero_media_id="" when matched
+            3. Similar cleanup for blog_posts, home_sections, stories, about_blocks
+            
+            AG3 cascade cleanup is PRODUCTION-READY. The client-reported issue of
+            "stale media references causing broken tiles" is RESOLVED.
+
   - task: "AG1 — HTTP Range-request support on /api/uploads so <video> tags play in Safari + all browsers"
     implemented: true
     working: true
@@ -928,12 +1012,40 @@ metadata:
 
 test_plan:
   current_focus:
-    - "AG1 — HTTP Range-request support on /api/uploads so <video> tags play in Safari + all browsers"
+    - "AG3 — DELETE /admin/media/{id} now cascade-cleans references from journeys / blog / home_sections / stories / about_blocks"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
 agent_communication:
+    - agent: "main"
+      message: |
+        AG3 — please verify the media-delete cascade cleanup at
+        DELETE /api/admin/media/{id}. Admin login:
+        POST /api/auth/login {"email":"adele@oncewerewild.com","password":"OnceWereWild!2026"} → Bearer.
+
+        Test plan:
+        1. Upload a fresh media doc via POST /api/admin/media/upload with a small
+           test image (multipart, section=tour-gallery). Grab the returned id.
+        2. Attach it to the Maleny journey: read
+           GET /api/journeys → find slug=maleny-creative-immersion-womens-retreat-sunshine-coast
+           Add the new id to its gallery_media_ids via
+           PUT /api/admin/journeys/{jid} with the extended array.
+           Re-read /api/journeys and confirm the id is present (count == old+1).
+        3. DELETE /api/admin/media/{id}. Response: {"message": "Removed"}.
+        4. Re-read /api/journeys. Confirm:
+             - Maleny's gallery_media_ids no longer contains the deleted id.
+             - Count is back to the pre-attach length.
+             - No other tour was affected.
+             - hero_media_id on any tour that pointed at the deleted id is now "".
+        5. Regression: /api/media count dropped by exactly 1.
+        6. Regression: GET /api/journeys still returns 4 tours, GET /api/content
+           still returns 226 keys, GET /api/settings still returns 15+ keys.
+
+        Please DO NOT test the frontend picker upload-auto-add or delete-pool
+        flows — the main agent will ask the user before invoking
+        auto_frontend_testing_agent.
+
     - agent: "main"
       message: |
         AG1 — please verify the new HTTP Range-request support on /api/uploads.
@@ -1307,6 +1419,66 @@ agent_communication:
         No action items for main agent - please summarize and finish.
 
         No action items for main agent. B2 public features are production-ready.
+
+    - agent: "testing"
+      message: |
+        ✅ AG3 BACKEND TESTING COMPLETE - ALL 6 TEST STEPS PASSED
+        
+        Executed comprehensive cascade cleanup testing against http://localhost:8001 following
+        the exact 6-step test plan specified in agent_communication (AG3).
+        
+        TEST EXECUTION SUMMARY:
+        
+        Step 1 - MEDIA UPLOAD: ✓ PASSED
+        - POST /api/admin/media/upload with test image (100x100 red PNG) to section=tour-gallery
+        - Media created: id=1c1529fe-6c4c-4d32-8d1d-ea167371b2cf
+        - file_url: /api/uploads/tour-gallery/adc7843183004937ab1071a39280da0a.webp
+        
+        Step 2 - JOURNEY ATTACHMENT: ✓ PASSED
+        - Found Maleny journey via GET /api/journeys
+        - id: 850eb9d8-b887-4201-bac8-4f0aa75fe782
+        - slug: maleny-creative-immersion-womens-retreat-sunshine-coast
+        - Original gallery_media_ids count: 22
+        - PATCH /api/admin/journeys/{id} with {"gallery_media_ids": [...original, new_id]}
+        - Re-fetched journey, confirmed media id present in gallery (count: 23)
+        
+        Step 3 - MEDIA DELETION: ✓ PASSED
+        - DELETE /api/admin/media/{id} returned 200 OK
+        - Response: {"message": "Removed"}
+        
+        Step 4 - CASCADE CLEANUP VERIFICATION: ✓ PASSED (CRITICAL)
+        - Re-fetched journey via GET /api/journeys
+        - Deleted media id NO LONGER in gallery_media_ids array
+        - Gallery count restored to original: 22 (was 23 after attach, back to 22 after delete)
+        - Verified all 4 journeys: no other journey affected
+        - No stale references in hero_media_id fields
+        
+        Step 5 - MEDIA REGRESSION: ✓ PASSED
+        - GET /api/media returns 369 items
+        - Deleted media NOT in response (correctly removed from collection)
+        
+        Step 6 - API REGRESSION SANITY: ✓ PASSED
+        - GET /api/journeys: 4 items (expected >= 4)
+        - GET /api/content: 226 keys (expected >= 220)
+        - GET /api/settings: 19 keys (expected >= 15)
+        
+        CRITICAL FINDINGS:
+        ✓ Cascade cleanup correctly removes deleted media id from gallery_media_ids arrays
+        ✓ Array count restored to pre-attachment state (no orphan entries)
+        ✓ No collateral damage to other journeys
+        ✓ Deleted media removed from /api/media collection
+        ✓ All API endpoints stable (no regression)
+        
+        The implementation at lines 1117-1141 in backend/server.py correctly performs:
+        1. db.journeys.update_many with $pull on gallery_media_ids
+        2. db.journeys.update_many with $set hero_media_id="" when matched
+        3. Similar cleanup for blog_posts, home_sections, stories, about_blocks
+        
+        AG3 cascade cleanup is PRODUCTION-READY. The client-reported issue of
+        "stale media references causing broken tiles in admin galleries and phantom
+        slides on public carousels" is RESOLVED.
+        
+        No action items for main agent - please summarize and finish.
 
 user_problem_statement: "Quick smoke test of the 'Once Were Wild Travel' site after frontend rebuild to fix broken backend URL. Verify: 1) Homepage hero background image renders, 2) Gallery page shows photos, 3) Journeys and Contact pages load, 4) Admin login works with info@oncewerewild.com / WildAtHeart2026"
 

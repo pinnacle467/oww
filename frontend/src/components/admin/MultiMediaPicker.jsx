@@ -91,7 +91,14 @@ export function MultiMediaPicker({
         (m.section || "").toLowerCase().includes(q) ||
         (m.alt || "").toLowerCase().includes(q) ||
         (m.caption || "").toLowerCase().includes(q))
-      .slice(0, 60);
+      // Newest media first so anything the operator just uploaded appears at
+      // the top of the pool instead of being buried at the bottom.
+      .sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""))
+      // Big-enough cap that a normal client library never truncates. The
+      // previous cap of 60 was silently hiding newly-uploaded videos when
+      // the library had more than ~60 items - the client saw "upload
+      // successful" but couldn't find the file.
+      .slice(0, 500);
   }, [allMedia, ids, filter, allowVideos, allowEmbeds]);
 
   const add = (id) => {
@@ -167,16 +174,24 @@ export function MultiMediaPicker({
     setUploading(false);
 
     // Refresh the parent's allMedia so the newly uploaded files appear in
-    // the "Available media" pool below. We deliberately DO NOT auto-add
-    // them to the current selection — uploading is a library action; the
-    // operator can then click the new tiles in the pool to add them to
-    // this gallery, and the "X" on a selected tile only removes the link
-    // (the file stays in Available media).
+    // the "Available media" pool below.
     if (typeof reloadMedia === "function") {
       try { await reloadMedia(); } catch (_) { /* non-fatal */ }
     }
+    // Auto-add the newly uploaded items to THIS gallery's selection. Client
+    // feedback: "upload successful but doesn't get added at all - just gets
+    // lost". The previous behaviour (leave the file in the pool for the
+    // operator to click) was too confusing, especially when the pool has
+    // hundreds of items. If the operator wants to un-add they can still
+    // click the "X" on the tile above. The files stay in the library.
     if (newlyUploadedIds.length) {
-      flashBanner(`Uploaded ${newlyUploadedIds.length} item${newlyUploadedIds.length === 1 ? "" : "s"} to Available media. Click any tile below to add it to this gallery.`);
+      const dedup = new Set(ids);
+      const merged = [...ids];
+      newlyUploadedIds.forEach((nid) => {
+        if (!dedup.has(nid)) { merged.push(nid); dedup.add(nid); }
+      });
+      onChange(merged);
+      flashBanner(`Added ${newlyUploadedIds.length} new item${newlyUploadedIds.length === 1 ? "" : "s"} to this gallery.`);
     }
     // Keep the queue visible for a moment if any errored so the operator sees the why.
     if (updated.every((q) => q.status === "done")) {

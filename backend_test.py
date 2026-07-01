@@ -1,273 +1,285 @@
 #!/usr/bin/env python3
 """
-AG1 Backend Test: HTTP Range-request support on /api/uploads
-Tests video playback Range support + regression checks
+AG3 Backend Test: DELETE /api/admin/media/{id} cascade cleanup verification
+
+Test plan:
+1. Upload a fresh media doc via POST /api/admin/media/upload
+2. Attach it to the Maleny journey's gallery_media_ids via PUT /api/admin/journeys/{jid}
+3. DELETE /api/admin/media/{id}
+4. Verify the journey's gallery_media_ids no longer contains the deleted id
+5. Verify hero_media_id is cleared if it pointed to the deleted media
+6. Regression checks on API endpoints
 """
 
 import requests
+import io
 import sys
+from PIL import Image
 
-# Base URL for testing (internal backend port)
 BASE_URL = "http://localhost:8001"
+ADMIN_EMAIL = "adele@oncewerewild.com"
+ADMIN_PASSWORD = "OnceWereWild!2026"
 
-# Test video file (client-reported issue)
-VIDEO_PATH = "/api/uploads/tour-gallery/13e6b94b8409444289cc9aeb2f6632bb.mp4"
-VIDEO_SIZE = 3076922
+def log(msg):
+    print(f"[TEST] {msg}")
 
-# Test image file for regression
-IMAGE_PATH = "/api/uploads/tour-gallery/90165a23d3864a97a416f8322cc3b88f.webp"
-
-def test_1_no_range_video():
-    """Test 1: NO-RANGE GET on mp4 → 200 OK with Accept-Ranges: bytes"""
-    print("\n=== TEST 1: NO-RANGE GET on video ===")
-    url = f"{BASE_URL}{VIDEO_PATH}"
-    resp = requests.get(url, timeout=30)
-    
-    print(f"Status: {resp.status_code}")
-    print(f"Content-Length: {resp.headers.get('Content-Length')}")
-    print(f"Accept-Ranges: {resp.headers.get('Accept-Ranges')}")
-    print(f"Content-Type: {resp.headers.get('Content-Type')}")
-    print(f"Cache-Control: {resp.headers.get('Cache-Control')}")
-    print(f"ETag: {resp.headers.get('ETag')}")
-    
-    assert resp.status_code == 200, f"Expected 200, got {resp.status_code}"
-    assert resp.headers.get('Content-Length') == str(VIDEO_SIZE), f"Expected Content-Length {VIDEO_SIZE}, got {resp.headers.get('Content-Length')}"
-    assert resp.headers.get('Accept-Ranges') == 'bytes', f"Expected Accept-Ranges: bytes, got {resp.headers.get('Accept-Ranges')}"
-    assert 'video' in resp.headers.get('Content-Type', '').lower(), f"Expected video Content-Type, got {resp.headers.get('Content-Type')}"
-    assert 'immutable' in resp.headers.get('Cache-Control', '').lower(), f"Expected immutable in Cache-Control, got {resp.headers.get('Cache-Control')}"
-    assert resp.headers.get('ETag') is not None, "Expected ETag header"
-    
-    print("✓ PASS: NO-RANGE GET returns 200 with Accept-Ranges: bytes")
-    return True
-
-def test_2_range_0_999():
-    """Test 2: RANGE GET bytes=0-999 → 206 Partial Content"""
-    print("\n=== TEST 2: RANGE GET bytes=0-999 ===")
-    url = f"{BASE_URL}{VIDEO_PATH}"
-    headers = {'Range': 'bytes=0-999'}
-    resp = requests.get(url, headers=headers, timeout=30)
-    
-    print(f"Status: {resp.status_code}")
-    print(f"Content-Range: {resp.headers.get('Content-Range')}")
-    print(f"Content-Length: {resp.headers.get('Content-Length')}")
-    print(f"First 4 bytes (hex): {resp.content[:4].hex()}")
-    
-    assert resp.status_code == 206, f"Expected 206, got {resp.status_code}"
-    assert resp.headers.get('Content-Range') == f'bytes 0-999/{VIDEO_SIZE}', f"Expected Content-Range bytes 0-999/{VIDEO_SIZE}, got {resp.headers.get('Content-Range')}"
-    assert resp.headers.get('Content-Length') == '1000', f"Expected Content-Length 1000, got {resp.headers.get('Content-Length')}"
-    assert len(resp.content) == 1000, f"Expected 1000 bytes, got {len(resp.content)}"
-    
-    # Verify first 4 bytes are ftyp atom start (00 00 00 18 or similar)
-    first_4 = resp.content[:4]
-    expected_start = b'\x00\x00'
-    print(f"First 4 bytes match MP4 ftyp atom pattern: {first_4[0:2] == expected_start}")
-    
-    print("✓ PASS: RANGE bytes=0-999 returns 206 with correct slice")
-    return True
-
-def test_3_range_500000_600000():
-    """Test 3: RANGE GET bytes=500000-600000 → 206"""
-    print("\n=== TEST 3: RANGE GET bytes=500000-600000 ===")
-    url = f"{BASE_URL}{VIDEO_PATH}"
-    headers = {'Range': 'bytes=500000-600000'}
-    resp = requests.get(url, headers=headers, timeout=30)
-    
-    print(f"Status: {resp.status_code}")
-    print(f"Content-Range: {resp.headers.get('Content-Range')}")
-    print(f"Content-Length: {resp.headers.get('Content-Length')}")
-    
-    assert resp.status_code == 206, f"Expected 206, got {resp.status_code}"
-    assert resp.headers.get('Content-Range') == f'bytes 500000-600000/{VIDEO_SIZE}', f"Expected Content-Range bytes 500000-600000/{VIDEO_SIZE}, got {resp.headers.get('Content-Range')}"
-    assert resp.headers.get('Content-Length') == '100001', f"Expected Content-Length 100001, got {resp.headers.get('Content-Length')}"
-    assert len(resp.content) == 100001, f"Expected 100001 bytes, got {len(resp.content)}"
-    
-    print("✓ PASS: RANGE bytes=500000-600000 returns 206 with correct slice")
-    return True
-
-def test_4_range_open_ended():
-    """Test 4: RANGE GET bytes=500- (open-ended) → 206"""
-    print("\n=== TEST 4: RANGE GET bytes=500- (open-ended) ===")
-    url = f"{BASE_URL}{VIDEO_PATH}"
-    headers = {'Range': 'bytes=500-'}
-    resp = requests.get(url, headers=headers, timeout=30)
-    
-    print(f"Status: {resp.status_code}")
-    print(f"Content-Range: {resp.headers.get('Content-Range')}")
-    print(f"Content-Length: {resp.headers.get('Content-Length')}")
-    
-    expected_length = VIDEO_SIZE - 500
-    assert resp.status_code == 206, f"Expected 206, got {resp.status_code}"
-    assert resp.headers.get('Content-Range') == f'bytes 500-{VIDEO_SIZE-1}/{VIDEO_SIZE}', f"Expected Content-Range bytes 500-{VIDEO_SIZE-1}/{VIDEO_SIZE}, got {resp.headers.get('Content-Range')}"
-    assert resp.headers.get('Content-Length') == str(expected_length), f"Expected Content-Length {expected_length}, got {resp.headers.get('Content-Length')}"
-    assert len(resp.content) == expected_length, f"Expected {expected_length} bytes, got {len(resp.content)}"
-    
-    print("✓ PASS: RANGE bytes=500- returns 206 with rest of file")
-    return True
-
-def test_5_range_suffix():
-    """Test 5: RANGE GET bytes=-1024 (suffix) → 206"""
-    print("\n=== TEST 5: RANGE GET bytes=-1024 (suffix) ===")
-    url = f"{BASE_URL}{VIDEO_PATH}"
-    headers = {'Range': 'bytes=-1024'}
-    resp = requests.get(url, headers=headers, timeout=30)
-    
-    print(f"Status: {resp.status_code}")
-    print(f"Content-Range: {resp.headers.get('Content-Range')}")
-    print(f"Content-Length: {resp.headers.get('Content-Length')}")
-    
-    expected_start = VIDEO_SIZE - 1024
-    expected_end = VIDEO_SIZE - 1
-    assert resp.status_code == 206, f"Expected 206, got {resp.status_code}"
-    assert resp.headers.get('Content-Range') == f'bytes {expected_start}-{expected_end}/{VIDEO_SIZE}', f"Expected Content-Range bytes {expected_start}-{expected_end}/{VIDEO_SIZE}, got {resp.headers.get('Content-Range')}"
-    assert resp.headers.get('Content-Length') == '1024', f"Expected Content-Length 1024, got {resp.headers.get('Content-Length')}"
-    assert len(resp.content) == 1024, f"Expected 1024 bytes, got {len(resp.content)}"
-    
-    print("✓ PASS: RANGE bytes=-1024 returns 206 with last 1024 bytes")
-    return True
-
-def test_6_bad_range_beyond_eof():
-    """Test 6: Bad Range bytes=99999999- (beyond EOF) → 416"""
-    print("\n=== TEST 6: Bad Range bytes=99999999- (beyond EOF) ===")
-    url = f"{BASE_URL}{VIDEO_PATH}"
-    headers = {'Range': 'bytes=99999999-'}
-    resp = requests.get(url, headers=headers, timeout=30)
-    
-    print(f"Status: {resp.status_code}")
-    print(f"Content-Range: {resp.headers.get('Content-Range')}")
-    
-    assert resp.status_code == 416, f"Expected 416, got {resp.status_code}"
-    assert resp.headers.get('Content-Range') == f'bytes */{VIDEO_SIZE}', f"Expected Content-Range bytes */{VIDEO_SIZE}, got {resp.headers.get('Content-Range')}"
-    
-    print("✓ PASS: Bad Range beyond EOF returns 416")
-    return True
-
-def test_7_malformed_range():
-    """Test 7: Malformed Range bytes=abc → 416"""
-    print("\n=== TEST 7: Malformed Range bytes=abc ===")
-    url = f"{BASE_URL}{VIDEO_PATH}"
-    headers = {'Range': 'bytes=abc'}
-    resp = requests.get(url, headers=headers, timeout=30)
-    
-    print(f"Status: {resp.status_code}")
-    print(f"Content-Range: {resp.headers.get('Content-Range')}")
-    
-    assert resp.status_code == 416, f"Expected 416, got {resp.status_code}"
-    assert resp.headers.get('Content-Range') == f'bytes */{VIDEO_SIZE}', f"Expected Content-Range bytes */{VIDEO_SIZE}, got {resp.headers.get('Content-Range')}"
-    
-    print("✓ PASS: Malformed Range returns 416")
-    return True
-
-def test_8_regression_images():
-    """Test 8: Regression on IMAGES (webp) with and without Range"""
-    print("\n=== TEST 8: Regression on IMAGES ===")
-    url = f"{BASE_URL}{IMAGE_PATH}"
-    
-    # 8a: Without Range
-    print("\n8a: Without Range header")
-    resp = requests.get(url, timeout=30)
-    print(f"Status: {resp.status_code}")
-    print(f"Accept-Ranges: {resp.headers.get('Accept-Ranges')}")
-    print(f"Content-Length: {resp.headers.get('Content-Length')}")
-    
-    assert resp.status_code == 200, f"Expected 200, got {resp.status_code}"
-    assert resp.headers.get('Accept-Ranges') == 'bytes', f"Expected Accept-Ranges: bytes, got {resp.headers.get('Accept-Ranges')}"
-    image_size = int(resp.headers.get('Content-Length', 0))
-    assert image_size > 0, "Expected non-zero Content-Length"
-    print(f"✓ Image size: {image_size} bytes")
-    
-    # 8b: With Range bytes=0-100
-    print("\n8b: With Range bytes=0-100")
-    headers = {'Range': 'bytes=0-100'}
-    resp = requests.get(url, headers=headers, timeout=30)
-    print(f"Status: {resp.status_code}")
-    print(f"Content-Range: {resp.headers.get('Content-Range')}")
-    print(f"Content-Length: {resp.headers.get('Content-Length')}")
-    
-    assert resp.status_code == 206, f"Expected 206, got {resp.status_code}"
-    assert resp.headers.get('Content-Range') == f'bytes 0-100/{image_size}', f"Expected Content-Range bytes 0-100/{image_size}, got {resp.headers.get('Content-Range')}"
-    assert resp.headers.get('Content-Length') == '101', f"Expected Content-Length 101, got {resp.headers.get('Content-Length')}"
-    assert len(resp.content) == 101, f"Expected 101 bytes, got {len(resp.content)}"
-    
-    print("✓ PASS: Image Range requests working correctly")
-    return True
-
-def test_9_regression_api_endpoints():
-    """Test 9: Regression sanity on other API endpoints"""
-    print("\n=== TEST 9: Regression sanity on API endpoints ===")
-    
-    endpoints = [
-        ('/api/media', 300, 'array'),
-        ('/api/journeys', 4, 'array'),
-        ('/api/content', 220, 'dict'),
-        ('/api/settings', 15, 'dict'),
-        ('/api/stories', 1, 'array'),
-        ('/api/blog', 1, 'array'),
-        ('/api/home-sections', 4, 'array'),
-        ('/api/home-faqs', 9, 'array'),
-    ]
-    
-    for path, min_count, expected_type in endpoints:
-        url = f"{BASE_URL}{path}"
-        resp = requests.get(url, timeout=30)
-        print(f"\n{path}: {resp.status_code}")
-        
-        assert resp.status_code == 200, f"Expected 200 for {path}, got {resp.status_code}"
-        
-        data = resp.json()
-        if expected_type == 'array':
-            assert isinstance(data, list), f"Expected array for {path}, got {type(data)}"
-            count = len(data)
-            print(f"  Count: {count} (expected >= {min_count})")
-            assert count >= min_count, f"Expected at least {min_count} items for {path}, got {count}"
-        elif expected_type == 'dict':
-            assert isinstance(data, dict), f"Expected dict for {path}, got {type(data)}"
-            count = len(data)
-            print(f"  Keys: {count} (expected >= {min_count})")
-            assert count >= min_count, f"Expected at least {min_count} keys for {path}, got {count}"
-    
-    print("\n✓ PASS: All API endpoints responding correctly")
-    return True
-
-def main():
-    print("=" * 80)
-    print("AG1 Backend Test: HTTP Range-request support on /api/uploads")
-    print("=" * 80)
-    
-    tests = [
-        test_1_no_range_video,
-        test_2_range_0_999,
-        test_3_range_500000_600000,
-        test_4_range_open_ended,
-        test_5_range_suffix,
-        test_6_bad_range_beyond_eof,
-        test_7_malformed_range,
-        test_8_regression_images,
-        test_9_regression_api_endpoints,
-    ]
-    
-    passed = 0
-    failed = 0
-    
-    for test_func in tests:
-        try:
-            test_func()
-            passed += 1
-        except AssertionError as e:
-            print(f"✗ FAIL: {e}")
-            failed += 1
-        except Exception as e:
-            print(f"✗ ERROR: {e}")
-            failed += 1
-    
-    print("\n" + "=" * 80)
-    print(f"RESULTS: {passed} passed, {failed} failed out of {len(tests)} tests")
-    print("=" * 80)
-    
-    if failed > 0:
+def login():
+    """Login and return Bearer token"""
+    log("Step 0: Logging in as admin...")
+    resp = requests.post(f"{BASE_URL}/api/auth/login", json={
+        "email": ADMIN_EMAIL,
+        "password": ADMIN_PASSWORD
+    })
+    if resp.status_code != 200:
+        log(f"❌ Login failed: {resp.status_code} {resp.text}")
         sys.exit(1)
-    else:
-        print("\n✅ ALL TESTS PASSED - AG1 Range-request support is working correctly")
-        sys.exit(0)
+    data = resp.json()
+    token = data.get("access_token")
+    if not token:
+        log(f"❌ No access_token in response: {data}")
+        sys.exit(1)
+    log(f"✓ Login successful")
+    return token
+
+def create_test_image():
+    """Create a small test image in memory"""
+    img = Image.new('RGB', (100, 100), color='red')
+    buf = io.BytesIO()
+    img.save(buf, format='PNG')
+    buf.seek(0)
+    return buf
+
+def test_ag3_cascade_cleanup():
+    """Main test for AG3 cascade cleanup"""
+    token = login()
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    # STEP 1: Upload a fresh media doc
+    log("\nStep 1: Uploading test media to section=tour-gallery...")
+    test_image = create_test_image()
+    files = {'file': ('test_ag3.png', test_image, 'image/png')}
+    data = {
+        'section': 'tour-gallery',
+        'category': '',
+        'alt_text': 'AG3 test image',
+        'sort_order': 0
+    }
+    resp = requests.post(f"{BASE_URL}/api/admin/media/upload", headers=headers, files=files, data=data)
+    if resp.status_code != 200:
+        log(f"❌ Media upload failed: {resp.status_code} {resp.text}")
+        sys.exit(1)
+    
+    media_doc = resp.json()
+    media_id = media_doc.get("id")
+    if not media_id:
+        log(f"❌ No id in media response: {media_doc}")
+        sys.exit(1)
+    log(f"✓ Media uploaded successfully: id={media_id}")
+    log(f"  file_url: {media_doc.get('file_url')}")
+    
+    # STEP 2: Find Maleny journey and attach the media id to gallery_media_ids
+    log("\nStep 2: Finding Maleny journey and attaching media...")
+    resp = requests.get(f"{BASE_URL}/api/journeys")
+    if resp.status_code != 200:
+        log(f"❌ Failed to fetch journeys: {resp.status_code}")
+        sys.exit(1)
+    
+    journeys = resp.json()
+    maleny = None
+    for j in journeys:
+        if "maleny" in j.get("slug", "").lower():
+            maleny = j
+            break
+    
+    if not maleny:
+        log(f"❌ Could not find Maleny journey in {len(journeys)} journeys")
+        log(f"Available slugs: {[j.get('slug') for j in journeys]}")
+        sys.exit(1)
+    
+    maleny_id = maleny.get("id")
+    maleny_slug = maleny.get("slug")
+    original_gallery = maleny.get("gallery_media_ids", [])
+    original_count = len(original_gallery)
+    log(f"✓ Found Maleny journey: id={maleny_id}, slug={maleny_slug}")
+    log(f"  Original gallery_media_ids count: {original_count}")
+    
+    # Attach the new media id to the gallery
+    updated_gallery = original_gallery + [media_id]
+    log(f"  Updating gallery_media_ids to include new media (count: {len(updated_gallery)})...")
+    
+    # Use PATCH with only the gallery_media_ids field to preserve other fields
+    patch_payload = {"gallery_media_ids": updated_gallery}
+    
+    resp = requests.patch(f"{BASE_URL}/api/admin/journeys/{maleny_id}", headers=headers, json=patch_payload)
+    if resp.status_code != 200:
+        log(f"❌ Failed to update journey: {resp.status_code} {resp.text}")
+        sys.exit(1)
+    log(f"✓ Journey updated successfully")
+    
+    # Verify the media id is now in the gallery
+    resp = requests.get(f"{BASE_URL}/api/journeys")
+    if resp.status_code != 200:
+        log(f"❌ Failed to re-fetch journeys: {resp.status_code}")
+        sys.exit(1)
+    
+    journeys = resp.json()
+    maleny_updated = None
+    for j in journeys:
+        if j.get("id") == maleny_id:
+            maleny_updated = j
+            break
+    
+    if not maleny_updated:
+        log(f"❌ Could not find Maleny journey after update")
+        sys.exit(1)
+    
+    updated_gallery_check = maleny_updated.get("gallery_media_ids", [])
+    if media_id not in updated_gallery_check:
+        log(f"❌ Media id {media_id} not found in gallery after update")
+        log(f"  Gallery: {updated_gallery_check}")
+        sys.exit(1)
+    
+    if len(updated_gallery_check) != original_count + 1:
+        log(f"❌ Gallery count mismatch: expected {original_count + 1}, got {len(updated_gallery_check)}")
+        sys.exit(1)
+    
+    log(f"✓ Media id {media_id} confirmed in gallery (count: {len(updated_gallery_check)})")
+    
+    # STEP 3: DELETE the media doc
+    log(f"\nStep 3: Deleting media id={media_id}...")
+    resp = requests.delete(f"{BASE_URL}/api/admin/media/{media_id}", headers=headers)
+    if resp.status_code != 200:
+        log(f"❌ Media delete failed: {resp.status_code} {resp.text}")
+        sys.exit(1)
+    
+    delete_response = resp.json()
+    if delete_response.get("message") != "Removed":
+        log(f"❌ Unexpected delete response: {delete_response}")
+        sys.exit(1)
+    log(f"✓ Media deleted successfully: {delete_response}")
+    
+    # STEP 4: Verify cascade cleanup
+    log(f"\nStep 4: Verifying cascade cleanup...")
+    resp = requests.get(f"{BASE_URL}/api/journeys")
+    if resp.status_code != 200:
+        log(f"❌ Failed to fetch journeys after delete: {resp.status_code}")
+        sys.exit(1)
+    
+    journeys = resp.json()
+    maleny_after_delete = None
+    for j in journeys:
+        if j.get("id") == maleny_id:
+            maleny_after_delete = j
+            break
+    
+    if not maleny_after_delete:
+        log(f"❌ Could not find Maleny journey after delete")
+        sys.exit(1)
+    
+    final_gallery = maleny_after_delete.get("gallery_media_ids", [])
+    
+    # CRITICAL CHECK: The deleted media id should NOT be in the gallery
+    if media_id in final_gallery:
+        log(f"❌ FAILED: Media id {media_id} still present in gallery after delete!")
+        log(f"  Gallery: {final_gallery}")
+        sys.exit(1)
+    
+    # Count should be back to original
+    if len(final_gallery) != original_count:
+        log(f"❌ Gallery count mismatch: expected {original_count}, got {len(final_gallery)}")
+        log(f"  Original: {original_count}, After attach: {len(updated_gallery_check)}, After delete: {len(final_gallery)}")
+        sys.exit(1)
+    
+    log(f"✓ CASCADE CLEANUP VERIFIED: Media id removed from gallery")
+    log(f"  Gallery count restored: {len(final_gallery)} (original: {original_count})")
+    
+    # Verify no other journey was affected
+    log(f"  Checking other journeys were not affected...")
+    for j in journeys:
+        if j.get("id") != maleny_id:
+            if media_id in j.get("gallery_media_ids", []):
+                log(f"❌ Media id {media_id} found in unexpected journey: {j.get('slug')}")
+                sys.exit(1)
+            if j.get("hero_media_id") == media_id:
+                log(f"❌ Media id {media_id} found as hero in unexpected journey: {j.get('slug')}")
+                sys.exit(1)
+    log(f"✓ No other journeys affected")
+    
+    # STEP 5: Regression check - media count
+    log(f"\nStep 5: Regression checks...")
+    resp = requests.get(f"{BASE_URL}/api/media")
+    if resp.status_code != 200:
+        log(f"❌ Failed to fetch media: {resp.status_code}")
+        sys.exit(1)
+    
+    media_list = resp.json()
+    media_count = len(media_list)
+    log(f"✓ GET /api/media returns {media_count} items")
+    
+    # Verify the deleted media is not in the list
+    for m in media_list:
+        if m.get("id") == media_id:
+            log(f"❌ Deleted media id {media_id} still in /api/media response!")
+            sys.exit(1)
+    log(f"✓ Deleted media not in /api/media response")
+    
+    # STEP 6: Regression sanity checks
+    log(f"\nStep 6: API regression sanity checks...")
+    
+    # Journeys
+    resp = requests.get(f"{BASE_URL}/api/journeys")
+    if resp.status_code != 200:
+        log(f"❌ GET /api/journeys failed: {resp.status_code}")
+        sys.exit(1)
+    journeys_count = len(resp.json())
+    if journeys_count < 4:
+        log(f"❌ Expected at least 4 journeys, got {journeys_count}")
+        sys.exit(1)
+    log(f"✓ GET /api/journeys: {journeys_count} items (expected >= 4)")
+    
+    # Content
+    resp = requests.get(f"{BASE_URL}/api/content")
+    if resp.status_code != 200:
+        log(f"❌ GET /api/content failed: {resp.status_code}")
+        sys.exit(1)
+    content_keys = len(resp.json())
+    if content_keys < 220:
+        log(f"❌ Expected at least 220 content keys, got {content_keys}")
+        sys.exit(1)
+    log(f"✓ GET /api/content: {content_keys} keys (expected >= 220)")
+    
+    # Settings
+    resp = requests.get(f"{BASE_URL}/api/settings")
+    if resp.status_code != 200:
+        log(f"❌ GET /api/settings failed: {resp.status_code}")
+        sys.exit(1)
+    settings_keys = len(resp.json())
+    if settings_keys < 15:
+        log(f"❌ Expected at least 15 settings keys, got {settings_keys}")
+        sys.exit(1)
+    log(f"✓ GET /api/settings: {settings_keys} keys (expected >= 15)")
+    
+    log(f"\n{'='*60}")
+    log(f"✅ ALL AG3 TESTS PASSED")
+    log(f"{'='*60}")
+    log(f"Summary:")
+    log(f"  - Media upload: ✓")
+    log(f"  - Journey gallery attachment: ✓")
+    log(f"  - Media deletion: ✓")
+    log(f"  - Cascade cleanup (gallery_media_ids): ✓")
+    log(f"  - No collateral damage to other journeys: ✓")
+    log(f"  - Deleted media removed from /api/media: ✓")
+    log(f"  - API regression checks: ✓")
+    log(f"\nAG3 cascade cleanup is working correctly!")
 
 if __name__ == "__main__":
-    main()
+    try:
+        test_ag3_cascade_cleanup()
+    except KeyboardInterrupt:
+        log("\n❌ Test interrupted by user")
+        sys.exit(1)
+    except Exception as e:
+        log(f"\n❌ Unexpected error: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)

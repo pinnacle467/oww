@@ -1113,6 +1113,33 @@ async def delete_media(mid: str, admin: dict = Depends(get_current_admin)):
     # don't leak orphan files on disk every time the admin removes a photo.
     if existing:
         _unlink_media_files(_media_doc_file_urls(existing))
+
+    # Cascade-clean references to this deleted media id from every collection
+    # that stores media ids. Without this, gallery_media_ids and similar
+    # arrays keep stale ids which render as empty broken tiles in the admin
+    # and can bleed into public carousels as "missing slide" placeholders.
+    # Cheap unconditional $pull / $unset — MongoDB no-ops when the value
+    # isn't present so this is safe to run on every delete.
+    file_url = (existing or {}).get("file_url", "")
+    # 1. Journeys - gallery_media_ids array + hero_media_id single ref.
+    await db.journeys.update_many({"gallery_media_ids": mid}, {"$pull": {"gallery_media_ids": mid}})
+    await db.journeys.update_many({"hero_media_id": mid}, {"$set": {"hero_media_id": ""}})
+    # 2. Blog posts - media_ids array + featured_url (matches file_url).
+    await db.blog_posts.update_many({"media_ids": mid}, {"$pull": {"media_ids": mid}})
+    if file_url:
+        await db.blog_posts.update_many({"featured_url": file_url}, {"$set": {"featured_url": ""}})
+    # 3. Home sections - media_ids array + image_url (matches file_url).
+    await db.home_sections.update_many({"media_ids": mid}, {"$pull": {"media_ids": mid}})
+    if file_url:
+        await db.home_sections.update_many({"image_url": file_url}, {"$set": {"image_url": ""}})
+    # 4. Stories - media_ids array + cover_url (matches file_url).
+    await db.stories.update_many({"media_ids": mid}, {"$pull": {"media_ids": mid}})
+    if file_url:
+        await db.stories.update_many({"cover_url": file_url}, {"$set": {"cover_url": ""}})
+    # 5. About blocks - image_url (matches file_url).
+    if file_url:
+        await db.about_blocks.update_many({"image_url": file_url}, {"$set": {"image_url": ""}})
+
     if existing and existing.get("section") == "hero":
         await regenerate_hero_preload()
     await schedule_snapshot()
