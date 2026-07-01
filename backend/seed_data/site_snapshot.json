@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-07-01T19:52:02.606024+00:00",
+  "generated_at": "2026-07-01T19:54:18.141209+00:00",
   "media": [
     {
       "file_url": "/api/uploads/contact-bg/c6213da9b39140b19135fb900221e491.webp",
@@ -7550,30 +7550,6 @@
       "is_active": true,
       "lqip": "data:image/webp;base64,UklGRvAAAABXRUJQVlA4IOQAAACwBgCdASoYACcAPu1wsFKppiSipWmZMB2JQBftWLiLgfGUqLO2Q79vDSDpOmJZYsQkuhsTmQHnkZ0NfXMQAAD9pALgM88LzPnET/+P1oMdeKhQFtq6vJPVolgTK9U6MKXw4Vzuu+XdQjPeNf34O3UqfYBsBYmjoRGzpiN3LGUe3Z6zTXSu4HN6vGdXOxFbZoE3W8K9dleUgh+zikf0SD8xVuVSkA5IyBfZZO7MZjYrJ6Tp79jzrCDynysvbQx0DIqKNjtXMlNn7PvF30cIie/Dknc8eIUx1LDge7Qg2UESb8AAAAA=",
       "created_at": "2026-06-28T03:05:24.560109+00:00"
-    },
-    {
-      "id": "d49da3d9-3f44-4431-906b-daf82891e940",
-      "section": "tour-gallery",
-      "file_url": "/api/uploads/tour-gallery/a37531a316594f0e9132a9a42551658f.webp",
-      "srcset": {
-        "1600w": "/api/uploads/tour-gallery/a37531a316594f0e9132a9a42551658f.webp",
-        "1200w": "/api/uploads/tour-gallery/a37531a316594f0e9132a9a42551658f-md.webp",
-        "800w": "/api/uploads/tour-gallery/a37531a316594f0e9132a9a42551658f-sm.webp"
-      },
-      "avif_srcset": {
-        "1600w": "/api/uploads/tour-gallery/a37531a316594f0e9132a9a42551658f.avif",
-        "1200w": "/api/uploads/tour-gallery/a37531a316594f0e9132a9a42551658f-md.avif",
-        "800w": "/api/uploads/tour-gallery/a37531a316594f0e9132a9a42551658f-sm.avif"
-      },
-      "thumb_url": "",
-      "file_type": "image",
-      "caption": "",
-      "alt_text": "AG3 test image",
-      "category": "",
-      "sort_order": 0,
-      "is_active": true,
-      "lqip": "data:image/webp;base64,UklGRkgAAABXRUJQVlA4IDwAAABQAwCdASoYABgAPu1wsVKppiSiqAgBMB2JZQDBCoAAQFFlAAD+6Wkfm+x7PB//OJfyR+gXacJhZq4AAAA=",
-      "created_at": "2026-07-01T19:51:33.273281+00:00"
     }
   ],
   "content": [
