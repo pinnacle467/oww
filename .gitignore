@@ -89,6 +89,11 @@ credentials.json
 *.key
 .credentials
 backend/uploads/gallery/4f6cace55b044077b9b048e509798ee6.mp4
+# Specific oversized uploads that exceed GitHub's 100 MB per-file limit and
+# must never re-enter git history. The site loads these from live via the
+# admin panel (they are re-uploaded there); the sync script + snapshot flow
+# keeps their media docs in DB even though the binary itself isn't tracked.
+backend/uploads/tour-gallery/0c8a8b8dd7874b148f2ba743d54b95fb.mp4
 
 # Local-only binaries (ffmpeg/ffprobe) — must not be pushed
 /bin/

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-07-01T20:17:24.522642+00:00",
+  "generated_at": "2026-07-01T20:25:58.100598+00:00",
   "media": [
     {
       "file_url": "/api/uploads/contact-bg/c6213da9b39140b19135fb900221e491.webp",
@@ -1946,22 +1946,6 @@
       "is_active": true,
       "lqip": "data:image/webp;base64,UklGRm4AAABXRUJQVlA4IGIAAADwAwCdASoYAA4APu1iqU2ppaOiMAgBMB2JYgCdMoAB9JItRMXbvbsAAPuXcIdGGihY3D1SYmm//I9fXMFm7o+qnqSOmZ1MYCMaee8VARaxCtTJhOjWB8Ji0EGNxHcmkRyAAA==",
       "created_at": "2026-07-01T19:36:45.900054+00:00"
-    },
-    {
-      "id": "fb2f61cd-2677-484e-8b1a-60022d482174",
-      "section": "tour-gallery",
-      "file_url": "/api/uploads/tour-gallery/0c8a8b8dd7874b148f2ba743d54b95fb.mp4",
-      "srcset": {},
-      "avif_srcset": {},
-      "thumb_url": "/api/uploads/tour-gallery/c62ce425a62441ea855ca9aa9f2d6c67.webp",
-      "file_type": "video",
-      "caption": "",
-      "alt_text": "",
-      "category": "",
-      "sort_order": 0,
-      "is_active": true,
-      "lqip": "data:image/webp;base64,UklGRkoAAABXRUJQVlA4ID4AAAAwAwCdASoYAA4APu1iqU2ppaQiMAgBMB2JQBadBY5MLENAAP7bfzmD7iCk/a4uZ+wdn5Gk92QMMsxWoGwAAA==",
-      "created_at": "2026-07-01T19:38:07.525091+00:00"
     },
     {
       "id": "0719c58d-120d-4640-b7e0-1debbef2c298",
