@@ -465,6 +465,9 @@ def convert_video_data_url(data_url: str, section: str) -> tuple[str, str, str]:
         out_path = section_dir / filename
         out_path.write_bytes(raw)
         file_url = f"{UPLOADS_URL_PREFIX}/{section}/{filename}"
+        # See _maybe_transcode_video docstring - keeps videos web-friendly
+        # + under Github's 100 MB per-file limit.
+        _maybe_transcode_video(out_path)
         thumb_url, lqip = _extract_video_thumb(out_path, section)
         return file_url, thumb_url, lqip
     except Exception as e:
@@ -473,6 +476,138 @@ def convert_video_data_url(data_url: str, section: str) -> tuple[str, str, str]:
 
 
 FFMPEG_BIN = shutil.which("ffmpeg")
+FFPROBE_BIN = shutil.which("ffprobe")
+
+
+# Size and codec thresholds that force re-encoding of an uploaded video into
+# a web-friendly H.264 1080p AAC MP4. Any of:
+#   * source codec is HEVC / H.265 (Chrome desktop cannot decode this)
+#   * source file is larger than this many bytes
+#   * source video is wider than 1920 px
+VIDEO_MAX_UNENCODED_BYTES = 20 * 1024 * 1024   # 20 MB
+VIDEO_MAX_WIDTH = 1920
+VIDEO_ENCODE_TIMEOUT_SECONDS = 600             # 10 minutes hard ceiling
+
+
+def _probe_video(video_path: Path) -> dict:
+    """Return { codec, width, height, size } for a video file. Missing values
+    become empty strings / 0 so the caller can key on them directly."""
+    out = {"codec": "", "width": 0, "height": 0, "size": video_path.stat().st_size if video_path.exists() else 0}
+    if not FFPROBE_BIN or not video_path.exists():
+        return out
+    try:
+        cmd = [
+            FFPROBE_BIN, "-v", "error",
+            "-select_streams", "v:0",
+            "-show_entries", "stream=codec_name,width,height",
+            "-of", "default=noprint_wrappers=1:nokey=0",
+            str(video_path),
+        ]
+        res = subprocess.run(cmd, capture_output=True, timeout=15)
+        if res.returncode == 0:
+            for line in res.stdout.decode(errors="ignore").splitlines():
+                if "=" not in line:
+                    continue
+                k, v = line.split("=", 1)
+                if k == "codec_name":
+                    out["codec"] = v.strip().lower()
+                elif k == "width":
+                    try:
+                        out["width"] = int(v.strip())
+                    except ValueError:
+                        pass
+                elif k == "height":
+                    try:
+                        out["height"] = int(v.strip())
+                    except ValueError:
+                        pass
+    except Exception as e:
+        logger.warning("ffprobe failed for %s: %s", video_path.name, e)
+    return out
+
+
+def _maybe_transcode_video(video_path: Path) -> bool:
+    """If a freshly-uploaded video is HEVC/H.265, > 20 MB, or wider than
+    1920 px, transcode it in-place to a web-friendly H.264 1080p AAC MP4.
+
+    Returns True when the file was rewritten (or was already fine), False
+    on transcode failure (in which case the original file is left alone
+    so the operator at least sees the upload; server-side push may still
+    fail on Github's 100 MB limit but the site keeps working).
+
+    Client bug context (2026-07-01): an admin uploaded a 134 MB 5312x2988
+    HEVC iPhone clip. Github rejected the push (>100 MB) and desktop
+    Chrome cannot decode HEVC anyway. This helper transcodes at upload
+    time so both problems are prevented at the source.
+    """
+    if not FFMPEG_BIN:
+        logger.warning("ffmpeg not installed - skipping video transcode (%s)", video_path.name)
+        return False
+    if not video_path.exists() or video_path.stat().st_size == 0:
+        return False
+
+    info = _probe_video(video_path)
+    size = info["size"]
+    codec = info["codec"]
+    width = info["width"]
+
+    needs_transcode = (
+        codec in ("hevc", "h265")
+        or size > VIDEO_MAX_UNENCODED_BYTES
+        or (width and width > VIDEO_MAX_WIDTH)
+    )
+    if not needs_transcode:
+        logger.info(
+            "Video %s already web-friendly (codec=%s width=%s size=%.1fMB) - skipping transcode.",
+            video_path.name, codec or "?", width or "?", size / (1024 * 1024),
+        )
+        return True
+
+    logger.info(
+        "Transcoding %s (codec=%s width=%s size=%.1fMB) -> h264 1080p AAC ...",
+        video_path.name, codec or "?", width or "?", size / (1024 * 1024),
+    )
+    tmp_out = video_path.with_suffix(video_path.suffix + ".transcode.tmp.mp4")
+    try:
+        cmd = [
+            FFMPEG_BIN, "-y", "-loglevel", "error",
+            "-i", str(video_path),
+            # Scale down proportionally when the source is wider than 1920 px;
+            # min() keeps smaller videos at their native width.
+            "-vf", f"scale=w=min({VIDEO_MAX_WIDTH}\\,iw):h=-2",
+            "-c:v", "libx264", "-preset", "veryfast", "-crf", "26",
+            "-pix_fmt", "yuv420p",
+            "-c:a", "aac", "-b:a", "128k",
+            "-movflags", "+faststart",
+            "-map", "0:v:0", "-map", "0:a:0?",
+            str(tmp_out),
+        ]
+        res = subprocess.run(cmd, capture_output=True, timeout=VIDEO_ENCODE_TIMEOUT_SECONDS)
+        if res.returncode != 0 or not tmp_out.exists() or tmp_out.stat().st_size == 0:
+            logger.warning(
+                "Video transcode failed for %s (rc=%s): %s",
+                video_path.name, res.returncode,
+                res.stderr.decode(errors="ignore")[:300],
+            )
+            tmp_out.unlink(missing_ok=True)
+            return False
+        # Atomic swap - keep the same on-disk filename (URL stays stable).
+        tmp_out.replace(video_path)
+        new_size = video_path.stat().st_size
+        logger.info(
+            "Transcode complete %s: %.1fMB -> %.1fMB",
+            video_path.name, size / (1024 * 1024), new_size / (1024 * 1024),
+        )
+        return True
+    except subprocess.TimeoutExpired:
+        logger.warning("Video transcode timed out for %s after %ss - keeping original.",
+                       video_path.name, VIDEO_ENCODE_TIMEOUT_SECONDS)
+        tmp_out.unlink(missing_ok=True)
+        return False
+    except Exception as e:
+        logger.warning("Video transcode raised for %s: %s", video_path.name, e)
+        tmp_out.unlink(missing_ok=True)
+        return False
 
 
 def _extract_video_thumb(video_path: Path, section: str) -> tuple[str, str]:
@@ -1026,6 +1161,12 @@ async def upload_media(
             out_path = section_dir / filename
             out_path.write_bytes(raw)
             file_url = f"{UPLOADS_URL_PREFIX}/{section}/{filename}"
+            # Transcode oversized / HEVC / 4K+ sources into web-friendly
+            # H.264 1080p AAC. Keeps Github pushes under the 100 MB limit
+            # and makes videos playable in Chrome desktop (which does not
+            # decode HEVC by default). No-op for videos already <=20MB,
+            # H.264/VP9, and <=1920 px wide.
+            _maybe_transcode_video(out_path)
             # Run ffmpeg to grab a poster frame so the gallery and admin tile
             # can render an actual still instead of a broken <img>.
             thumb_url, lqip = _extract_video_thumb(out_path, section)
