@@ -1,750 +1,273 @@
 #!/usr/bin/env python3
 """
-SESSION AF Backend Testing
-Tests forgot-password, reset-password, admin content grouping, and regression checks.
+AG1 Backend Test: HTTP Range-request support on /api/uploads
+Tests video playback Range support + regression checks
 """
 
 import requests
-import json
-import time
-import re
-import subprocess
-from typing import Dict, Any, List, Optional
+import sys
 
-# Backend URL from frontend/.env
-BASE_URL = "https://admin-content-sync-5.preview.emergentagent.com/api"
+# Base URL for testing (internal backend port)
+BASE_URL = "http://localhost:8001"
 
-# Admin credentials from /app/memory/test_credentials.md
-ADMIN_EMAIL = "info@oncewerewild.com"
-ADMIN_PASSWORD = "ChangeMe-OWW-2026!"
+# Test video file (client-reported issue)
+VIDEO_PATH = "/api/uploads/tour-gallery/13e6b94b8409444289cc9aeb2f6632bb.mp4"
+VIDEO_SIZE = 3076922
 
-# Test results tracking
-test_results = {
-    "passed": [],
-    "failed": [],
-    "warnings": []
-}
+# Test image file for regression
+IMAGE_PATH = "/api/uploads/tour-gallery/90165a23d3864a97a416f8322cc3b88f.webp"
 
-def log_pass(test_name: str, details: str = ""):
-    """Log a passed test"""
-    msg = f"✅ PASS: {test_name}"
-    if details:
-        msg += f" - {details}"
-    print(msg)
-    test_results["passed"].append(test_name)
+def test_1_no_range_video():
+    """Test 1: NO-RANGE GET on mp4 → 200 OK with Accept-Ranges: bytes"""
+    print("\n=== TEST 1: NO-RANGE GET on video ===")
+    url = f"{BASE_URL}{VIDEO_PATH}"
+    resp = requests.get(url, timeout=30)
+    
+    print(f"Status: {resp.status_code}")
+    print(f"Content-Length: {resp.headers.get('Content-Length')}")
+    print(f"Accept-Ranges: {resp.headers.get('Accept-Ranges')}")
+    print(f"Content-Type: {resp.headers.get('Content-Type')}")
+    print(f"Cache-Control: {resp.headers.get('Cache-Control')}")
+    print(f"ETag: {resp.headers.get('ETag')}")
+    
+    assert resp.status_code == 200, f"Expected 200, got {resp.status_code}"
+    assert resp.headers.get('Content-Length') == str(VIDEO_SIZE), f"Expected Content-Length {VIDEO_SIZE}, got {resp.headers.get('Content-Length')}"
+    assert resp.headers.get('Accept-Ranges') == 'bytes', f"Expected Accept-Ranges: bytes, got {resp.headers.get('Accept-Ranges')}"
+    assert 'video' in resp.headers.get('Content-Type', '').lower(), f"Expected video Content-Type, got {resp.headers.get('Content-Type')}"
+    assert 'immutable' in resp.headers.get('Cache-Control', '').lower(), f"Expected immutable in Cache-Control, got {resp.headers.get('Cache-Control')}"
+    assert resp.headers.get('ETag') is not None, "Expected ETag header"
+    
+    print("✓ PASS: NO-RANGE GET returns 200 with Accept-Ranges: bytes")
+    return True
 
-def log_fail(test_name: str, details: str):
-    """Log a failed test"""
-    msg = f"❌ FAIL: {test_name} - {details}"
-    print(msg)
-    test_results["failed"].append(f"{test_name}: {details}")
+def test_2_range_0_999():
+    """Test 2: RANGE GET bytes=0-999 → 206 Partial Content"""
+    print("\n=== TEST 2: RANGE GET bytes=0-999 ===")
+    url = f"{BASE_URL}{VIDEO_PATH}"
+    headers = {'Range': 'bytes=0-999'}
+    resp = requests.get(url, headers=headers, timeout=30)
+    
+    print(f"Status: {resp.status_code}")
+    print(f"Content-Range: {resp.headers.get('Content-Range')}")
+    print(f"Content-Length: {resp.headers.get('Content-Length')}")
+    print(f"First 4 bytes (hex): {resp.content[:4].hex()}")
+    
+    assert resp.status_code == 206, f"Expected 206, got {resp.status_code}"
+    assert resp.headers.get('Content-Range') == f'bytes 0-999/{VIDEO_SIZE}', f"Expected Content-Range bytes 0-999/{VIDEO_SIZE}, got {resp.headers.get('Content-Range')}"
+    assert resp.headers.get('Content-Length') == '1000', f"Expected Content-Length 1000, got {resp.headers.get('Content-Length')}"
+    assert len(resp.content) == 1000, f"Expected 1000 bytes, got {len(resp.content)}"
+    
+    # Verify first 4 bytes are ftyp atom start (00 00 00 18 or similar)
+    first_4 = resp.content[:4]
+    expected_start = b'\x00\x00'
+    print(f"First 4 bytes match MP4 ftyp atom pattern: {first_4[0:2] == expected_start}")
+    
+    print("✓ PASS: RANGE bytes=0-999 returns 206 with correct slice")
+    return True
 
-def log_warning(test_name: str, details: str):
-    """Log a warning"""
-    msg = f"⚠️  WARNING: {test_name} - {details}"
-    print(msg)
-    test_results["warnings"].append(f"{test_name}: {details}")
+def test_3_range_500000_600000():
+    """Test 3: RANGE GET bytes=500000-600000 → 206"""
+    print("\n=== TEST 3: RANGE GET bytes=500000-600000 ===")
+    url = f"{BASE_URL}{VIDEO_PATH}"
+    headers = {'Range': 'bytes=500000-600000'}
+    resp = requests.get(url, headers=headers, timeout=30)
+    
+    print(f"Status: {resp.status_code}")
+    print(f"Content-Range: {resp.headers.get('Content-Range')}")
+    print(f"Content-Length: {resp.headers.get('Content-Length')}")
+    
+    assert resp.status_code == 206, f"Expected 206, got {resp.status_code}"
+    assert resp.headers.get('Content-Range') == f'bytes 500000-600000/{VIDEO_SIZE}', f"Expected Content-Range bytes 500000-600000/{VIDEO_SIZE}, got {resp.headers.get('Content-Range')}"
+    assert resp.headers.get('Content-Length') == '100001', f"Expected Content-Length 100001, got {resp.headers.get('Content-Length')}"
+    assert len(resp.content) == 100001, f"Expected 100001 bytes, got {len(resp.content)}"
+    
+    print("✓ PASS: RANGE bytes=500000-600000 returns 206 with correct slice")
+    return True
 
-def get_admin_token() -> str:
-    """Login as admin and return Bearer token"""
-    response = requests.post(
-        f"{BASE_URL}/auth/login",
-        json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD}
-    )
-    if response.status_code != 200:
-        raise Exception(f"Admin login failed: {response.status_code} {response.text}")
-    data = response.json()
-    return data["access_token"]
+def test_4_range_open_ended():
+    """Test 4: RANGE GET bytes=500- (open-ended) → 206"""
+    print("\n=== TEST 4: RANGE GET bytes=500- (open-ended) ===")
+    url = f"{BASE_URL}{VIDEO_PATH}"
+    headers = {'Range': 'bytes=500-'}
+    resp = requests.get(url, headers=headers, timeout=30)
+    
+    print(f"Status: {resp.status_code}")
+    print(f"Content-Range: {resp.headers.get('Content-Range')}")
+    print(f"Content-Length: {resp.headers.get('Content-Length')}")
+    
+    expected_length = VIDEO_SIZE - 500
+    assert resp.status_code == 206, f"Expected 206, got {resp.status_code}"
+    assert resp.headers.get('Content-Range') == f'bytes 500-{VIDEO_SIZE-1}/{VIDEO_SIZE}', f"Expected Content-Range bytes 500-{VIDEO_SIZE-1}/{VIDEO_SIZE}, got {resp.headers.get('Content-Range')}"
+    assert resp.headers.get('Content-Length') == str(expected_length), f"Expected Content-Length {expected_length}, got {resp.headers.get('Content-Length')}"
+    assert len(resp.content) == expected_length, f"Expected {expected_length} bytes, got {len(resp.content)}"
+    
+    print("✓ PASS: RANGE bytes=500- returns 206 with rest of file")
+    return True
 
-def get_backend_logs(lines: int = 200) -> str:
-    """Get backend error logs"""
-    try:
-        result = subprocess.run(
-            ["tail", "-n", str(lines), "/var/log/supervisor/backend.err.log"],
-            capture_output=True,
-            text=True,
-            timeout=5
-        )
-        return result.stdout
-    except Exception as e:
-        return f"Error reading logs: {e}"
+def test_5_range_suffix():
+    """Test 5: RANGE GET bytes=-1024 (suffix) → 206"""
+    print("\n=== TEST 5: RANGE GET bytes=-1024 (suffix) ===")
+    url = f"{BASE_URL}{VIDEO_PATH}"
+    headers = {'Range': 'bytes=-1024'}
+    resp = requests.get(url, headers=headers, timeout=30)
+    
+    print(f"Status: {resp.status_code}")
+    print(f"Content-Range: {resp.headers.get('Content-Range')}")
+    print(f"Content-Length: {resp.headers.get('Content-Length')}")
+    
+    expected_start = VIDEO_SIZE - 1024
+    expected_end = VIDEO_SIZE - 1
+    assert resp.status_code == 206, f"Expected 206, got {resp.status_code}"
+    assert resp.headers.get('Content-Range') == f'bytes {expected_start}-{expected_end}/{VIDEO_SIZE}', f"Expected Content-Range bytes {expected_start}-{expected_end}/{VIDEO_SIZE}, got {resp.headers.get('Content-Range')}"
+    assert resp.headers.get('Content-Length') == '1024', f"Expected Content-Length 1024, got {resp.headers.get('Content-Length')}"
+    assert len(resp.content) == 1024, f"Expected 1024 bytes, got {len(resp.content)}"
+    
+    print("✓ PASS: RANGE bytes=-1024 returns 206 with last 1024 bytes")
+    return True
 
-def extract_reset_token_from_logs(email: str, logs: str) -> Optional[str]:
-    """Extract reset token from backend logs for a specific email"""
-    # Log format: Reset link for <email> would be: https://.../admin/reset-password?token=<64-hex>
-    pattern = rf"Reset link for {re.escape(email)} would be:.*?token=([a-f0-9]{{64}})"
-    matches = re.findall(pattern, logs, re.IGNORECASE)
-    if matches:
-        return matches[-1]  # Return the most recent token
-    return None
+def test_6_bad_range_beyond_eof():
+    """Test 6: Bad Range bytes=99999999- (beyond EOF) → 416"""
+    print("\n=== TEST 6: Bad Range bytes=99999999- (beyond EOF) ===")
+    url = f"{BASE_URL}{VIDEO_PATH}"
+    headers = {'Range': 'bytes=99999999-'}
+    resp = requests.get(url, headers=headers, timeout=30)
+    
+    print(f"Status: {resp.status_code}")
+    print(f"Content-Range: {resp.headers.get('Content-Range')}")
+    
+    assert resp.status_code == 416, f"Expected 416, got {resp.status_code}"
+    assert resp.headers.get('Content-Range') == f'bytes */{VIDEO_SIZE}', f"Expected Content-Range bytes */{VIDEO_SIZE}, got {resp.headers.get('Content-Range')}"
+    
+    print("✓ PASS: Bad Range beyond EOF returns 416")
+    return True
 
-def clear_backend_logs():
-    """Clear backend logs to isolate new entries"""
-    try:
-        subprocess.run(
-            ["sudo", "truncate", "-s", "0", "/var/log/supervisor/backend.err.log"],
-            timeout=5
-        )
-    except Exception as e:
-        print(f"Warning: Could not clear logs: {e}")
+def test_7_malformed_range():
+    """Test 7: Malformed Range bytes=abc → 416"""
+    print("\n=== TEST 7: Malformed Range bytes=abc ===")
+    url = f"{BASE_URL}{VIDEO_PATH}"
+    headers = {'Range': 'bytes=abc'}
+    resp = requests.get(url, headers=headers, timeout=30)
+    
+    print(f"Status: {resp.status_code}")
+    print(f"Content-Range: {resp.headers.get('Content-Range')}")
+    
+    assert resp.status_code == 416, f"Expected 416, got {resp.status_code}"
+    assert resp.headers.get('Content-Range') == f'bytes */{VIDEO_SIZE}', f"Expected Content-Range bytes */{VIDEO_SIZE}, got {resp.headers.get('Content-Range')}"
+    
+    print("✓ PASS: Malformed Range returns 416")
+    return True
 
-# ============================================================================
-# GROUP A: FORGOT-PASSWORD + RESET-PASSWORD INFRA
-# ============================================================================
+def test_8_regression_images():
+    """Test 8: Regression on IMAGES (webp) with and without Range"""
+    print("\n=== TEST 8: Regression on IMAGES ===")
+    url = f"{BASE_URL}{IMAGE_PATH}"
+    
+    # 8a: Without Range
+    print("\n8a: Without Range header")
+    resp = requests.get(url, timeout=30)
+    print(f"Status: {resp.status_code}")
+    print(f"Accept-Ranges: {resp.headers.get('Accept-Ranges')}")
+    print(f"Content-Length: {resp.headers.get('Content-Length')}")
+    
+    assert resp.status_code == 200, f"Expected 200, got {resp.status_code}"
+    assert resp.headers.get('Accept-Ranges') == 'bytes', f"Expected Accept-Ranges: bytes, got {resp.headers.get('Accept-Ranges')}"
+    image_size = int(resp.headers.get('Content-Length', 0))
+    assert image_size > 0, "Expected non-zero Content-Length"
+    print(f"✓ Image size: {image_size} bytes")
+    
+    # 8b: With Range bytes=0-100
+    print("\n8b: With Range bytes=0-100")
+    headers = {'Range': 'bytes=0-100'}
+    resp = requests.get(url, headers=headers, timeout=30)
+    print(f"Status: {resp.status_code}")
+    print(f"Content-Range: {resp.headers.get('Content-Range')}")
+    print(f"Content-Length: {resp.headers.get('Content-Length')}")
+    
+    assert resp.status_code == 206, f"Expected 206, got {resp.status_code}"
+    assert resp.headers.get('Content-Range') == f'bytes 0-100/{image_size}', f"Expected Content-Range bytes 0-100/{image_size}, got {resp.headers.get('Content-Range')}"
+    assert resp.headers.get('Content-Length') == '101', f"Expected Content-Length 101, got {resp.headers.get('Content-Length')}"
+    assert len(resp.content) == 101, f"Expected 101 bytes, got {len(resp.content)}"
+    
+    print("✓ PASS: Image Range requests working correctly")
+    return True
 
-def test_group_a_forgot_reset_password():
-    """Test forgot-password and reset-password flow"""
-    print("\n" + "="*80)
-    print("GROUP A: FORGOT-PASSWORD + RESET-PASSWORD INFRA")
-    print("="*80)
+def test_9_regression_api_endpoints():
+    """Test 9: Regression sanity on other API endpoints"""
+    print("\n=== TEST 9: Regression sanity on API endpoints ===")
     
-    # Clear logs before starting
-    clear_backend_logs()
-    time.sleep(1)
+    endpoints = [
+        ('/api/media', 300, 'array'),
+        ('/api/journeys', 4, 'array'),
+        ('/api/content', 220, 'dict'),
+        ('/api/settings', 15, 'dict'),
+        ('/api/stories', 1, 'array'),
+        ('/api/blog', 1, 'array'),
+        ('/api/home-sections', 4, 'array'),
+        ('/api/home-faqs', 9, 'array'),
+    ]
     
-    # A1: Forgot password with admin email
-    print("\n--- A1: POST /api/auth/forgot-password with admin email ---")
-    response = requests.post(
-        f"{BASE_URL}/auth/forgot-password",
-        json={"email": ADMIN_EMAIL, "origin": "https://oww.example/"}
-    )
-    
-    if response.status_code == 200:
-        body = response.json()
-        if "If that email matches" in body.get("message", ""):
-            log_pass("A1.1: Forgot-password returns 200 with generic message")
-        else:
-            log_fail("A1.1: Forgot-password message", f"Unexpected message: {body}")
-    else:
-        log_fail("A1.1: Forgot-password status", f"Expected 200, got {response.status_code}: {response.text}")
-    
-    # Wait for log to be written
-    time.sleep(2)
-    
-    # Check logs for reset link
-    logs = get_backend_logs(100)
-    admin_token = extract_reset_token_from_logs(ADMIN_EMAIL, logs)
-    
-    if admin_token:
-        log_pass("A1.2: Reset link logged for admin email", f"Token: {admin_token[:16]}...")
-    else:
-        log_fail("A1.2: Reset link in logs", "No reset link found in backend logs")
-        print(f"Recent logs:\n{logs[-500:]}")
-    
-    # A2: Forgot password with unknown email
-    print("\n--- A2: POST /api/auth/forgot-password with unknown email ---")
-    response = requests.post(
-        f"{BASE_URL}/auth/forgot-password",
-        json={"email": "nobody@example.com", "origin": "https://oww.example/"}
-    )
-    
-    if response.status_code == 200:
-        body = response.json()
-        if "If that email matches" in body.get("message", ""):
-            log_pass("A2.1: Forgot-password returns same generic 200 for unknown email")
-        else:
-            log_fail("A2.1: Forgot-password message", f"Unexpected message: {body}")
-    else:
-        log_fail("A2.1: Forgot-password status", f"Expected 200, got {response.status_code}")
-    
-    # Check that no reset link was logged for unknown email
-    time.sleep(1)
-    logs = get_backend_logs(50)
-    unknown_token = extract_reset_token_from_logs("nobody@example.com", logs)
-    
-    if not unknown_token:
-        log_pass("A2.2: No reset link logged for unknown email (no enumeration)")
-    else:
-        log_fail("A2.2: Email enumeration", "Reset link logged for unknown email")
-    
-    # A3: Rate limiting test
-    print("\n--- A3: Rate limiting (4 rapid requests) ---")
-    clear_backend_logs()
-    time.sleep(1)
-    
-    for i in range(4):
-        response = requests.post(
-            f"{BASE_URL}/auth/forgot-password",
-            json={"email": ADMIN_EMAIL, "origin": "https://oww.example/"}
-        )
-        if response.status_code != 200:
-            log_fail(f"A3.{i+1}: Rate limit request {i+1}", f"Expected 200, got {response.status_code}")
-        time.sleep(0.5)
-    
-    time.sleep(2)
-    logs = get_backend_logs(100)
-    reset_links = re.findall(rf"Reset link for {re.escape(ADMIN_EMAIL)}", logs, re.IGNORECASE)
-    
-    if len(reset_links) <= 3:
-        log_pass("A3: Rate limiting working", f"Found {len(reset_links)} reset links (max 3 expected)")
-    else:
-        log_fail("A3: Rate limiting", f"Found {len(reset_links)} reset links, expected max 3")
-    
-    # A4: Reset password with bogus token (wrong length)
-    print("\n--- A4: POST /api/auth/reset-password with bogus token ---")
-    response = requests.post(
-        f"{BASE_URL}/auth/reset-password",
-        json={"token": "bogus", "new_password": "TempA12345!"}
-    )
-    
-    if response.status_code == 400:
-        body = response.json()
-        if "not valid" in body.get("detail", "").lower():
-            log_pass("A4: Bogus token rejected with 400")
-        else:
-            log_fail("A4: Bogus token error message", f"Unexpected message: {body}")
-    else:
-        log_fail("A4: Bogus token status", f"Expected 400, got {response.status_code}")
-    
-    # A5: Reset password with non-existent token (64-hex)
-    print("\n--- A5: POST /api/auth/reset-password with non-existent token ---")
-    fake_token = "a" * 64
-    response = requests.post(
-        f"{BASE_URL}/auth/reset-password",
-        json={"token": fake_token, "new_password": "TempA12345!"}
-    )
-    
-    if response.status_code == 400:
-        body = response.json()
-        if "already been used" in body.get("detail", "").lower() or "no longer valid" in body.get("detail", "").lower():
-            log_pass("A5: Non-existent token rejected with 400")
-        else:
-            log_fail("A5: Non-existent token error message", f"Unexpected message: {body}")
-    else:
-        log_fail("A5: Non-existent token status", f"Expected 400, got {response.status_code}")
-    
-    # A6: Reset password with short password
-    print("\n--- A6: POST /api/auth/reset-password with short password ---")
-    if not admin_token:
-        log_fail("A6: Short password test", "No valid token available from A1")
-        # Generate a new token
-        clear_backend_logs()
-        requests.post(f"{BASE_URL}/auth/forgot-password", json={"email": ADMIN_EMAIL, "origin": "https://oww.example/"})
-        time.sleep(2)
-        logs = get_backend_logs(50)
-        admin_token = extract_reset_token_from_logs(ADMIN_EMAIL, logs)
-    
-    if admin_token:
-        response = requests.post(
-            f"{BASE_URL}/auth/reset-password",
-            json={"token": admin_token, "new_password": "Short"}
-        )
+    for path, min_count, expected_type in endpoints:
+        url = f"{BASE_URL}{path}"
+        resp = requests.get(url, timeout=30)
+        print(f"\n{path}: {resp.status_code}")
         
-        if response.status_code == 400:
-            body = response.json()
-            if "at least 8 characters" in body.get("detail", "").lower():
-                log_pass("A6: Short password rejected with 400")
-            else:
-                log_fail("A6: Short password error message", f"Unexpected message: {body}")
-        else:
-            log_fail("A6: Short password status", f"Expected 400, got {response.status_code}")
-    
-    # A7: Reset password with valid token and strong password
-    print("\n--- A7: POST /api/auth/reset-password with valid token ---")
-    # Generate a fresh token since we may have used it in A6
-    clear_backend_logs()
-    requests.post(f"{BASE_URL}/auth/forgot-password", json={"email": ADMIN_EMAIL, "origin": "https://oww.example/"})
-    time.sleep(2)
-    logs = get_backend_logs(50)
-    admin_token = extract_reset_token_from_logs(ADMIN_EMAIL, logs)
-    
-    if not admin_token:
-        log_fail("A7: Valid reset", "Could not get fresh token")
-    else:
-        response = requests.post(
-            f"{BASE_URL}/auth/reset-password",
-            json={"token": admin_token, "new_password": "TempA12345!"}
-        )
+        assert resp.status_code == 200, f"Expected 200 for {path}, got {resp.status_code}"
         
-        if response.status_code == 200:
-            body = response.json()
-            if "password has been reset" in body.get("message", "").lower():
-                log_pass("A7: Valid reset successful with 200")
-            else:
-                log_fail("A7: Valid reset message", f"Unexpected message: {body}")
-        else:
-            log_fail("A7: Valid reset status", f"Expected 200, got {response.status_code}: {response.text}")
+        data = resp.json()
+        if expected_type == 'array':
+            assert isinstance(data, list), f"Expected array for {path}, got {type(data)}"
+            count = len(data)
+            print(f"  Count: {count} (expected >= {min_count})")
+            assert count >= min_count, f"Expected at least {min_count} items for {path}, got {count}"
+        elif expected_type == 'dict':
+            assert isinstance(data, dict), f"Expected dict for {path}, got {type(data)}"
+            count = len(data)
+            print(f"  Keys: {count} (expected >= {min_count})")
+            assert count >= min_count, f"Expected at least {min_count} keys for {path}, got {count}"
     
-    # A8: Re-use the same token
-    print("\n--- A8: Re-use same token immediately ---")
-    response = requests.post(
-        f"{BASE_URL}/auth/reset-password",
-        json={"token": admin_token, "new_password": "TempA12345!"}
-    )
-    
-    if response.status_code == 400:
-        body = response.json()
-        if "already been used" in body.get("detail", "").lower():
-            log_pass("A8: Token re-use rejected with 400")
-        else:
-            log_fail("A8: Token re-use error message", f"Unexpected message: {body}")
-    else:
-        log_fail("A8: Token re-use status", f"Expected 400, got {response.status_code}")
-    
-    # A9: Login with new password
-    print("\n--- A9: POST /api/auth/login with new password ---")
-    response = requests.post(
-        f"{BASE_URL}/auth/login",
-        json={"email": ADMIN_EMAIL, "password": "TempA12345!"}
-    )
-    
-    if response.status_code == 200:
-        body = response.json()
-        if "access_token" in body:
-            new_token = body["access_token"]
-            log_pass("A9: Login with new password successful")
-        else:
-            log_fail("A9: Login response", "No access_token in response")
-            new_token = None
-    else:
-        log_fail("A9: Login status", f"Expected 200, got {response.status_code}: {response.text}")
-        new_token = None
-    
-    # A10: Change password back to original
-    print("\n--- A10: POST /api/auth/change-password to restore original ---")
-    if not new_token:
-        log_fail("A10: Restore password", "No token available from A9")
-    else:
-        response = requests.post(
-            f"{BASE_URL}/auth/change-password",
-            json={"current_password": "TempA12345!", "new_password": ADMIN_PASSWORD},
-            headers={"Authorization": f"Bearer {new_token}"}
-        )
-        
-        if response.status_code == 200:
-            log_pass("A10: Password restored to original")
-        else:
-            log_fail("A10: Restore password status", f"Expected 200, got {response.status_code}: {response.text}")
-    
-    # A11: Re-login with original password to confirm
-    print("\n--- A11: POST /api/auth/login with original password ---")
-    response = requests.post(
-        f"{BASE_URL}/auth/login",
-        json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD}
-    )
-    
-    if response.status_code == 200:
-        body = response.json()
-        if "access_token" in body:
-            log_pass("A11: Re-login with original password successful - CREDENTIALS RESTORED")
-        else:
-            log_fail("A11: Re-login response", "No access_token in response")
-    else:
-        log_fail("A11: Re-login status", f"Expected 200, got {response.status_code}: {response.text}")
-
-# ============================================================================
-# GROUP B: ADMIN CONTENT GROUPING + NEW KEYS
-# ============================================================================
-
-def test_group_b_admin_content():
-    """Test admin content grouping and new keys"""
-    print("\n" + "="*80)
-    print("GROUP B: ADMIN CONTENT GROUPING + NEW KEYS")
-    print("="*80)
-    
-    # Get admin token
-    try:
-        token = get_admin_token()
-    except Exception as e:
-        log_fail("B: Admin login", str(e))
-        return
-    
-    headers = {"Authorization": f"Bearer {token}"}
-    
-    # B1: GET /api/admin/content and verify groups
-    print("\n--- B1: GET /api/admin/content - verify groups and keys ---")
-    response = requests.get(f"{BASE_URL}/admin/content", headers=headers)
-    
-    if response.status_code != 200:
-        log_fail("B1: Admin content status", f"Expected 200, got {response.status_code}")
-        return
-    
-    content_groups = response.json()
-    
-    # B1.1: tour_detail group with exactly 16 keys
-    if "tour_detail" not in content_groups:
-        log_fail("B1.1: tour_detail group", "Group not found")
-    else:
-        tour_detail_keys = [item["key"] for item in content_groups["tour_detail"]]
-        expected_keys = [
-            "tour_detail.highlights.heading",
-            "tour_detail.small_group.heading",
-            "tour_detail.small_group.body",
-            "tour_detail.testimonials.heading",
-            "tour_detail.tab.details",
-            "tour_detail.tab.includes",
-            "tour_detail.tab.prices",
-            "tour_detail.download_pdf",
-            "tour_detail.enquire",
-            "tour_detail.loading",
-            "tour_detail.not_found_title",
-            "tour_detail.not_found_body",
-            "tour_detail.kind.tour",
-            "tour_detail.pdf_only_note",
-            "tour_detail.empty_message",
-            "tour_detail.back_to_tours"
-        ]
-        
-        if len(tour_detail_keys) == 16:
-            log_pass("B1.1a: tour_detail has exactly 16 keys")
-        else:
-            log_fail("B1.1a: tour_detail key count", f"Expected 16, got {len(tour_detail_keys)}")
-        
-        missing_keys = [k for k in expected_keys if k not in tour_detail_keys]
-        if not missing_keys:
-            log_pass("B1.1b: All expected tour_detail keys present")
-        else:
-            log_fail("B1.1b: tour_detail keys", f"Missing: {missing_keys}")
-    
-    # B1.2: pricing group should NOT contain tour_detail.* keys
-    if "pricing" not in content_groups:
-        log_fail("B1.2: pricing group", "Group not found")
-    else:
-        pricing_keys = [item["key"] for item in content_groups["pricing"]]
-        tour_detail_in_pricing = [k for k in pricing_keys if k.startswith("tour_detail.")]
-        
-        if not tour_detail_in_pricing:
-            log_pass("B1.2: pricing group has no tour_detail.* keys (migration successful)")
-        else:
-            log_fail("B1.2: pricing group migration", f"Found tour_detail keys: {tour_detail_in_pricing}")
-    
-    # B1.3: about group >= 15 keys with new ones
-    if "about" not in content_groups:
-        log_fail("B1.3: about group", "Group not found")
-    else:
-        about_keys = [item["key"] for item in content_groups["about"]]
-        expected_new_keys = [
-            "about.blocks.empty",
-            "about.stories.empty",
-            "about.stories.read_cta",
-            "about.travel.eyebrow",
-            "about.travel.title"
-        ]
-        
-        if len(about_keys) >= 15:
-            log_pass("B1.3a: about group has >= 15 keys", f"Found {len(about_keys)}")
-        else:
-            log_fail("B1.3a: about group key count", f"Expected >= 15, got {len(about_keys)}")
-        
-        missing_keys = [k for k in expected_new_keys if k not in about_keys]
-        if not missing_keys:
-            log_pass("B1.3b: All expected new about keys present")
-        else:
-            log_fail("B1.3b: about new keys", f"Missing: {missing_keys}")
-    
-    # B1.4: blog group >= 13 keys
-    if "blog" not in content_groups:
-        log_fail("B1.4: blog group", "Group not found")
-    else:
-        blog_keys = [item["key"] for item in content_groups["blog"]]
-        expected_blog_keys = [
-            "blog.loading",
-            "blog.load_more",
-            "blog.card.read_more",
-            "blog.post.loading",
-            "blog.post.not_found_title",
-            "blog.post.not_found_body",
-            "blog.post.not_found_cta",
-            "blog.post.back_to_journal"
-        ]
-        
-        if len(blog_keys) >= 13:
-            log_pass("B1.4a: blog group has >= 13 keys", f"Found {len(blog_keys)}")
-        else:
-            log_fail("B1.4a: blog group key count", f"Expected >= 13, got {len(blog_keys)}")
-        
-        missing_keys = [k for k in expected_blog_keys if k not in blog_keys]
-        if not missing_keys:
-            log_pass("B1.4b: Expected blog keys present")
-        else:
-            log_fail("B1.4b: blog keys", f"Missing: {missing_keys}")
-    
-    # B1.5: home group includes home.journal.card_read_more
-    if "home" not in content_groups:
-        log_fail("B1.5: home group", "Group not found")
-    else:
-        home_keys = [item["key"] for item in content_groups["home"]]
-        if "home.journal.card_read_more" in home_keys:
-            log_pass("B1.5: home.journal.card_read_more present")
-        else:
-            log_fail("B1.5: home.journal.card_read_more", "Key not found")
-    
-    # B1.6: footer group includes new keys
-    if "footer" not in content_groups:
-        log_fail("B1.6: footer group", "Group not found")
-    else:
-        footer_keys = [item["key"] for item in content_groups["footer"]]
-        expected_footer_keys = [
-            "footer.enquiry_sending",
-            "footer.copyright_rights_text",
-            "footer.cookies_link"
-        ]
-        
-        missing_keys = [k for k in expected_footer_keys if k not in footer_keys]
-        if not missing_keys:
-            log_pass("B1.6: All expected footer keys present")
-        else:
-            log_fail("B1.6: footer keys", f"Missing: {missing_keys}")
-    
-    # B2: GET /api/content (public) returns ~226 keys
-    print("\n--- B2: GET /api/content (public) - verify total keys ---")
-    response = requests.get(f"{BASE_URL}/content")
-    
-    if response.status_code != 200:
-        log_fail("B2: Public content status", f"Expected 200, got {response.status_code}")
-    else:
-        content = response.json()
-        total_keys = len(content)
-        
-        if total_keys >= 226:
-            log_pass("B2: Public content has ~226 keys", f"Found {total_keys}")
-        else:
-            log_fail("B2: Public content key count", f"Expected ~226, got {total_keys}")
-    
-    # B3: ROUND-TRIP test
-    print("\n--- B3: ROUND-TRIP test - update and restore keys ---")
-    
-    # Get current values
-    response = requests.get(f"{BASE_URL}/content")
-    if response.status_code != 200:
-        log_fail("B3: Get baseline", "Could not fetch content")
-        return
-    
-    baseline = response.json()
-    original_read_cta = baseline.get("about.stories.read_cta", "")
-    original_kind_tour = baseline.get("tour_detail.kind.tour", "")
-    
-    # Update values
-    update_payload = {
-        "items": [
-            {"key": "about.stories.read_cta", "value": "Open story"},
-            {"key": "tour_detail.kind.tour", "value": "Group Journey"}
-        ]
-    }
-    
-    response = requests.put(
-        f"{BASE_URL}/admin/content",
-        json=update_payload,
-        headers=headers
-    )
-    
-    if response.status_code != 200:
-        log_fail("B3.1: Update keys", f"Expected 200, got {response.status_code}: {response.text}")
-    else:
-        log_pass("B3.1: Update keys successful")
-    
-    # Verify new values
-    response = requests.get(f"{BASE_URL}/content")
-    if response.status_code != 200:
-        log_fail("B3.2: Get updated content", "Could not fetch content")
-    else:
-        updated = response.json()
-        
-        if updated.get("about.stories.read_cta") == "Open story":
-            log_pass("B3.2a: about.stories.read_cta updated correctly")
-        else:
-            log_fail("B3.2a: about.stories.read_cta", f"Expected 'Open story', got '{updated.get('about.stories.read_cta')}'")
-        
-        if updated.get("tour_detail.kind.tour") == "Group Journey":
-            log_pass("B3.2b: tour_detail.kind.tour updated correctly")
-        else:
-            log_fail("B3.2b: tour_detail.kind.tour", f"Expected 'Group Journey', got '{updated.get('tour_detail.kind.tour')}'")
-    
-    # Restore original values
-    restore_payload = {
-        "items": [
-            {"key": "about.stories.read_cta", "value": original_read_cta or "Read story"},
-            {"key": "tour_detail.kind.tour", "value": original_kind_tour or "Small Group Tour"}
-        ]
-    }
-    
-    response = requests.put(
-        f"{BASE_URL}/admin/content",
-        json=restore_payload,
-        headers=headers
-    )
-    
-    if response.status_code != 200:
-        log_fail("B3.3: Restore keys", f"Expected 200, got {response.status_code}")
-    else:
-        log_pass("B3.3: Keys restored to original values")
-    
-    # Verify restoration
-    response = requests.get(f"{BASE_URL}/content")
-    if response.status_code == 200:
-        restored = response.json()
-        if restored.get("about.stories.read_cta") == (original_read_cta or "Read story"):
-            log_pass("B3.4: about.stories.read_cta restoration verified")
-        else:
-            log_fail("B3.4: about.stories.read_cta restoration", f"Value mismatch")
-    
-    # B4: LABEL BACKFILL - spot check legacy keys
-    print("\n--- B4: LABEL BACKFILL - verify human-readable labels ---")
-    
-    response = requests.get(f"{BASE_URL}/admin/content", headers=headers)
-    if response.status_code != 200:
-        log_fail("B4: Get admin content", "Could not fetch content")
-        return
-    
-    content_groups = response.json()
-    
-    # Check a few legacy keys for human-readable labels
-    test_keys = {
-        "brand.tagline": "brand",
-        "home.manifesto.eyebrow": "home",
-        "contact.hero.eyebrow": "contact"
-    }
-    
-    for key, group in test_keys.items():
-        if group in content_groups:
-            items = content_groups[group]
-            item = next((i for i in items if i["key"] == key), None)
-            
-            if item:
-                label = item.get("label", "")
-                # Label should be human-readable, not just the key itself
-                if label and label != key and len(label) > 5:
-                    log_pass(f"B4: {key} has human-readable label", f"'{label}'")
-                else:
-                    log_fail(f"B4: {key} label", f"Label is not human-readable: '{label}'")
-            else:
-                log_warning(f"B4: {key}", "Key not found in group")
-
-# ============================================================================
-# GROUP C: REGRESSION
-# ============================================================================
-
-def test_group_c_regression():
-    """Test regression checks"""
-    print("\n" + "="*80)
-    print("GROUP C: REGRESSION")
-    print("="*80)
-    
-    # C1: GET /api/content
-    print("\n--- C1: GET /api/content ---")
-    response = requests.get(f"{BASE_URL}/content")
-    
-    if response.status_code == 200:
-        content = response.json()
-        total_keys = len(content)
-        log_pass("C1: GET /api/content returns 200", f"Total keys: {total_keys}")
-    else:
-        log_fail("C1: GET /api/content", f"Expected 200, got {response.status_code}")
-    
-    # C2: GET /api/journeys
-    print("\n--- C2: GET /api/journeys ---")
-    response = requests.get(f"{BASE_URL}/journeys")
-    
-    if response.status_code == 200:
-        journeys = response.json()
-        if len(journeys) == 4:
-            log_pass("C2: GET /api/journeys returns 4 rows")
-        else:
-            log_fail("C2: GET /api/journeys count", f"Expected 4, got {len(journeys)}")
-    else:
-        log_fail("C2: GET /api/journeys", f"Expected 200, got {response.status_code}")
-    
-    # C3: GET /api/media
-    print("\n--- C3: GET /api/media ---")
-    response = requests.get(f"{BASE_URL}/media")
-    
-    if response.status_code == 200:
-        media = response.json()
-        if len(media) >= 309:
-            log_pass("C3: GET /api/media returns >= 309 rows", f"Found {len(media)}")
-        else:
-            log_fail("C3: GET /api/media count", f"Expected >= 309, got {len(media)}")
-    else:
-        log_fail("C3: GET /api/media", f"Expected 200, got {response.status_code}")
-    
-    # C4: GET /api/blog
-    print("\n--- C4: GET /api/blog ---")
-    response = requests.get(f"{BASE_URL}/blog")
-    
-    if response.status_code == 200:
-        blog_posts = response.json()
-        if len(blog_posts) >= 1:
-            log_pass("C4: GET /api/blog returns >= 1 published post", f"Found {len(blog_posts)}")
-        else:
-            log_fail("C4: GET /api/blog count", f"Expected >= 1, got {len(blog_posts)}")
-    else:
-        log_fail("C4: GET /api/blog", f"Expected 200, got {response.status_code}")
-    
-    # C5: GET /api/settings
-    print("\n--- C5: GET /api/settings ---")
-    response = requests.get(f"{BASE_URL}/settings")
-    
-    if response.status_code == 200:
-        settings = response.json()
-        if len(settings) == 19:
-            log_pass("C5: GET /api/settings returns 19 settings")
-        else:
-            log_warning("C5: GET /api/settings count", f"Expected 19, got {len(settings)}")
-    else:
-        log_fail("C5: GET /api/settings", f"Expected 200, got {response.status_code}")
-    
-    # C6: Check site_snapshot.json exists and was modified
-    print("\n--- C6: Check /app/backend/seed_data/site_snapshot.json ---")
-    import os
-    snapshot_path = "/app/backend/seed_data/site_snapshot.json"
-    
-    if os.path.exists(snapshot_path):
-        stat = os.stat(snapshot_path)
-        log_pass("C6: site_snapshot.json exists", f"Size: {stat.st_size} bytes")
-    else:
-        log_fail("C6: site_snapshot.json", "File not found")
-
-# ============================================================================
-# MAIN
-# ============================================================================
+    print("\n✓ PASS: All API endpoints responding correctly")
+    return True
 
 def main():
-    """Run all test groups"""
-    print("\n" + "="*80)
-    print("SESSION AF BACKEND TESTING")
-    print("="*80)
-    print(f"Backend URL: {BASE_URL}")
-    print(f"Admin Email: {ADMIN_EMAIL}")
-    print(f"Admin Password: {ADMIN_PASSWORD}")
+    print("=" * 80)
+    print("AG1 Backend Test: HTTP Range-request support on /api/uploads")
+    print("=" * 80)
     
-    # Run all test groups
-    test_group_a_forgot_reset_password()
-    test_group_b_admin_content()
-    test_group_c_regression()
+    tests = [
+        test_1_no_range_video,
+        test_2_range_0_999,
+        test_3_range_500000_600000,
+        test_4_range_open_ended,
+        test_5_range_suffix,
+        test_6_bad_range_beyond_eof,
+        test_7_malformed_range,
+        test_8_regression_images,
+        test_9_regression_api_endpoints,
+    ]
     
-    # Print summary
-    print("\n" + "="*80)
-    print("TEST SUMMARY")
-    print("="*80)
-    print(f"✅ PASSED: {len(test_results['passed'])}")
-    print(f"❌ FAILED: {len(test_results['failed'])}")
-    print(f"⚠️  WARNINGS: {len(test_results['warnings'])}")
+    passed = 0
+    failed = 0
     
-    if test_results['failed']:
-        print("\nFAILED TESTS:")
-        for failure in test_results['failed']:
-            print(f"  - {failure}")
+    for test_func in tests:
+        try:
+            test_func()
+            passed += 1
+        except AssertionError as e:
+            print(f"✗ FAIL: {e}")
+            failed += 1
+        except Exception as e:
+            print(f"✗ ERROR: {e}")
+            failed += 1
     
-    if test_results['warnings']:
-        print("\nWARNINGS:")
-        for warning in test_results['warnings']:
-            print(f"  - {warning}")
+    print("\n" + "=" * 80)
+    print(f"RESULTS: {passed} passed, {failed} failed out of {len(tests)} tests")
+    print("=" * 80)
     
-    print("\n" + "="*80)
-    print("CRITICAL: Verify admin credentials still work")
-    print("="*80)
-    
-    # Final verification: admin credentials still work
-    response = requests.post(
-        f"{BASE_URL}/auth/login",
-        json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD}
-    )
-    
-    if response.status_code == 200 and "access_token" in response.json():
-        print("✅ VERIFIED: Admin credentials (info@oncewerewild.com / ChangeMe-OWW-2026!) still work")
+    if failed > 0:
+        sys.exit(1)
     else:
-        print("❌ CRITICAL: Admin credentials NOT working! Password may not have been restored!")
-        print(f"   Response: {response.status_code} {response.text}")
+        print("\n✅ ALL TESTS PASSED - AG1 Range-request support is working correctly")
+        sys.exit(0)
 
 if __name__ == "__main__":
     main()

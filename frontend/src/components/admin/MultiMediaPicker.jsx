@@ -457,13 +457,15 @@ export function MultiMediaPicker({
             {filteredAvailable.map((m) => {
               const kind = m.file_type || "image";
               return (
-                <button
-                  type="button"
+                <div
                   key={m.id}
-                  onClick={() => add(m.id)}
-                  className="group relative aspect-square overflow-hidden rounded border border-gray-200 bg-white hover:ring-2 hover:ring-[#2D4A3E] transition-all"
-                  title={m.section ? `Section: ${m.section}` : "Click to add"}
+                  className="group relative aspect-square overflow-hidden rounded border border-gray-200 bg-white hover:ring-2 hover:ring-[#2D4A3E] transition-all cursor-pointer"
+                  title={m.section ? `Section: ${m.section} — click to add` : "Click to add"}
                   data-testid={`mmp-available-${m.id}`}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => add(m.id)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); add(m.id); } }}
                 >
                   {kind === "image" || (kind === "video" && m.thumb_url) ? (
                     <img src={thumbUrl(m)} alt="" className="absolute inset-0 h-full w-full object-cover" />
@@ -473,12 +475,28 @@ export function MultiMediaPicker({
                     </div>
                   )}
                   {kind === "video" && (
-                    <div className="absolute inset-x-0 bottom-0 bg-black/60 text-white text-[10px] uppercase tracking-widest px-1.5 py-0.5 text-center">video</div>
+                    <div className="absolute inset-x-0 bottom-0 bg-black/60 text-white text-[10px] uppercase tracking-widest px-1.5 py-0.5 text-center pointer-events-none">video</div>
                   )}
-                  <div className="absolute inset-x-0 bottom-0 bg-black/55 text-white text-[10px] uppercase tracking-widest px-1.5 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity text-center">
+                  <div className="absolute inset-x-0 bottom-0 bg-black/55 text-white text-[10px] uppercase tracking-widest px-1.5 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity text-center pointer-events-none">
                     Add
                   </div>
-                </button>
+                  {/* Delete-permanently button - hover-revealed, top-right.
+                      Available on every pool tile so the operator can clean
+                      out photos and videos they no longer need. Uses the
+                      existing setToDelete + confirmDelete flow (with an
+                      AlertDialog confirm) so we never delete by accident. */}
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setToDelete(m); }}
+                    onKeyDown={(e) => e.stopPropagation()}
+                    className="absolute top-1 right-1 z-10 bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 focus:opacity-100 hover:bg-red-700 transition-opacity shadow"
+                    title="Delete permanently from library"
+                    aria-label="Delete permanently"
+                    data-testid={`mmp-pool-delete-${m.id}`}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
               );
             })}
           </div>

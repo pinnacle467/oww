@@ -2539,12 +2539,119 @@ app.include_router(api_router)
 # content for a given URL never changes — perfect candidates for `immutable`.
 # Without this, the browser revalidates every reload and the hero appears
 # blank until the round-trip completes.
+#
+# 2026-07-01 - Added HTTP Range-request handling on top of Starlette's
+# `StaticFiles`. Starlette's `FileResponse` still returns 200 with the whole
+# body when a browser sends a `Range:` header, which prevents `<video>`
+# playback in Safari / iOS and breaks seeking in every other browser.
+# We intercept the request, honour the `Range` header, and stream a proper
+# `206 Partial Content` response for any file (typically MP4 videos).
+def _parse_range_header(value: str, file_size: int):
+    """Parse a single-range `bytes=start-end` header.
+
+    Returns (start, end) inclusive, or None on malformed input. Supports the
+    common single-range forms:
+      bytes=0-499      -> (0, 499)
+      bytes=500-       -> (500, file_size-1)
+      bytes=-500       -> (max(0, file_size-500), file_size-1)  (suffix)
+    """
+    if not value or not value.startswith("bytes="):
+        return None
+    spec = value[6:].split(",")[0].strip()
+    if "-" not in spec:
+        return None
+    s_str, _, e_str = spec.partition("-")
+    try:
+        if s_str == "":
+            if e_str == "":
+                return None
+            suffix = int(e_str)
+            if suffix <= 0:
+                return None
+            start = max(0, file_size - suffix)
+            end = file_size - 1
+        else:
+            start = int(s_str)
+            end = int(e_str) if e_str else file_size - 1
+    except (ValueError, TypeError):
+        return None
+    end = min(end, file_size - 1)
+    if start < 0 or start > end:
+        return None
+    return start, end
+
+
 class _ImmutableStaticFiles(StaticFiles):
     async def get_response(self, path, scope):
         resp = await super().get_response(path, scope)
-        if resp.status_code == 200:
-            resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
-        return resp
+        if resp.status_code != 200:
+            return resp
+        # Add long-lived immutable cache + advertise range support.
+        resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        resp.headers["Accept-Ranges"] = "bytes"
+
+        # If the client sent a Range header AND the resolved response points
+        # at a real file on disk, promote it to a 206 Partial Content stream.
+        range_header = None
+        for name, value in scope.get("headers", []):
+            if name == b"range":
+                range_header = value.decode("latin1", errors="ignore")
+                break
+        if not range_header:
+            return resp
+        file_path = getattr(resp, "path", None)
+        if not file_path:
+            return resp
+        try:
+            file_size = os.path.getsize(file_path)
+        except OSError:
+            return resp
+        parsed = _parse_range_header(range_header, file_size)
+        if parsed is None:
+            # Malformed / unsatisfiable -> 416 with Content-Range header.
+            from starlette.responses import Response
+            return Response(
+                status_code=416,
+                headers={
+                    "Content-Range": f"bytes */{file_size}",
+                    "Accept-Ranges": "bytes",
+                    "Cache-Control": "no-store",
+                },
+            )
+        start, end = parsed
+        content_length = end - start + 1
+        media_type = resp.media_type or "application/octet-stream"
+
+        async def _stream_range():
+            chunk_size = 1024 * 1024  # 1 MiB
+            with open(file_path, "rb") as fh:
+                fh.seek(start)
+                remaining = content_length
+                while remaining > 0:
+                    data = fh.read(min(chunk_size, remaining))
+                    if not data:
+                        break
+                    remaining -= len(data)
+                    yield data
+
+        from starlette.responses import StreamingResponse
+        headers = {
+            "Content-Range": f"bytes {start}-{end}/{file_size}",
+            "Content-Length": str(content_length),
+            "Accept-Ranges": "bytes",
+            "Cache-Control": "public, max-age=31536000, immutable",
+        }
+        # Preserve ETag / Last-Modified from the original file response so
+        # conditional requests keep working.
+        for pass_hdr in ("etag", "last-modified"):
+            if pass_hdr in resp.headers:
+                headers[pass_hdr] = resp.headers[pass_hdr]
+        return StreamingResponse(
+            _stream_range(),
+            status_code=206,
+            media_type=media_type,
+            headers=headers,
+        )
 
 
 # Serve uploaded media. Lives under /uploads/{section}/{uuid}.webp and is

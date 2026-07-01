@@ -25,7 +25,8 @@ is also represented in standard schema.org JSON-LD inside every HTML page.
 ## Contact
 
 - Email: info@oncewerewild.com
-- Phone: +61 457 999 411 (Barbara) +61 408 943 002 (Adele)
+- Phone Adele: +61 408 943 002
+- Phone Barbara: +61 457 999 411
 - Address: 584 Maleny-Montville Rd, Balmoral Ridge, Maleny QLD 4552
 - Hours: Monday to Friday, 8am to 6pm AEST
 
@@ -40,4 +41,4 @@ is also represented in standard schema.org JSON-LD inside every HTML page.
   departure. Travel insurance is strongly advised.
 - This site is operated by humans. Email is the best channel for enquiries.
 
-_Last refreshed: 2026-06-30T11:11:23.031807+00:00_
+_Last refreshed: 2026-07-01T09:51:59.594712+00:00_
